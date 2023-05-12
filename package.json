@@ -1,0 +1,36 @@
+{
+  "name": "chatbotconnect",
+  "version": "1.0.0",
+  "description": "chatbot to communicate with taught ai",
+  "main": "src/lib/chatbot-connect.js",
+  "scripts": {
+    "build": "NODE_ENV=development webpack",
+    "start": "webpack-dev-server --open",
+    "tests": "NODE_ENV=test jest --testPathPattern=/__tests__/unit"
+  },
+  "keywords": [
+    "chat",
+    "ai",
+    "frontend"
+  ],
+  "author": "di",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-loader": "^9.1.2",
+    "@babel/preset-env": "^7.16.11",
+    "@babel/preset-typescript": "^7.16.7",
+    "@faker-js/faker": "^7.6.0",
+    "@testing-library/jest-dom": "^5.16.4",
+    "jest": "^27.5.1",
+    "jest-fetch-mock": "^3.0.3",
+    "jest-location-mock": "^1.0.9",
+    "html-webpack-plugin": "^5.5.1",
+    "webpack": "^5.82.0",
+    "webpack-cli": "^5.1.1",
+    "webpack-dev-server": "^4.15.0"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.6.1"
+  }
+}
