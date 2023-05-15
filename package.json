@@ -9,7 +9,7 @@
     "tests": "NODE_ENV=test jest --testPathPattern=/__tests__/unit"
   },
   "keywords": [
-    "chat",
+    "chatui",
     "ai",
     "frontend"
   ],

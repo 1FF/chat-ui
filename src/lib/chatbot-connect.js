@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 import { chatMarkup, loadingDots, styles } from "./chat-widgets";
 import cssMinify from "./css-minify";
-import { containsURL, formatDateByLocale, getRandomInteger } from "./helpers";
+import { extractLink, formatDateByLocale, getRandomInteger } from "./helpers";
 const STORAGE_KEY = 'history';
 const CHAT_SEEN_KEY = 'chatSeen';
 
@@ -72,8 +72,8 @@ const ChatbotConnect = {
     this.socket && this.socket.emit(this.events.chatHistory, { user_id: this.userId });
   },
   onChatHistory(res) {
-   localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
-   this.loadExistingMessages();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
+    this.loadExistingMessages();
   },
   /**
    * Closes the socket connection if it is open.
@@ -111,22 +111,18 @@ const ChatbotConnect = {
     }
 
     const lastMessage = messages[messages.length - 1];
-
-    if (containsURL(lastMessage.content)) {
-      this.elements.ctaButton.classList.remove('hidden');
-      this.elements.promptContainer.classList.add('hidden');
-      return;
-    }
-
-    if (lastMessage.role !== 'assistant') {
-      return;
-    }
+    const link = extractLink(lastMessage.content);
 
     setTimeout(() => {
       document.getElementById('wave').remove();
       this.togglePointerEvents();
       this.addMessage(lastMessage);
       this.appendHtml(lastMessage);
+      if (link) {
+        this.elements.ctaButton.classList.remove('hidden');
+        this.elements.ctaButton.setAttribute('href', link);
+        this.elements.promptContainer.classList.add('hidden');
+      }
     }, getRandomInteger(2500, 5000));
   },
   /**
@@ -236,7 +232,7 @@ const ChatbotConnect = {
     }
     const questionData = {
       "term": this.term, //hardcoded for now it will be taken from url
-      "user_id": this.userId, 
+      "user_id": this.userId,
       "message": "" // updated on each user prompt and each assistant response
     }
     const data = { role: 'user', content, time: new Date().toISOString() };

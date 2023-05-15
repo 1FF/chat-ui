@@ -32,7 +32,7 @@ export const chatMarkup = (config) => `<div class="chat-container">
     </div>
     <div class="chat-widget__messages-container" id="message-incrementor"></div>
   </div>
-  <div class="chat-widget__cta hidden" id="cta-button">Conversation finished</div>
+  <a class="chat-widget__cta hidden" id="cta-button">Conversation finished</a>
   <div class="chat-widget__prompt" id="prompt-container">
     <span class="widget__input">
       <textarea id="chat-prompt" name="chat-prompt"></textarea>

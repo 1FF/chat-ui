@@ -32,15 +32,18 @@ export function formatDateByLocale(dateString) {
   return `${formattedDate}`.toUpperCase();
 };
 
-
 /**
- * Checks if a string contains a URL.
+ * Extracts a link from a given string.
  *
- * @param {string} str - The input string to check.
- * @returns {boolean} - True if the string contains a URL, false otherwise.
+ * @param {string} string - The input string from which the link will be extracted.
+ * @returns {string} The extracted link, or an empty string if no link is found.
  */
-export function containsURL(str) {
-  // Regular expression pattern to match URLs for http and https containing string;
-  const urlRegex = /(https?:\/\/[^\s]+)/;
-  return urlRegex.test(str);
+export function extractLink(string) {
+  // Regular expression to match a URL
+  const urlRegex = /((?:https?:\/\/|www\.)[^\s/$.?#].[^\s]*)\b/gi;
+  
+  // Extract the link from the string
+  const matches = string.match(urlRegex);
+  const link = matches ? matches[0] : '';
+  return link;
 }
