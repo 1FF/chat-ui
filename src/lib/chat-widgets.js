@@ -1,5 +1,4 @@
-export const chatMarkup = (config) => `<div class="chat-container">
-<div class="chat-widget">
+export const chatMarkup = (config) => `<div class="chat-widget">
   <div class="chat-widget__head">
     <div class="chat-widget__info">
       <span class="img">
@@ -43,7 +42,6 @@ export const chatMarkup = (config) => `<div class="chat-container">
       </svg>
     </div>
   </div>
-</div>
 </div>`;
 
 export const loadingDots = `<div id="wave">
@@ -52,7 +50,7 @@ export const loadingDots = `<div id="wave">
   <span class="dot"></span>
 </div>`;
 
-export const styles = `html {
+export const styles = (height) => `html {
   box-sizing: border-box;
   font-size: 16px;
 }
@@ -66,6 +64,11 @@ export const styles = `html {
 button:focus,
 input:focus {
   outline: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
 input {
@@ -110,12 +113,6 @@ textarea {
   position: relative;
 }
 
-body {
-  margin: 0;
-  padding: 0;
-  font-weight: 400;
-}
-
 img {
   max-width: 100%;
   height: auto;
@@ -123,7 +120,7 @@ img {
 
 .chat-widget {
   width: 100%;
-  height: 100%;
+  height: ${height}px;
   overflow: hidden;
   display: flex;
   justify-content: space-between;
@@ -228,6 +225,7 @@ img {
   justify-content: space-between;
   align-items: center;
   padding: 11px 20px;
+  height: fit-content;
 }
 
 .chat-widget__messages {
@@ -296,7 +294,7 @@ img {
   font-family: var(--font-family);
   background: var(--lumina);
   width: 100%;
-  height: 100vh;
+  height: 100%;
   position: fixed;
   top: 0;
   left: 0;
@@ -318,14 +316,14 @@ img {
   margin: 11px 20px;
   background: var(--seraph);
   max-width: 375px;
-  color: var(--whisper);
+  color: white;
   cursor: pointer;
   position: relative;
   letter-spacing: 2px;
   padding: 11px 20px;
   border-radius: 20px;
   margin-inline: auto;
-  max-width: 375px;
+  max-width: 320px;
   width: 100%;
   font-weight: bolder;
   font-size: 20px;

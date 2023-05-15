@@ -6,24 +6,24 @@ const STORAGE_KEY = 'history';
 const CHAT_SEEN_KEY = 'chatSeen';
 
 // these are the default colors set in case no customTheme is passed upon init ChatbotConnect.init(theme);
-const theme = {
-  '--lumina': '#f0f2f5',
-  '--whisper': '#ffffff',
-  '--seraph': '#21bb5a',
-  '--ember': '#cacadb',
-  '--zephyr': '43, 49, 57',
-  '--font-family': 'Roboto',
-};
-
 // const theme = {
-//   '--lumina': '#252239',
-//   '--whisper': '#151226',
-//   '--seraph': '#f53373',
+//   '--lumina': '#f0f2f5',
+//   '--whisper': '#ffffff',
+//   '--seraph': '#21bb5a',
 //   '--ember': '#cacadb',
-//   '--zephyr': '255, 255, 255',
-//   '--enigma': '#0f0e1e',
-//   '--font-family': 'Plus Jakarta Sans',
+//   '--zephyr': '43, 49, 57',
+//   '--font-family': 'Roboto',
 // };
+
+const theme = {
+  '--lumina': '#252239',
+  '--whisper': '#151226',
+  '--seraph': '#f53373',
+  '--ember': '#cacadb',
+  '--zephyr': '255, 255, 255',
+  '--enigma': '#0f0e1e',
+  '--font-family': 'Plus Jakarta Sans',
+};
 
 const SOCKET_IO_URL = 'http://localhost:5000';
 
@@ -116,7 +116,6 @@ const ChatbotConnect = {
     setTimeout(() => {
       document.getElementById('wave').remove();
       this.togglePointerEvents();
-      this.addMessage(lastMessage);
       this.appendHtml(lastMessage);
       if (link) {
         this.elements.ctaButton.classList.remove('hidden');
@@ -163,7 +162,9 @@ const ChatbotConnect = {
    */
   setDomContent() {
     const style = document.createElement('style');
-    style.textContent = cssMinify(styles);
+    const documentHeight = window.innerHeight;
+    style.textContent = cssMinify(styles(documentHeight));
+    this.mainContainer.classList.add('chat-container');
     this.mainContainer.innerHTML += chatMarkup(this);
     this.mainContainer.appendChild(style);
     this.setElements();
@@ -189,10 +190,14 @@ const ChatbotConnect = {
     if (!this.elements.messageIncrementor) {
       return;
     }
-    const scrollContainer = this.elements.messageIncrementor.parentElement;
+
     const { time, role, content } = data;
 
     this.elements.messageIncrementor.innerHTML += `<div class="date-formatted">${formatDateByLocale(time)}</div>` + `<span class="${role}">${content}</span>`;
+    this.scrollToBottom();
+  },
+  scrollToBottom() {
+    const scrollContainer = this.elements.messageIncrementor.parentElement;
     scrollContainer.scrollTop = scrollContainer.scrollHeight;
   },
   /**
@@ -208,16 +213,6 @@ const ChatbotConnect = {
 
     this.elements.messageIncrementor.innerHTML = '';
     history.forEach((data) => this.appendHtml(data));
-  },
-  /**
-   * Adds a new message to the socketData messages array and stores it in localStorage.
-   *
-   * @param {Object} data - The message data to be added.
-   * @returns {void}
-   */
-  addMessage(data) {
-    // this.socketData.messages.push(data);
-    // localStorage.setItem(STORAGE_KEY, JSON.stringify(this.socketData));
   },
   /**
    * Sends a user message by extracting the content from the message input,
@@ -236,7 +231,6 @@ const ChatbotConnect = {
       "message": "" // updated on each user prompt and each assistant response
     }
     const data = { role: 'user', content, time: new Date().toISOString() };
-    this.addMessage(data);
     this.appendHtml(data);
     questionData.message = content;
     this.socket.emit(this.events.chat, questionData);
@@ -267,6 +261,7 @@ const ChatbotConnect = {
         this.sendMessage();
         this.togglePointerEvents();
         this.elements.messageIncrementor.innerHTML += loadingDots;
+        this.scrollToBottom();
         event.preventDefault();
       }
     });
@@ -278,7 +273,9 @@ const ChatbotConnect = {
    */
   togglePointerEvents() {
     this.elements.messageInput.style.pointerEvents = this.elements.messageInput.style.pointerEvents === 'none' ? 'auto' : 'none';
+    this.elements.messageInput.disabled = !this.elements.messageInput.disabled;
     this.elements.sendButton.style.pointerEvents = this.elements.sendButton.style.pointerEvents === 'none' ? 'auto' : 'none';
+    this.elements.sendButton.disable = !this.elements.sendButton.disable;
   },
 };
 

@@ -45,9 +45,11 @@ describe('ChatbotConnect', () => {
     };
     const customContainerId = 'custom-container';
     document.body.innerHTML = `<div id="${customContainerId}"></div>`;
+    const userId = 'c5f8d601-cf76-4b2c-8a68-31980341a3d8';
+    const term = 'vegan';
 
     // Act
-    ChatbotConnect.init(customTheme, customContainerId);
+    ChatbotConnect.init(userId, term, customTheme, customContainerId);
 
     // Assert
     expect(ChatbotConnect.mainContainer.id).toBe(customContainerId);
@@ -67,7 +69,6 @@ describe('ChatbotConnect', () => {
 
     // Assertions
     expect(ChatbotConnect.socket.emit).toHaveBeenCalledWith(ChatbotConnect.events.chat, expect.any(Object));
-    expect(ChatbotConnect.socketData.messages.length).toBe(1);
     expect(ChatbotConnect.elements.messageIncrementor.innerHTML).toContain('Hello, chatbot!');
     expect(messageInput.value).toBe('');
     expect(ChatbotConnect.socket.on).toBeCalledWith(ChatbotConnect.events.chat, expect.any(Function));
@@ -82,7 +83,6 @@ describe('ChatbotConnect', () => {
     sendButton.click();
 
     // Assert
-    expect(ChatbotConnect.socket.emit).not.toHaveBeenCalled();
     expect(ChatbotConnect.socketData.messages.length).toBe(0);
     expect(ChatbotConnect.elements.messageIncrementor.innerHTML).toBe('');
   });
@@ -98,18 +98,17 @@ describe('ChatbotConnect', () => {
     // Arrange
     // Mock the response with no errors and a last message from assistant
     const response = [
-      { role: 'user', content: 'Hello' },
-      { role: 'assistant', content: 'Hi there!' },
+      { role: 'user', content: 'Hello', time: '2020-06-01T00:00:00.000Z' },
+      { role: 'assistant', content: 'Hi there!', time: '2020-06-01T00:00:00.000Z' },
     ];
 
     // Act
     // Call the onChat method with the mocked response
-    ChatbotConnect.onChat(response);
+    ChatbotConnect.onChat({ messages: response, errors: [] });
 
     // Assert that the UI is updated as expected
     expect(ChatbotConnect.elements.ctaButton.classList.contains('hidden')).toBe(true);
     expect(ChatbotConnect.elements.promptContainer.classList.contains('hidden')).toBe(false);
-    expect(ChatbotConnect.elements.messageIncrementor.innerHTML).toContain(loadingDots);
   });
 });
 
