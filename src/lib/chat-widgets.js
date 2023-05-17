@@ -284,7 +284,7 @@ img {
   height: 24px;
   border-radius: 100%;
   background: var(--seraph);
-  pointer-events: none;
+  pointer-events: all;
 }
 
 .resend-icon svg {
@@ -403,6 +403,10 @@ div#wave .dot:nth-child(3) {
   30% {
     transform: translateY(-15px);
   }
+}
+
+.underline {
+  text-decoration: underline;
 }
 
 .hidden {

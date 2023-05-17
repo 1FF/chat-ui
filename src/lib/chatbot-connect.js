@@ -5,7 +5,7 @@ import { events } from "./config/events";
 import { roles } from "./config/roles";
 import { theme } from "./config/theme";
 import cssMinify from "./css-minify";
-import { extractLink, formatDateByLocale, getRandomInteger } from "./helpers";
+import { extractLink, formatDateByLocale, getRandomInteger, replaceLinkWithAnchor } from "./helpers";
 
 const STORAGE_KEY = 'history';
 const CHAT_SEEN_KEY = 'chatSeen';
@@ -132,11 +132,16 @@ const ChatbotConnect = {
       this.togglePointerEvents();
       this.appendHtml(lastMessage);
       if (link) {
-        this.elements.ctaButton.classList.remove('hidden');
-        this.elements.ctaButton.setAttribute('href', link);
-        this.elements.promptContainer.classList.add('hidden');
+        this.setLink(link);
       }
     }, getRandomInteger(2500, 5000));
+  },
+  setLink(link) {
+    const lastMessageElement = this.elements.messageIncrementor.querySelectorAll('.assistant')[this.elements.messageIncrementor.querySelectorAll('.assistant').length - 1];
+    lastMessageElement.innerHTML = replaceLinkWithAnchor(lastMessageElement.textContent)
+    this.elements.ctaButton.classList.remove('hidden');
+    this.elements.ctaButton.setAttribute('href', link);
+    this.elements.promptContainer.classList.add('hidden');
   },
   /**
    * Sets custom variables and applies them to the main container element and font family.
@@ -243,11 +248,16 @@ const ChatbotConnect = {
     this.socketEmitChat();
   },
   socketEmitChat() {
+    const lastChild = this.getLastUserMessageElement();
+
     if (this.socket.connected) {
       this.socket.emit(this.events.chat, this.lastQuestionData);
       this.elements.messageIncrementor.innerHTML += loadingDots;
     } else {
-      this.onError();
+      lastChild.querySelector('.resend-icon').classList.add('hidden');
+      setTimeout(() => {
+        this.onError();
+      }, 2000);
     }
 
     this.togglePointerEvents();

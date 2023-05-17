@@ -1,3 +1,5 @@
+const REGEX_URL = /((?:https?:\/\/|www\.)[^\s/$.?#].[^\s]*)\b/gi;
+
 /**
  * Generates a random integer between the specified range (inclusive).
  *
@@ -47,16 +49,30 @@ function hasQueryParams(url) {
  * @returns {string} The extracted link, or an empty string if no link is found.
  */
 export function extractLink(string) {
-  // Regular expression to match a URL
-  const urlRegex = /((?:https?:\/\/|www\.)[^\s/$.?#].[^\s]*)\b/gi;
   const hasQuery = hasQueryParams(string);
+
   // Extract the link from the string
-  const matches = string.match(urlRegex);
+  const matches = string.match(REGEX_URL);
   const link = matches ? matches[0] : '';
 
+  if (!link) {
+    return false;
+  }
+  
   if (hasQuery) {
     return link;
   }
 
   return link + window.location.search
+}
+
+export function replaceLinkWithAnchor(message) {
+  // Extract the link from the message
+  const matches = message.match(REGEX_URL);
+  const link = matches ? matches[0] : '';
+
+  // Replace the link in the message with a clickable anchor tag
+  const replacedMessage = message.replace(REGEX_URL, `<a class="underline" href="${extractLink(message)}">${link}</a>`);
+
+  return replacedMessage;
 }
