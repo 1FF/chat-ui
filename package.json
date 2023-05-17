@@ -1,6 +1,6 @@
 {
-  "name": "chatbotconnect",
-  "version": "1.0.0",
+  "name": "1ff-chat-ui",
+  "version": "1.0.1",
   "description": "chatbot to communicate with taught ai",
   "main": "src/lib/chatbot-connect.js",
   "scripts": {
@@ -13,6 +13,10 @@
     "ai",
     "frontend"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1FF/chat-ui"
+  },
   "author": "di",
   "license": "ISC",
   "devDependencies": {

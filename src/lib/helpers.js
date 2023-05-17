@@ -32,6 +32,14 @@ export function formatDateByLocale(dateString) {
   return `${formattedDate}`.toUpperCase();
 };
 
+function hasQueryParams(url) {
+  // Regular expression pattern to match query parameters
+  const pattern = /[?&]([^=#]+)=([^&#]*)/g;
+
+  // Check if the pattern matches any query parameters
+  return pattern.test(url);
+}
+
 /**
  * Extracts a link from a given string.
  *
@@ -41,9 +49,14 @@ export function formatDateByLocale(dateString) {
 export function extractLink(string) {
   // Regular expression to match a URL
   const urlRegex = /((?:https?:\/\/|www\.)[^\s/$.?#].[^\s]*)\b/gi;
-  
+  const hasQuery = hasQueryParams(string);
   // Extract the link from the string
   const matches = string.match(urlRegex);
   const link = matches ? matches[0] : '';
-  return link;
+
+  if (hasQuery) {
+    return link;
+  }
+
+  return link + window.location.search
 }

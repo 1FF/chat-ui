@@ -1,7 +1,5 @@
-import { loadingDots } from "../../src/lib/chat-widgets";
 import ChatbotConnect from "../../src/lib/chatbot-connect";
 jest.mock("socket.io-client");
-
 
 describe('ChatbotConnect', () => {
   beforeEach(() => {
@@ -28,8 +26,8 @@ describe('ChatbotConnect', () => {
     // Assert
     expect(ChatbotConnect.mainContainer).toBeDefined();
     expect(ChatbotConnect.theme).toEqual(expect.objectContaining({
-      '--lumina': '#f0f2f5',
-      '--whisper': '#ffffff',
+      '--lumina': '#252239',
+      '--whisper': '#151226',
       // ... other default theme properties
     }));
     expect(ChatbotConnect.mainContainer).not.toBeEmptyDOMElement();
@@ -39,17 +37,18 @@ describe('ChatbotConnect', () => {
   test('initializes the chatbot with custom theme and container ID', () => {
     // Arrange
     const customTheme = {
-      '--lumina': '#252239',
-      '--whisper': '#151226',
+      '--lumina': '#f0f2f5',
+      '--whisper': '#ffffff',
       // ... custom theme properties
     };
     const customContainerId = 'custom-container';
     document.body.innerHTML = `<div id="${customContainerId}"></div>`;
     const userId = 'c5f8d601-cf76-4b2c-8a68-31980341a3d8';
     const term = 'vegan';
+    const url = "http://localhost:3000";
 
     // Act
-    ChatbotConnect.init(userId, term, customTheme, customContainerId);
+    ChatbotConnect.init(userId, term, url, {},customTheme, customContainerId);
 
     // Assert
     expect(ChatbotConnect.mainContainer.id).toBe(customContainerId);
@@ -68,7 +67,7 @@ describe('ChatbotConnect', () => {
     sendButton.click();
 
     // Assertions
-    expect(ChatbotConnect.socket.emit).toHaveBeenCalledWith(ChatbotConnect.events.chat, expect.any(Object));
+    expect(ChatbotConnect.socket.emit).toHaveBeenCalledWith(ChatbotConnect.events.chatHistory, expect.any(Object));
     expect(ChatbotConnect.elements.messageIncrementor.innerHTML).toContain('Hello, chatbot!');
     expect(messageInput.value).toBe('');
     expect(ChatbotConnect.socket.on).toBeCalledWith(ChatbotConnect.events.chat, expect.any(Function));

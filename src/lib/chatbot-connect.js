@@ -1,30 +1,14 @@
 import { io } from "socket.io-client";
-import { chatMarkup, loadingDots, styles } from "./chat-widgets";
+import { chatMarkup, loadingDots, rolesHTML, styles } from "./chat-widgets";
+import { assistant } from "./config/assistant";
+import { events } from "./config/events";
+import { roles } from "./config/roles";
+import { theme } from "./config/theme";
 import cssMinify from "./css-minify";
 import { extractLink, formatDateByLocale, getRandomInteger } from "./helpers";
+
 const STORAGE_KEY = 'history';
 const CHAT_SEEN_KEY = 'chatSeen';
-
-// these are the default colors set in case no customTheme is passed upon init ChatbotConnect.init(theme);
-// const theme = {
-//   '--lumina': '#f0f2f5',
-//   '--whisper': '#ffffff',
-//   '--seraph': '#21bb5a',
-//   '--ember': '#cacadb',
-//   '--zephyr': '43, 49, 57',
-//   '--font-family': 'Roboto',
-// };
-
-const theme = {
-  '--lumina': '#252239',
-  '--whisper': '#151226',
-  '--seraph': '#f53373',
-  '--ember': '#cacadb',
-  '--zephyr': '255, 255, 255',
-  '--enigma': '#0f0e1e',
-  '--font-family': 'Plus Jakarta Sans',
-};
-
 const SOCKET_IO_URL = 'http://localhost:5000';
 
 const themeSpecificKeys = {
@@ -33,47 +17,67 @@ const themeSpecificKeys = {
 
 const ChatbotConnect = {
   theme,
+  assistant,
+  events,
+  roles,
   fontFamily: 'Arial',
   socket: null,
   elements: null,
-  events: { chat: 'chat', chatHistory: 'chat-history' },
-  userId: '',
-  term: '',
-  assistant: {
-    image: 'https://randomuser.me/api/portraits/women/90.jpg', //hardcoded for now may be set on connection
-    role: 'Lead Nutrition Expert, PhD', //hardcoded for now may be set on connection
-    name: 'Jenny Wilson',//hardcoded for now may be set on connection
-    welcome: 'Have a quick chat with our personal nutritionist and get a free consultation about the perfect diet for you',
+  userId: null,
+  term: null,
+  url: null,
+  initialHeight: null,
+  lastQuestionData: {
+    "term": '',
+    "user_id": '',
+    "message": '',
   },
   /**
    * Initializes the chatbot, setting up the necessary configurations and elements.
    *
-   * @param {String} userId - The user ID of the user.
-   * @param {Object} customTheme - Custom theme configuration for the chatbot (optional).
-   * @param {string} containerId - ID of the HTML container element for the chatbot (optional).
+   * @param {String} [url=SOCKET_IO_URL] - The URL of the socket server. Defaults to SOCKET_IO_URL constant.
+   * @param {Object} [assistantConfig] - Custom configuration for the assistant (optional).
+   * @param {Object} [customTheme={}] - Custom theme configuration for the chatbot (optional).
+   * @param {String} [containerId='chatbot-container'] - ID of the HTML container element for the chatbot (optional).
    * @returns {void}
    */
-  init(userId, term, customTheme = {}, containerId = 'chatbot-container') {
+  init(url = SOCKET_IO_URL, assistantConfig = {}, customTheme = {}, containerId = 'chatbot-container') {
     if (localStorage.getItem(CHAT_SEEN_KEY)) {
       this.closeSocket();
       return;
     };
-    this.term = term;
-    this.userId = userId;
+    this.url = url;
     this.theme = { ...this.theme, ...customTheme };
+    this.assistant = { ...this.assistant, ...assistantConfig };
     this.mainContainer = document.getElementById(containerId);
+    this.setMessageObject();
     this.setCustomVars();
     this.setCustomFont();
     this.setDomContent();
     this.setSocket();
-    this.loadExistingMessages();
-    this.socket && this.socket.on(this.events.chat, this.onChat.bind(this));
-    this.socket && this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
-    this.socket && this.socket.emit(this.events.chatHistory, { user_id: this.userId });
+  },
+  setMessageObject() {
+    this.lastQuestionData.term = this.getTerm();
+    this.lastQuestionData.user_id = localStorage.getItem('__cid');
+  },
+  getTerm() {
+    const url = window.location.search;
+    const urlParams = new URLSearchParams(url);
+
+    return urlParams.get('utm_chat');
   },
   onChatHistory(res) {
+    res.history.unshift(this.assistant.initialMessage);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
-    this.loadExistingMessages();
+    if (res.history.length === 1) {
+      this.elements.messageIncrementor.innerHTML += loadingDots;
+      setTimeout(() => {
+        document.getElementById('wave').remove();
+        this.appendHtml(res.history[0]);
+      }, 1500);
+    } else {
+      this.loadExistingMessages();
+    }
   },
   /**
    * Closes the socket connection if it is open.
@@ -89,12 +93,21 @@ const ChatbotConnect = {
    * @returns {void}
    */
   setSocket() {
-    this.socket = io.connect(SOCKET_IO_URL, {
+    this.socket = io.connect(this.url, {
       transports: ['websocket', 'polling'],
       upgrade: true,
       secure: true,
       reconnect: true,
     });
+
+    this.socket.on(this.events.chat, this.onChat.bind(this));
+    this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
+    this.socket.emit(this.events.chatHistory, { user_id: this.lastQuestionData.user_id });
+    // TODO do something on server error or disconnection
+    // this.socket.on("disconnect", (reason) => {
+    //   console.log(reason);
+    // });
+    // this.socket.on("error", this.onSocketError.bind(this));
   },
   /**
    * Handles the chat response received from the server.
@@ -105,8 +118,9 @@ const ChatbotConnect = {
   onChat(res) {
     const { messages, errors } = res;
 
-    // TODO do something on error
     if (errors && errors.length) {
+      document.getElementById('wave')?.remove();
+      this.onError();
       return;
     }
 
@@ -162,8 +176,8 @@ const ChatbotConnect = {
    */
   setDomContent() {
     const style = document.createElement('style');
-    const documentHeight = window.innerHeight;
-    style.textContent = cssMinify(styles(documentHeight));
+    this.initialHeight = window.innerHeight;
+    style.textContent = cssMinify(styles(this.initialHeight));
     this.mainContainer.classList.add('chat-container');
     this.mainContainer.innerHTML += chatMarkup(this);
     this.mainContainer.appendChild(style);
@@ -187,13 +201,9 @@ const ChatbotConnect = {
    * @returns {void}
    */
   appendHtml(data) {
-    if (!this.elements.messageIncrementor) {
-      return;
-    }
-
     const { time, role, content } = data;
 
-    this.elements.messageIncrementor.innerHTML += `<div class="date-formatted">${formatDateByLocale(time)}</div>` + `<span class="${role}">${content}</span>`;
+    this.elements.messageIncrementor.innerHTML += `<div class="date-formatted">${formatDateByLocale(time)}</div>` + rolesHTML[role](content);
     this.scrollToBottom();
   },
   scrollToBottom() {
@@ -225,16 +235,39 @@ const ChatbotConnect = {
     if (content === '') {
       return;
     }
-    const questionData = {
-      "term": this.term, //hardcoded for now it will be taken from url
-      "user_id": this.userId,
-      "message": "" // updated on each user prompt and each assistant response
-    }
+
     const data = { role: 'user', content, time: new Date().toISOString() };
+    this.lastQuestionData.message = content;
+
     this.appendHtml(data);
-    questionData.message = content;
-    this.socket.emit(this.events.chat, questionData);
+    this.socketEmitChat();
+  },
+  socketEmitChat() {
+    if (this.socket.connected) {
+      this.socket.emit(this.events.chat, this.lastQuestionData);
+      this.elements.messageIncrementor.innerHTML += loadingDots;
+    } else {
+      this.onError();
+    }
+
+    this.togglePointerEvents();
+    this.scrollToBottom();
     this.elements.messageInput.value = '';
+  },
+  onError() {
+    const lastUserMessageElement = this.getLastUserMessageElement();
+    lastUserMessageElement.style.cursor = 'pointer';
+    lastUserMessageElement.addEventListener('click', this.socketEmitChat.bind(this, this.lastQuestionData));
+    lastUserMessageElement.querySelector('.resend-icon').classList.remove('hidden');
+  },
+  getLastUserMessageElement() {
+    const oldChild = this.elements.messageIncrementor.querySelectorAll('.user')[this.elements.messageIncrementor.querySelectorAll('.user').length - 1];
+    if (oldChild && oldChild.classList.contains('user')) {
+      const newLast = oldChild.cloneNode(true);
+      oldChild.parentNode.replaceChild(newLast, oldChild);
+      return newLast;
+    }
+    return null;
   },
   /**
    * Closes the widget by clearing the main container, closing the socket connection,
@@ -256,15 +289,13 @@ const ChatbotConnect = {
     this.elements.closeButton.addEventListener('click', this.closeWidget.bind(this));
     this.elements.sendButton.addEventListener('click', this.sendMessage.bind(this));
     this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
-    this.elements.messageInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        this.sendMessage();
-        this.togglePointerEvents();
-        this.elements.messageIncrementor.innerHTML += loadingDots;
-        this.scrollToBottom();
-        event.preventDefault();
-      }
-    });
+    this.elements.messageInput.addEventListener('keydown', (event) => this.onKeyDown(event));
+  },
+  onKeyDown(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.sendMessage();
+    }
   },
   /**
    * Toggles the pointer events for the message input and send button elements.
