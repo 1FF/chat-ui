@@ -2,21 +2,30 @@ import ChatbotConnect from "../../src/lib/chatbot-connect";
 jest.mock("socket.io-client");
 
 describe('ChatbotConnect', () => {
+  const userID = 'userID';
+  const testMessage = {
+    content: 'hello',
+    time: '2023-05-12T10:30:45.123Z',
+    role: 'assistant'
+  }
   beforeEach(() => {
-    // Create a DOM container element for the chatbot
-    jest.useFakeTimers(); // Enable fake timers
     document.body.innerHTML = '<div id="chatbot-container"></div>';
+    jest.useFakeTimers(); // Enable fake timers
+    localStorage.setItem('__cid', userID);
+    Object.defineProperty(window, 'location', {
+      value: {
+        search: '?utm_chat=test'
+      },
+      writable: true
+    });
   });
 
   afterEach(() => {
-    // Clean up the DOM after each test
     document.body.innerHTML = '';
-    jest.useRealTimers(); // Restore real timers
-    ChatbotConnect.socketData = {
-      "term": "vegan", //hardcoded for now it will be taken from url
-      "customer_id": "c5f8d601-cf76-4b2c-8a68-31980341a3d8", //hardcoded for now it will be taken from localStorage
-      "messages": [] // updated on each user prompt and each assistant response
-    }
+    localStorage.clear();
+    jest.useRealTimers();
+    jest.clearAllTimers();
+    delete window.location;
   });
 
   test('initializes the chatbot with default theme and container ID', () => {
@@ -26,9 +35,13 @@ describe('ChatbotConnect', () => {
     // Assert
     expect(ChatbotConnect.mainContainer).toBeDefined();
     expect(ChatbotConnect.theme).toEqual(expect.objectContaining({
-      '--lumina': '#252239',
-      '--whisper': '#151226',
-      // ... other default theme properties
+      "--ember": "#cacadb",
+      "--enigma": "#FFAE19",
+      "--font-family": "Roboto",
+      "--lumina": "#f0f2f5",
+      "--seraph": "#21bb5a",
+      "--whisper": "#ffffff",
+      "--zephyr": "43, 49, 57",
     }));
     expect(ChatbotConnect.mainContainer).not.toBeEmptyDOMElement();
     expect(ChatbotConnect.socket).toBeDefined();
@@ -37,25 +50,25 @@ describe('ChatbotConnect', () => {
   test('initializes the chatbot with custom theme and container ID', () => {
     // Arrange
     const customTheme = {
-      '--lumina': '#f0f2f5',
-      '--whisper': '#ffffff',
-      // ... custom theme properties
+      '--lumina': '#252239',
+      '--whisper': '#151226',
+      '--seraph': '#f53373',
+      '--ember': '#cacadb',
+      '--zephyr': '255, 255, 255'
     };
     const customContainerId = 'custom-container';
     document.body.innerHTML = `<div id="${customContainerId}"></div>`;
-    const userId = 'c5f8d601-cf76-4b2c-8a68-31980341a3d8';
-    const term = 'vegan';
     const url = "http://localhost:3000";
 
     // Act
-    ChatbotConnect.init(userId, term, url, {},customTheme, customContainerId);
+    ChatbotConnect.init(url, {}, customTheme, customContainerId);
 
     // Assert
     expect(ChatbotConnect.mainContainer.id).toBe(customContainerId);
     expect(ChatbotConnect.theme).toEqual(expect.objectContaining(customTheme));
   });
 
-  test('sends a user message', () => {
+  test('sends an user message', () => {
     // Act
     ChatbotConnect.init();
 
@@ -82,9 +95,11 @@ describe('ChatbotConnect', () => {
     sendButton.click();
 
     // Assert
-    expect(ChatbotConnect.socketData.messages.length).toBe(0);
+    expect(ChatbotConnect.socket.emit).not.toBeCalledWith('chat');
+    expect(ChatbotConnect.socket.emit).toBeCalledWith('chat-history', { user_id: userID });
     expect(ChatbotConnect.elements.messageIncrementor.innerHTML).toBe('');
   });
+
   test('does close the socket', () => {
     // Act
     ChatbotConnect.closeSocket();
@@ -93,80 +108,55 @@ describe('ChatbotConnect', () => {
     expect(ChatbotConnect.socket.close).toHaveBeenCalled();
   });
 
-  test('should update UI and add message when no error and last message is from assistant', () => {
+  test('should return the value of "utm_chat" parameter from the URL', () => {
+    // Act
+    const term = ChatbotConnect.getTerm();
+
+    // Assert
+    expect(term).toEqual('test');
+    delete window.location;
+  });
+
+  test('should setMessageObject correctly', () => {
+    // Assert
+    expect(ChatbotConnect.lastQuestionData).toEqual({ "message": "Hello, chatbot!", "term": "test", "user_id": "userID" });
+  });
+
+  test('should call onError when onChat we have errors', () => {
     // Arrange
-    // Mock the response with no errors and a last message from assistant
-    const response = [
-      { role: 'user', content: 'Hello', time: '2020-06-01T00:00:00.000Z' },
-      { role: 'assistant', content: 'Hi there!', time: '2020-06-01T00:00:00.000Z' },
-    ];
+    jest.spyOn(ChatbotConnect, 'onError');
 
     // Act
-    // Call the onChat method with the mocked response
-    ChatbotConnect.onChat({ messages: response, errors: [] });
+    ChatbotConnect.onChat({ message: 'hello', errors: ['server error'] });
 
-    // Assert that the UI is updated as expected
-    expect(ChatbotConnect.elements.ctaButton.classList.contains('hidden')).toBe(true);
-    expect(ChatbotConnect.elements.promptContainer.classList.contains('hidden')).toBe(false);
+    // Assert
+    expect(ChatbotConnect.onError).toBeCalled();
+  });
+
+  test('should call onError when onChat we have no errors', () => {
+    // Arrange
+    jest.spyOn(ChatbotConnect, 'toggleActiveTextarea');
+    jest.spyOn(ChatbotConnect, 'appendHtml');
+
+    // Act
+    ChatbotConnect.onChat({ messages: [testMessage], errors: [] });
+    // advance the timer by this hardcoded value because it is the largest possible amount
+    jest.advanceTimersByTime(60000);
+
+    // Assert
+    expect(ChatbotConnect.elements.messageIncrementor.innerHTML).toEqual("<div class=\"date-formatted\">MAY 12, 2023, 1:30 PM</div><span class=\"assistant\">hello</span>")
+  });
+
+  test('should setLink', () => {
+    // Arrange
+    const link = 'https://example.com';
+
+    // Act
+    ChatbotConnect.setLink(link);
+
+    // Assert
+    expect(ChatbotConnect.elements.ctaButton.getAttribute('href')).toBe(link);
+    expect(ChatbotConnect.elements.ctaButton.classList.contains('hidden')).toBe(false);
+    expect(ChatbotConnect.elements.promptContainer.classList.contains('hidden')).toBe(true);
   });
 });
-
-
-// Test init method:
-
-// Verify that the theme is correctly set when a custom theme is provided.
-// Verify that the main container element is correctly set.
-// Verify that the custom variables are correctly set and applied to the main container element.
-// Verify that the socket is set up and the event listener is attached.
-// Test closeSocket method:
-
-// Verify that the socket connection is closed when the socket is open.
-// Verify that no error occurs when the socket is already closed.
-// Test setSocket method:
-
-// Verify that the socket connection is set up with the correct options.
-// Test onChat method:
-
-// Mock the server response and verify that the appropriate actions are taken based on the response.
-// Test getRandomInteger method:
-
-// Verify that a random integer is generated within the specified range.
-// Test setCustomVars method:
-
-// Verify that the custom variables are correctly set and applied to the main container element.
-// Test setCustomFont method:
-
-// Verify that the custom font is loaded if it is not already loaded.
-// Test setDomContent method:
-
-// Verify that the HTML content is correctly appended to the main container element.
-// Verify that the necessary elements are correctly set up and event listeners are attached.
-// Test setElements method:
-
-// Verify that the elements are correctly set and retrieved.
-// Test formatDateByLocale method:
-
-// Verify that the date string is correctly formatted according to the locale.
-// Test appendHtml method:
-
-// Verify that the HTML content is correctly appended to the chat message container.
-// Verify that the scroll container is scrolled to the bottom.
-// Test loadExistingMessages method:
-
-// Mock the localStorage data and verify that the existing messages are correctly loaded and displayed.
-// Test addMessage method:
-
-// Verify that a new message is correctly added to the socketData and stored in localStorage.
-// Test sendMessage method:
-
-// Mock the input message and verify that the message is correctly sent, added to the socketData, and displayed.
-// Test containsURL method:
-
-// Verify that a string containing a URL returns true.
-// Verify that a string without a URL returns false.
-// Test closeWidget method:
-
-// Verify that the main container is cleared, the socket connection is closed, and the chat is marked as seen in localStorage.
-// Test event listeners:
-
-// Test the click event listeners for the close button, send button, and CTA button, and verify that the corresponding methods are called.

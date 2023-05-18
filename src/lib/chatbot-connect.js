@@ -60,12 +60,27 @@ const ChatbotConnect = {
     this.lastQuestionData.term = this.getTerm();
     this.lastQuestionData.user_id = localStorage.getItem('__cid');
   },
+  /**
+   * Retrieves the value of the 'utm_chat' parameter from the current URL.
+   *
+   * @returns {string|null} The value of the 'utm_chat' parameter, or null if it is not present.
+   */
   getTerm() {
     const url = window.location.search;
     const urlParams = new URLSearchParams(url);
 
     return urlParams.get('utm_chat');
   },
+  /**
+   * Handles the response from the server containing the chat history.
+   * Prepends the initial assistant message to the history.
+   * Updates the local storage with the updated history.
+   * If the history is empty except for the initial message, displays loading dots and appends the initial message.
+   * Otherwise, loads the existing messages from the history.
+   *
+   * @param {Object} res - The response object containing the chat history.
+   * @returns {void}
+   */
   onChatHistory(res) {
     res.history.unshift(this.assistant.initialMessage);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
@@ -88,7 +103,10 @@ const ChatbotConnect = {
     this.socket && this.socket.close();
   },
   /**
-   * Sets up the socket connection by creating a socket instance with the specified options.
+   * Initializes the socket connection with the server.
+   * It connects to the server using the specified URL and socket options.
+   * Sets up event listeners for 'chat' and 'chatHistory' events.
+   * Emits the 'chatHistory' event to request chat history for the user.
    *
    * @returns {void}
    */
@@ -111,8 +129,11 @@ const ChatbotConnect = {
   },
   /**
    * Handles the chat response received from the server.
+   * It checks for errors in the response and triggers an error state if any errors are present.
+   * It extracts the last message from the response, along with a link if present.
+   * After a delay, it removes the wave element, performs necessary UI updates, and sets the link if available.
    *
-   * @param {Object} res - The chat response object.
+   * @param {Object} res - The chat response object containing messages and errors.
    * @returns {void}
    */
   onChat(res) {
@@ -126,16 +147,24 @@ const ChatbotConnect = {
 
     const lastMessage = messages[messages.length - 1];
     const link = extractLink(lastMessage.content);
-
+    const wavingDots = document.getElementById('wave');
+    
     setTimeout(() => {
-      document.getElementById('wave').remove();
-      this.togglePointerEvents();
+      wavingDots && wavingDots.remove();
+      this.toggleActiveTextarea();
       this.appendHtml(lastMessage);
       if (link) {
         this.setLink(link);
       }
     }, getRandomInteger(2500, 5000));
   },
+  /**
+   * Sets the link and updates the last assistant message element to include an anchor tag with the link.
+   * It also shows the CTA button, sets the href attribute to the link, and hides the prompt container.
+   *
+   * @param {string} link - The link to be set.
+   * @returns {void}
+   */
   setLink(link) {
     const lastMessageElement = this.elements.messageIncrementor.querySelectorAll('.assistant')[this.elements.messageIncrementor.querySelectorAll('.assistant').length - 1];
     lastMessageElement.innerHTML = replaceLinkWithAnchor(lastMessageElement.textContent)
@@ -247,6 +276,13 @@ const ChatbotConnect = {
     this.appendHtml(data);
     this.socketEmitChat();
   },
+  /**
+   * Emits a chat event to the socket server with the last question data.
+   * If the socket is connected, it sends the data and adds loading dots to the message incrementor.
+   * If the socket is disconnected, it hides the resend icon, triggers an error after a delay, and performs necessary UI updates.
+   *
+   * @returns {void}
+   */
   socketEmitChat() {
     const lastChild = this.getLastUserMessageElement();
 
@@ -254,22 +290,35 @@ const ChatbotConnect = {
       this.socket.emit(this.events.chat, this.lastQuestionData);
       this.elements.messageIncrementor.innerHTML += loadingDots;
     } else {
-      lastChild.querySelector('.resend-icon').classList.add('hidden');
+      lastChild && lastChild.querySelector('.resend-icon').classList.add('hidden');
       setTimeout(() => {
         this.onError();
       }, 2000);
     }
 
-    this.togglePointerEvents();
+    this.toggleActiveTextarea();
     this.scrollToBottom();
     this.elements.messageInput.value = '';
   },
+  /**
+   * Handles the error event by updating the last user message element to allow resending the message.
+   * It adds a click event listener to the element and removes the hidden class from the resend icon.
+   *
+   * @returns {void}
+   */
   onError() {
     const lastUserMessageElement = this.getLastUserMessageElement();
+    if (!lastUserMessageElement) return;
     lastUserMessageElement.style.cursor = 'pointer';
     lastUserMessageElement.addEventListener('click', this.socketEmitChat.bind(this, this.lastQuestionData));
     lastUserMessageElement.querySelector('.resend-icon').classList.remove('hidden');
   },
+  /**
+   * Retrieves the last user message element from the message incrementor.
+   * If the element exists, it clones and replaces it to ensure it is the latest instance.
+   *
+   * @returns {Element|null} - The last user message element if found, otherwise null.
+   */
   getLastUserMessageElement() {
     const oldChild = this.elements.messageIncrementor.querySelectorAll('.user')[this.elements.messageIncrementor.querySelectorAll('.user').length - 1];
     if (oldChild && oldChild.classList.contains('user')) {
@@ -301,6 +350,12 @@ const ChatbotConnect = {
     this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
     this.elements.messageInput.addEventListener('keydown', (event) => this.onKeyDown(event));
   },
+  /**
+   * Handles the keydown event and sends a message when the Enter key is pressed.
+   *
+   * @param {KeyboardEvent} event - The keydown event object.
+   * @returns {void}
+   */
   onKeyDown(event) {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -308,15 +363,21 @@ const ChatbotConnect = {
     }
   },
   /**
-   * Toggles the pointer events for the message input and send button elements.
+   * Toggles the pointer events for the message textarea and send button elements.
+   * Toggles focus event on the textarea also.
    *
    * @returns {void}
    */
-  togglePointerEvents() {
+  toggleActiveTextarea() {
     this.elements.messageInput.style.pointerEvents = this.elements.messageInput.style.pointerEvents === 'none' ? 'auto' : 'none';
     this.elements.messageInput.disabled = !this.elements.messageInput.disabled;
     this.elements.sendButton.style.pointerEvents = this.elements.sendButton.style.pointerEvents === 'none' ? 'auto' : 'none';
     this.elements.sendButton.disable = !this.elements.sendButton.disable;
+    if (this.elements.messageInput === document.activeElement) {
+      this.elements.messageInput.blur(); // Remove focus from the textarea
+    } else {
+      this.elements.messageInput.focus(); // Set focus on the textarea
+    }
   },
 };
 

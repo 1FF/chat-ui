@@ -1,10 +1,16 @@
 import { roles } from "./roles";
 
 export const assistant = {
-  image: 'https://randomuser.me/api/portraits/women/90.jpg',
-  role: 'Lead Nutrition Expert, PhD',
-  name: 'Jenny Wilson',
-  welcome: 'Have a quick chat with our personal nutritionist and get a free consultation about the perfect diet for you',
-  ctaTextContent: 'Visit',
-  initialMessage: { role: roles.assistant, content: 'Hi, Im Jenny Wilson, your personal nutritionist. Im here to help you with your nutritional needs.', time: new Date() }
+  // image: 'https://assets.appsforfit.com/assets/avatars/practitioner-1.png',
+  // role: 'Lead Nutrition Expert, PhD',
+  // name: 'Jenny Wilson',
+  // welcome: 'Chat for 1 min, and get diet advise for free!',
+  // ctaTextContent: 'Customize Your Plan!',
+  // initialMessage: { role: roles.assistant, content: `Hey there! I'm here to provide nutritional assistance. Let's create the perfect meal plan tailored to your favorite foods. Please share your diet goals with me!`, time: new Date() }
+  image: 'https://assets.appsforfit.com/assets/avatars/practitioner-1.png',
+  role: 'AI nutritional assistant',
+  name: 'MealMentor',
+  welcome: 'Chat for 1 min, and get diet advise for free!',
+  ctaTextContent: 'Create Your Menu!',
+  initialMessage: { role: roles.assistant, content: `Hey there! I'm your personal AI diet consultant. I'd love to learn more about you to create the perfect meal plan and tailor it to your favorite foods. Could you please share your diet goals with me?`, time: new Date() }
 };
