@@ -5,7 +5,7 @@ import { events } from "./config/events";
 import { roles } from "./config/roles";
 import { theme } from "./config/theme";
 import cssMinify from "./css-minify";
-import { extractLink, formatDateByLocale, getRandomInteger, replaceLinkWithAnchor } from "./helpers";
+import { constructLink, formatDateByLocale, getRandomInteger, replaceLinkWithAnchor } from "./helpers";
 
 const STORAGE_KEY = 'history';
 const CHAT_SEEN_KEY = 'chatSeen';
@@ -146,9 +146,9 @@ const ChatUi = {
     }
 
     const lastMessage = messages[messages.length - 1];
-    const link = extractLink(lastMessage.content);
+    const link = constructLink(lastMessage.content, this.lastQuestionData.user_id);
     const wavingDots = document.getElementById('wave');
-    
+
     setTimeout(() => {
       wavingDots && wavingDots.remove();
       this.toggleActiveTextarea();
@@ -167,7 +167,7 @@ const ChatUi = {
    */
   setLink(link) {
     const lastMessageElement = this.elements.messageIncrementor.querySelectorAll('.assistant')[this.elements.messageIncrementor.querySelectorAll('.assistant').length - 1];
-    lastMessageElement.innerHTML = replaceLinkWithAnchor(lastMessageElement.textContent)
+    lastMessageElement.innerHTML = replaceLinkWithAnchor(lastMessageElement.textContent, this.lastQuestionData.user_id)
     this.elements.ctaButton.classList.remove('hidden');
     this.elements.ctaButton.setAttribute('href', link);
     this.elements.promptContainer.classList.add('hidden');
