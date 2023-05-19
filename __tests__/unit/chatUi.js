@@ -1,7 +1,7 @@
-import ChatbotConnect from "../../src/lib/chatbot-connect";
+import ChatUi from "../../src/lib/chat-ui";
 jest.mock("socket.io-client");
 
-describe('ChatbotConnect', () => {
+describe('ChatUi', () => {
   const userID = 'userID';
   const testMessage = {
     content: 'hello',
@@ -30,11 +30,11 @@ describe('ChatbotConnect', () => {
 
   test('initializes the chatbot with default theme and container ID', () => {
     // Act
-    ChatbotConnect.init();
+    ChatUi.init();
 
     // Assert
-    expect(ChatbotConnect.mainContainer).toBeDefined();
-    expect(ChatbotConnect.theme).toEqual(expect.objectContaining({
+    expect(ChatUi.mainContainer).toBeDefined();
+    expect(ChatUi.theme).toEqual(expect.objectContaining({
       "--ember": "#cacadb",
       "--enigma": "#FFAE19",
       "--font-family": "Roboto",
@@ -43,8 +43,8 @@ describe('ChatbotConnect', () => {
       "--whisper": "#ffffff",
       "--zephyr": "43, 49, 57",
     }));
-    expect(ChatbotConnect.mainContainer).not.toBeEmptyDOMElement();
-    expect(ChatbotConnect.socket).toBeDefined();
+    expect(ChatUi.mainContainer).not.toBeEmptyDOMElement();
+    expect(ChatUi.socket).toBeDefined();
   });
 
   test('initializes the chatbot with custom theme and container ID', () => {
@@ -61,16 +61,16 @@ describe('ChatbotConnect', () => {
     const url = "http://localhost:3000";
 
     // Act
-    ChatbotConnect.init(url, {}, customTheme, customContainerId);
+    ChatUi.init(url, {}, customTheme, customContainerId);
 
     // Assert
-    expect(ChatbotConnect.mainContainer.id).toBe(customContainerId);
-    expect(ChatbotConnect.theme).toEqual(expect.objectContaining(customTheme));
+    expect(ChatUi.mainContainer.id).toBe(customContainerId);
+    expect(ChatUi.theme).toEqual(expect.objectContaining(customTheme));
   });
 
   test('sends an user message', () => {
     // Act
-    ChatbotConnect.init();
+    ChatUi.init();
 
     // Arrange
     const messageInput = document.getElementById('chat-prompt');
@@ -80,37 +80,37 @@ describe('ChatbotConnect', () => {
     sendButton.click();
 
     // Assertions
-    expect(ChatbotConnect.socket.emit).toHaveBeenCalledWith(ChatbotConnect.events.chatHistory, expect.any(Object));
-    expect(ChatbotConnect.elements.messageIncrementor.innerHTML).toContain('Hello, chatbot!');
+    expect(ChatUi.socket.emit).toHaveBeenCalledWith(ChatUi.events.chatHistory, expect.any(Object));
+    expect(ChatUi.elements.messageIncrementor.innerHTML).toContain('Hello, chatbot!');
     expect(messageInput.value).toBe('');
-    expect(ChatbotConnect.socket.on).toBeCalledWith(ChatbotConnect.events.chat, expect.any(Function));
+    expect(ChatUi.socket.on).toBeCalledWith(ChatUi.events.chat, expect.any(Function));
   });
 
   test('does not send an empty user message', () => {
     // Act
-    ChatbotConnect.init();
+    ChatUi.init();
 
     // Arrange
     const sendButton = document.getElementById('send-button');
     sendButton.click();
 
     // Assert
-    expect(ChatbotConnect.socket.emit).not.toBeCalledWith('chat');
-    expect(ChatbotConnect.socket.emit).toBeCalledWith('chat-history', { user_id: userID });
-    expect(ChatbotConnect.elements.messageIncrementor.innerHTML).toBe('');
+    expect(ChatUi.socket.emit).not.toBeCalledWith('chat');
+    expect(ChatUi.socket.emit).toBeCalledWith('chat-history', { user_id: userID });
+    expect(ChatUi.elements.messageIncrementor.innerHTML).toBe('');
   });
 
   test('does close the socket', () => {
     // Act
-    ChatbotConnect.closeSocket();
+    ChatUi.closeSocket();
 
     // Assert
-    expect(ChatbotConnect.socket.close).toHaveBeenCalled();
+    expect(ChatUi.socket.close).toHaveBeenCalled();
   });
 
   test('should return the value of "utm_chat" parameter from the URL', () => {
     // Act
-    const term = ChatbotConnect.getTerm();
+    const term = ChatUi.getTerm();
 
     // Assert
     expect(term).toEqual('test');
@@ -119,32 +119,32 @@ describe('ChatbotConnect', () => {
 
   test('should setMessageObject correctly', () => {
     // Assert
-    expect(ChatbotConnect.lastQuestionData).toEqual({ "message": "Hello, chatbot!", "term": "test", "user_id": "userID" });
+    expect(ChatUi.lastQuestionData).toEqual({ "message": "Hello, chatbot!", "term": "test", "user_id": "userID" });
   });
 
   test('should call onError when onChat we have errors', () => {
     // Arrange
-    jest.spyOn(ChatbotConnect, 'onError');
+    jest.spyOn(ChatUi, 'onError');
 
     // Act
-    ChatbotConnect.onChat({ message: 'hello', errors: ['server error'] });
+    ChatUi.onChat({ message: 'hello', errors: ['server error'] });
 
     // Assert
-    expect(ChatbotConnect.onError).toBeCalled();
+    expect(ChatUi.onError).toBeCalled();
   });
 
   test('should call onError when onChat we have no errors', () => {
     // Arrange
-    jest.spyOn(ChatbotConnect, 'toggleActiveTextarea');
-    jest.spyOn(ChatbotConnect, 'appendHtml');
+    jest.spyOn(ChatUi, 'toggleActiveTextarea');
+    jest.spyOn(ChatUi, 'appendHtml');
 
     // Act
-    ChatbotConnect.onChat({ messages: [testMessage], errors: [] });
+    ChatUi.onChat({ messages: [testMessage], errors: [] });
     // advance the timer by this hardcoded value because it is the largest possible amount
     jest.advanceTimersByTime(60000);
 
     // Assert
-    expect(ChatbotConnect.elements.messageIncrementor.innerHTML).toEqual("<div class=\"date-formatted\">MAY 12, 2023, 1:30 PM</div><span class=\"assistant\">hello</span>")
+    expect(ChatUi.elements.messageIncrementor.innerHTML).toEqual("<div class=\"date-formatted\">MAY 12, 2023, 1:30 PM</div><span class=\"assistant\">hello</span>")
   });
 
   test('should setLink', () => {
@@ -152,11 +152,11 @@ describe('ChatbotConnect', () => {
     const link = 'https://example.com';
 
     // Act
-    ChatbotConnect.setLink(link);
+    ChatUi.setLink(link);
 
     // Assert
-    expect(ChatbotConnect.elements.ctaButton.getAttribute('href')).toBe(link);
-    expect(ChatbotConnect.elements.ctaButton.classList.contains('hidden')).toBe(false);
-    expect(ChatbotConnect.elements.promptContainer.classList.contains('hidden')).toBe(true);
+    expect(ChatUi.elements.ctaButton.getAttribute('href')).toBe(link);
+    expect(ChatUi.elements.ctaButton.classList.contains('hidden')).toBe(false);
+    expect(ChatUi.elements.promptContainer.classList.contains('hidden')).toBe(true);
   });
 });

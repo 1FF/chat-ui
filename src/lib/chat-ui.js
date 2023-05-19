@@ -15,7 +15,7 @@ const themeSpecificKeys = {
   fontFamily: '--font-family',
 }
 
-const ChatbotConnect = {
+const ChatUi = {
   theme,
   assistant,
   events,
@@ -381,4 +381,4 @@ const ChatbotConnect = {
   },
 };
 
-export default ChatbotConnect;
+export default ChatUi;

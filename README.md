@@ -1,28 +1,28 @@
 ## **1ff-chat-ui**
 
-ChatbotConnect is a Node.js package that provides a chatbot widget for integrating a chatbot into Node.js projects. It uses Socket.IO for real-time communication with the server.
+1ff-chat-ui is a Node.js package that provides a chatbot widget for integrating a chatbot into Node.js projects. It uses Socket.IO for real-time communication with the server.
 
 ## **Installation**
 
 To install 1ff-chat-ui, use the following command:
 
-`npm install chatbot-connect`
+`npm install 1ff-chat-ui`
 
 ## **Usage**
 
-To use ChatbotConnect in your Node.js project, follow these steps:
+To use ChatUi in your Node.js project, follow these steps:
 
 *   Import the required modules:
 
 ```javascript
-import ChatbotConnect from "chatbot-connect";
+import ChatUi from "chat-ui";
 ```
 
 *   Initialize it (Make sure to replace **SOCKET\_IO\_URL** with the URL of your socket server.):
 
 ```javascript
 document.addEventListener('DOMContentLoaded', () => {
-  ChatbotConnect.init(SOCKET_IO_URL);
+  ChatUi.init(SOCKET_IO_URL);
 })
 ```
 
@@ -64,7 +64,7 @@ const containerId = "chatbot-container";
 
 ## **Configuration**
 
-ChatbotConnect supports the following configuration options:
+ChatUi supports the following configuration options:
 
 *   **SOCKET\_IO\_URL** (String, default: '[http://localhost:5000](http://localhost:5000/)'): The URL of the socket server.
 *   **assistant** (Object, default: **/lib/config/theme.js**): Custom configuration for the assistant.
@@ -73,7 +73,7 @@ ChatbotConnect supports the following configuration options:
 
 ## **Methods**
 
-ChatbotConnect provides the following methods:
+ChatUi provides the following methods:
 
 *   **init(url, assistantConfig, customTheme, containerId)**: Initializes the chatbot with the specified configurations and elements.
 *   **closeWidget()**: Closes the chat widget.
