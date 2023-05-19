@@ -1,3 +1,5 @@
+import { translations } from "./config/translations";
+
 export const chatMarkup = (config) => `<div class="chat-widget">
   <div class="chat-widget__head">
     <div class="chat-widget__info">
@@ -19,19 +21,19 @@ export const chatMarkup = (config) => `<div class="chat-widget">
     </div>
   </div>
   <div class="chat-widget__messages" id="scroll-incrementor">
-    <div class="chat-widget__initiator-profile">
-    <span class="assistant-welcome">${config.assistant.welcome}</span>
-      <span class="img">
-        <img src="${config.assistant.image}" alt="image">
-      </span>
-      <span class="w-start-profile">
-        <div class="w-name">${config.assistant.name}</div>
-        <div class="w-role">${config.assistant.role}</div>
-      </span>
-    </div>
-    <div class="chat-widget__messages-container" id="message-incrementor"></div>
+  <div class="chat-widget__initiator-profile">
+  <span class="assistant-welcome">${config.assistant.welcome}</span>
+  <span class="img">
+  <img src="${config.assistant.image}" alt="image">
+  </span>
+  <span class="w-start-profile">
+  <div class="w-name">${config.assistant.name}</div>
+  <div class="w-role">${config.assistant.role}</div>
+  </span>
   </div>
-  <a class="chat-widget__cta hidden" id="cta-button">Conversation finished</a>
+  <div class="chat-widget__messages-container" id="message-incrementor"></div>
+  </div>
+  <a class="chat-widget__cta hidden" id="cta-button">${config.assistant.ctaTextContent}</a>
   <div class="chat-widget__prompt" id="prompt-container">
     <span class="widget__input">
       <textarea id="chat-prompt" name="chat-prompt"></textarea>
@@ -43,6 +45,14 @@ export const chatMarkup = (config) => `<div class="chat-widget">
     </div>
   </div>
 </div>`;
+
+export const rolesHTML = {
+  user: (content) => `<span class="user js-user">${content}<span class="resend-icon hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path fill="none" d="M0 0h24v24H0V0z"/>
+                            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                          </svg></span></span>`,
+  assistant: (content) => `<span class="assistant">${content}</span>`,
+};
 
 export const loadingDots = `<div id="wave">
   <span class="dot"></span>
@@ -120,6 +130,11 @@ img {
 
 .chat-widget {
   width: 100%;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
   height: ${height}px;
   overflow: hidden;
   display: flex;
@@ -176,7 +191,7 @@ img {
 
 .w-name {
   font-size: 24px;
-  font-weight: 600px;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -262,8 +277,29 @@ img {
   height: auto;
 }
 
+.resend-icon {
+  position: absolute;
+  top: 60%;
+  width: 24px;
+  height: 24px;
+  border-radius: 100%;
+  background: var(--seraph);
+  pointer-events: all;
+}
+
+.resend-icon svg {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  fill: white;
+}
+
 .chat-widget__messages .user,
 .chat-widget__messages .assistant {
+  position: relative;
   display: block;
   background-color: var(--lumina);
   width: fit-content;
@@ -314,9 +350,8 @@ img {
   justify-content: center;
   align-items: center;
   margin: 11px 20px;
-  background: var(--seraph);
   max-width: 375px;
-  color: white;
+  color: rgba(var(--zephyr));
   cursor: pointer;
   position: relative;
   letter-spacing: 2px;
@@ -327,6 +362,8 @@ img {
   width: 100%;
   font-weight: bolder;
   font-size: 20px;
+  background: var(--enigma);
+  box-shadow: 0px 12px 24px -4px rgba(255, 174, 25, 0.2);
 }
 
 div#wave {
@@ -366,6 +403,10 @@ div#wave .dot:nth-child(3) {
   30% {
     transform: translateY(-15px);
   }
+}
+
+.underline {
+  text-decoration: underline;
 }
 
 .hidden {
