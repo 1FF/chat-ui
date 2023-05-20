@@ -115,8 +115,10 @@ const ChatUi = {
    */
   setSocket() {
     this.socket = io.connect(this.url, {
-      transports: ['websocket', 'polling'],
-      upgrade: true,
+      transports: ['websocket'],
+      upgrade: false,
+      pingInterval: 1000 * 60 * 5,
+      pingTimeout: 1000 * 60 * 3,
       secure: true,
       reconnect: true,
     });
