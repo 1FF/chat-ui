@@ -55,7 +55,6 @@ const ChatUi = {
     this.setCustomFont();
     this.setDomContent();
     this.setSocket();
-    this.loadExistingMessage();
   },
   setMessageObject() {
     this.lastQuestionData.term = this.getTerm();
@@ -85,6 +84,13 @@ const ChatUi = {
   onChatHistory(res) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
     const visualizedHistory = document.querySelectorAll('#message-incrementor .user').length + document.querySelectorAll('#message-incrementor .assistant').length
+
+    if (!res.history.length && !visualizedHistory) {
+      console.log('no history');
+      this.loadExistingMessage();
+      return;
+    }
+
     if (res.history.length > visualizedHistory) {
       this.elements.messageIncrementor.innerHTML = '';
       res.history.unshift(assistant.initialMessage);
@@ -116,10 +122,11 @@ const ChatUi = {
     });
     this.socket.on(this.events.chat, this.onChat.bind(this));
     this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
+    this.socket.emit(this.events.chatHistory, { user_id: this.lastQuestionData.user_id });
 
     setInterval(() => {
       this.socket.emit(this.events.chatHistory, { user_id: this.lastQuestionData.user_id });
-    }, 5000);
+    }, 15000);
 
     // TODO do something on server error or disconnection
     // this.socket.on("disconnect", (reason) => {});
