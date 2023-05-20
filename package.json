@@ -1,6 +1,6 @@
 {
   "name": "1ff-chat-ui",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "chatbot to communicate with taught ai",
   "main": "src/lib/chatbot-connect.js",
   "scripts": {
