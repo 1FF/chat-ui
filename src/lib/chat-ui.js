@@ -55,6 +55,7 @@ const ChatUi = {
     this.setCustomFont();
     this.setDomContent();
     this.setSocket();
+    this.loadExistingMessage();
   },
   setMessageObject() {
     this.lastQuestionData.term = this.getTerm();
@@ -82,16 +83,12 @@ const ChatUi = {
    * @returns {void}
    */
   onChatHistory(res) {
-    res.history.unshift(this.assistant.initialMessage);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
-    if (res.history.length === 1) {
-      this.elements.messageIncrementor.innerHTML += loadingDots;
-      setTimeout(() => {
-        document.getElementById('wave').remove();
-        this.appendHtml(res.history[0]);
-      }, 1500);
-    } else {
-      this.loadExistingMessages();
+    const visualizedHistory = document.querySelectorAll('#message-incrementor .user').length + document.querySelectorAll('#message-incrementor .assistant').length
+    if (res.history.length > visualizedHistory) {
+      this.elements.messageIncrementor.innerHTML = '';
+      res.history.unshift(assistant.initialMessage);
+      res.history.forEach((data) => this.appendHtml(data));
     }
   },
   /**
@@ -117,15 +114,16 @@ const ChatUi = {
       secure: true,
       reconnect: true,
     });
-
     this.socket.on(this.events.chat, this.onChat.bind(this));
     this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
-    this.socket.emit(this.events.chatHistory, { user_id: this.lastQuestionData.user_id });
+
+    setInterval(() => {
+      this.socket.emit(this.events.chatHistory, { user_id: this.lastQuestionData.user_id });
+    }, 5000);
+
     // TODO do something on server error or disconnection
-    // this.socket.on("disconnect", (reason) => {
-    //   console.log(reason);
-    // });
-    // this.socket.on("error", this.onSocketError.bind(this));
+    // this.socket.on("disconnect", (reason) => {});
+    // this.socket.on("error", (reason) => {});
   },
   /**
    * Handles the chat response received from the server.
@@ -237,6 +235,15 @@ const ChatUi = {
   appendHtml(data) {
     const { time, role, content } = data;
 
+    // TODO this must be refactored
+    const historyElements = document.querySelector('#message-incrementor').children.length;
+    if (historyElements) {
+      const lastElementContent = document.querySelector('#message-incrementor').children[historyElements - 1].textContent;
+      if (lastElementContent.trim() === content.trim()) {
+        return;
+      }
+    }
+
     this.elements.messageIncrementor.innerHTML += `<div class="date-formatted">${formatDateByLocale(time)}</div>` + rolesHTML[role](content);
     this.scrollToBottom();
   },
@@ -249,14 +256,14 @@ const ChatUi = {
    *
    * @returns {void}
    */
-  loadExistingMessages() {
-    const history = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!history) {
-      return
-    }
-
-    this.elements.messageIncrementor.innerHTML = '';
-    history.forEach((data) => this.appendHtml(data));
+  loadExistingMessage() {
+    this.elements.messageIncrementor.innerHTML += loadingDots;
+    this.toggleActiveTextarea();
+    setTimeout(() => {
+      document.querySelector('#wave')?.remove();
+      this.appendHtml(assistant.initialMessage);
+      this.toggleActiveTextarea();
+    }, 1500);
   },
   /**
    * Sends a user message by extracting the content from the message input,
