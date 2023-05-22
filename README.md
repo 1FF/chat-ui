@@ -22,7 +22,7 @@ import ChatUi from "chat-ui";
 
 ```javascript
 document.addEventListener('DOMContentLoaded', () => {
-  ChatUi.init(SOCKET_IO_URL);
+  ChatUi.init(config);
 })
 ```
 
@@ -69,13 +69,14 @@ ChatUi supports the following configuration options:
 *   **SOCKET\_IO\_URL** (String, default: '[http://localhost:5000](http://localhost:5000/)'): The URL of the socket server.
 *   **assistant** (Object, default: **/lib/config/theme.js**): Custom configuration for the assistant.
 *   **theme** (Object, default: **/lib/config/theme.js**): Custom theme configuration for the chatbot.
+*   **socketConfig** (Object, default: **/lib/config/socket.js**): Default socket.io-client config.
 *   **containerId** (String, default: 'chatbot-container'): ID of the HTML container element for the chatbot.
 
 ## **Methods**
 
 ChatUi provides the following methods:
 
-*   **init(url, assistantConfig, customTheme, containerId)**: Initializes the chatbot with the specified configurations and elements.
+*   **init(config)**: Initializes the chatbot with the specified configurations and elements.
 *   **closeWidget()**: Closes the chat widget.
 *   **getTerm()**: Retrieves the value of the 'utm\_chat' parameter from the current URL.
 *   **setSocket()**: Initializes the socket connection with the server.

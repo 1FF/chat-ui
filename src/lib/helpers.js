@@ -11,13 +11,12 @@ export function getRandomInteger(from, to) {
   return Math.floor(Math.random() * to) + from;
 }
 
-
 /**
-   * Formats a date string according to the locale, including the date and time.
-   *
-   * @param {string} dateString - The date string to be formatted.
-   * @returns {string} - The formatted date and time string.
-   */
+ * Formats a date string according to the locale, including the date and time.
+ *
+ * @param {string} dateString - The date string to be formatted.
+ * @returns {string} - The formatted date and time string.
+ */
 export function formatDateByLocale(dateString) {
   const date = new Date(dateString);
 
@@ -26,13 +25,13 @@ export function formatDateByLocale(dateString) {
     month: 'long',
     year: 'numeric',
     hour: 'numeric',
-    minute: 'numeric'
+    minute: 'numeric',
   };
 
   const formattedDate = date.toLocaleDateString(undefined, options);
 
   return `${formattedDate}`.toUpperCase();
-};
+}
 
 function hasQueryParams(url) {
   // Regular expression pattern to match query parameters
@@ -48,14 +47,15 @@ function hasQueryParams(url) {
  * @param {string} string - The input string from which the link will be extracted.
  * @returns {string} The extracted link, or an empty string if no link is found.
  */
-export function constructLink(string, user_id) {
+export function constructLink(string) {
+  const userId = getUserId();
   let search = '';
 
   if (window.location.search) {
     search = new URLSearchParams(window.location.search);
 
     search.delete('utm_chat');
-    search.append('__cid', user_id);
+    search.append('cid', userId);
     search = '/?' + search;
   }
 
@@ -76,13 +76,28 @@ export function constructLink(string, user_id) {
   return link + search;
 }
 
-export function replaceLinkWithAnchor(message, user_id) {
+export function replaceLinksWithAnchors(message) {
   // Extract the link from the message
-  const matches = message.match(REGEX_URL);
-  const link = matches ? matches[0] : '';
+  const links = message.match(REGEX_URL);
 
-  // Replace the link in the message with a clickable anchor tag
-  const replacedMessage = message.replace(REGEX_URL, `<a class="underline" href="${constructLink(message, user_id)}">${link}</a>`);
+  if (!links) {
+    return;
+  }
 
-  return replacedMessage;
+  const messageArray = message.replace(/\n/g, ' ').split(' ');
+
+  messageArray.forEach((word, index) => {
+    const wordHasLink = word.match(REGEX_URL);
+    if (wordHasLink) {
+      messageArray[index] = `<a class="underline" href="${constructLink(
+        word,
+      )}">${word}</a>\n`;
+    }
+  });
+
+  return messageArray.join(' ');
 }
+
+export const getUserId = () => {
+  return localStorage.getItem('__cid');
+};

@@ -1,64 +1,91 @@
-import { io } from "socket.io-client";
-import { chatMarkup, loadingDots, rolesHTML, styles } from "./chat-widgets";
-import { assistant } from "./config/assistant";
-import { events } from "./config/events";
-import { roles } from "./config/roles";
-import { theme } from "./config/theme";
-import cssMinify from "./css-minify";
-import { constructLink, formatDateByLocale, getRandomInteger, replaceLinkWithAnchor } from "./helpers";
+import { io } from 'socket.io-client';
+import { chatMarkup, loadingDots, rolesHTML, styles } from './chat-widgets';
+import { assistant } from './config/assistant';
+import { events } from './config/events';
+import { roles } from './config/roles';
+import { socketConfig } from './config/socket';
+import { theme } from './config/theme';
+import cssMinify from './css-minify';
+import {
+  constructLink,
+  formatDateByLocale,
+  getRandomInteger,
+  getUserId,
+  replaceLinksWithAnchors,
+} from './helpers';
 
 const STORAGE_KEY = 'history';
 const CHAT_SEEN_KEY = 'chatSeen';
 const SOCKET_IO_URL = 'http://localhost:5000';
-
-const themeSpecificKeys = {
-  fontFamily: '--font-family',
-}
 
 const ChatUi = {
   theme,
   assistant,
   events,
   roles,
-  fontFamily: 'Arial',
+  socketConfig,
   socket: null,
   elements: null,
   userId: null,
   term: null,
   url: null,
   initialHeight: null,
+  containerId: 'chatbot-container',
   lastQuestionData: {
-    "term": '',
-    "user_id": '',
-    "message": '',
+    term: '',
+    user_id: '',
+    message: '',
   },
   /**
-   * Initializes the chatbot, setting up the necessary configurations and elements.
-   *
-   * @param {String} [url=SOCKET_IO_URL] - The URL of the socket server. Defaults to SOCKET_IO_URL constant.
-   * @param {Object} [assistantConfig] - Custom configuration for the assistant (optional).
-   * @param {Object} [customTheme={}] - Custom theme configuration for the chatbot (optional).
-   * @param {String} [containerId='chatbot-container'] - ID of the HTML container element for the chatbot (optional).
-   * @returns {void}
+   * Initializes the chat module.
+   * @param {object} config - The configuration object.
+   * @example
+   * // Example usage:
+   * const config = {
+   *   url: 'http://localhost:5000',
+   *   assistantConfig: {
+   *      image: 'https://assets.appsforfit.com/assets/avatars/practitioner-1.png',
+   *      role: 'Lead Nutrition Expert, PhD',
+   *      name: 'Jenny Wilson',
+   *      welcome: 'Chat for 1 min, and get diet advise for free!',
+   *      ctaTextContent: 'Customize Your Plan!',
+   *   },
+   *   customTheme: {
+   *      '--lumina': '#f0f2f5',
+   *      '--whisper': '#ffffff',
+   *      '--seraph': '#21bb5a',
+   *      '--ember': '#cacadb',
+   *      '--zephyr': '43, 49, 57',
+   *      '--enigma': '#FFAE19',
+   *   },
+   * };
+   * init(config);
    */
-  init(url = SOCKET_IO_URL, assistantConfig = {}, customTheme = {}, containerId = 'chatbot-container') {
+  init(config = {}) {
     if (localStorage.getItem(CHAT_SEEN_KEY)) {
       this.closeSocket();
       return;
-    };
-    this.url = url;
-    this.theme = { ...this.theme, ...customTheme };
-    this.assistant = { ...this.assistant, ...assistantConfig };
-    this.mainContainer = document.getElementById(containerId);
+    }
+    this.setConfig(config);
     this.setMessageObject();
     this.setCustomVars();
-    this.setCustomFont();
     this.setDomContent();
     this.setSocket();
   },
+  setConfig(config) {
+    this.url = config.url || SOCKET_IO_URL;
+    this.containerId = config.containerId || this.containerId;
+    config.assistantConfig = config.assistantConfig || {};
+    config.customTheme = config.customTheme || {};
+
+    this.socketConfig = { ...this.socketConfig, ...config.socketConfig };
+    this.theme = { ...this.theme, ...config.customTheme };
+    this.assistant = { ...this.assistant, ...config.assistantConfig };
+    this.mainContainer = document.getElementById(this.containerId);
+  },
   setMessageObject() {
     this.lastQuestionData.term = this.getTerm();
-    this.lastQuestionData.user_id = localStorage.getItem('__cid');
+    this.lastQuestionData.user_id = getUserId();
   },
   /**
    * Retrieves the value of the 'utm_chat' parameter from the current URL.
@@ -83,10 +110,11 @@ const ChatUi = {
    */
   onChatHistory(res) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
-    const visualizedHistory = document.querySelectorAll('#message-incrementor .user').length + document.querySelectorAll('#message-incrementor .assistant').length
+    const visualizedHistory =
+      document.querySelectorAll('#message-incrementor .user').length +
+      document.querySelectorAll('#message-incrementor .assistant').length;
 
     if (!res.history.length && !visualizedHistory) {
-      console.log('no history');
       this.loadExistingMessage();
       return;
     }
@@ -94,7 +122,7 @@ const ChatUi = {
     if (res.history.length > visualizedHistory) {
       this.elements.messageIncrementor.innerHTML = '';
       res.history.unshift(assistant.initialMessage);
-      res.history.forEach((data) => this.appendHtml(data));
+      res.history.forEach(data => this.appendHtml(data));
     }
   },
   /**
@@ -114,22 +142,12 @@ const ChatUi = {
    * @returns {void}
    */
   setSocket() {
-    this.socket = io.connect(this.url, {
-      transports: ['websocket'],
-      upgrade: false,
-      pingInterval: 1000 * 60 * 5,
-      pingTimeout: 1000 * 60 * 3,
-      secure: true,
-      reconnect: true,
-    });
+    this.socket = io.connect(this.url, this.socketConfig);
     this.socket.on(this.events.chat, this.onChat.bind(this));
     this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
-    this.socket.emit(this.events.chatHistory, { user_id: this.lastQuestionData.user_id });
-
-    setInterval(() => {
-      this.socket.emit(this.events.chatHistory, { user_id: this.lastQuestionData.user_id });
-    }, 15000);
-
+    this.socket.emit(this.events.chatHistory, {
+      user_id: this.lastQuestionData.user_id,
+    });
     // TODO do something on server error or disconnection
     // this.socket.on("disconnect", (reason) => {});
     // this.socket.on("error", (reason) => {});
@@ -153,7 +171,10 @@ const ChatUi = {
     }
 
     const lastMessage = messages[messages.length - 1];
-    const link = constructLink(lastMessage.content, this.lastQuestionData.user_id);
+    const link = constructLink(
+      lastMessage.content,
+      this.lastQuestionData.user_id,
+    );
     const wavingDots = document.getElementById('wave');
 
     setTimeout(() => {
@@ -173,8 +194,19 @@ const ChatUi = {
    * @returns {void}
    */
   setLink(link) {
-    const lastMessageElement = this.elements.messageIncrementor.querySelectorAll('.assistant')[this.elements.messageIncrementor.querySelectorAll('.assistant').length - 1];
-    lastMessageElement.innerHTML = replaceLinkWithAnchor(lastMessageElement.textContent, this.lastQuestionData.user_id)
+    const lastMessageElement =
+      this.elements.messageIncrementor.querySelectorAll('.assistant')[
+        this.elements.messageIncrementor.querySelectorAll('.assistant').length -
+          1
+      ];
+
+    if (!lastMessageElement) {
+      return;
+    }
+    lastMessageElement.innerHTML = replaceLinksWithAnchors(
+      lastMessageElement.textContent,
+      this.lastQuestionData.user_id,
+    );
     this.elements.ctaButton.classList.remove('hidden');
     this.elements.ctaButton.setAttribute('href', link);
     this.elements.promptContainer.classList.add('hidden');
@@ -187,27 +219,8 @@ const ChatUi = {
    */
   setCustomVars() {
     Object.entries(this.theme).forEach(([property, value]) => {
-      if (property === themeSpecificKeys.fontFamily) {
-        this.fontFamily = value;
-      }
       this.mainContainer.style.setProperty(property, value);
     });
-  },
-  /**
-   * Sets the custom font for the chatbot if it is not already loaded.
-   *
-   * @returns {void}
-   */
-  setCustomFont() {
-    const isCurrentFontLoaded = document.fonts.check(`1em ${this.fontFamily}`);
-    if (isCurrentFontLoaded) {
-      return;
-    }
-
-    const linkElement = document.createElement('link');
-    linkElement.rel = 'stylesheet';
-    linkElement.href = `https://fonts.googleapis.com/css2?family=${this.fontFamily.replace(/\s/g, '+')}&display=swap`;
-    document.head.appendChild(linkElement);
   },
   /**
    * Sets the DOM content of the chat widget by creating and appending the necessary HTML elements,
@@ -223,7 +236,14 @@ const ChatUi = {
     this.mainContainer.innerHTML += chatMarkup(this);
     this.mainContainer.appendChild(style);
     this.setElements();
+    this.toggleScroll();
     this.attachListeners();
+  },
+  toggleScroll() {
+    const body = document.body;
+    const getCurrent = () =>
+      body.style.overflowY === 'hidden' ? 'visible' : 'hidden';
+    body.style.overflowY = getCurrent();
   },
   setElements() {
     this.elements = {
@@ -245,15 +265,19 @@ const ChatUi = {
     const { time, role, content } = data;
 
     // TODO this must be refactored
-    const historyElements = document.querySelector('#message-incrementor').children.length;
+    const historyElements = document.querySelector('#message-incrementor')
+      .children.length;
     if (historyElements) {
-      const lastElementContent = document.querySelector('#message-incrementor').children[historyElements - 1].textContent;
+      const lastElementContent = document.querySelector('#message-incrementor')
+        .children[historyElements - 1].textContent;
       if (lastElementContent.trim() === content.trim()) {
         return;
       }
     }
 
-    this.elements.messageIncrementor.innerHTML += `<div class="date-formatted">${formatDateByLocale(time)}</div>` + rolesHTML[role](content);
+    this.elements.messageIncrementor.innerHTML +=
+      `<div class="date-formatted">${formatDateByLocale(time)}</div>` +
+      rolesHTML[role](content);
     this.scrollToBottom();
   },
   scrollToBottom() {
@@ -306,7 +330,8 @@ const ChatUi = {
       this.socket.emit(this.events.chat, this.lastQuestionData);
       this.elements.messageIncrementor.innerHTML += loadingDots;
     } else {
-      lastChild && lastChild.querySelector('.resend-icon').classList.add('hidden');
+      lastChild &&
+        lastChild.querySelector('.resend-icon').classList.add('hidden');
       setTimeout(() => {
         this.onError();
       }, 2000);
@@ -326,8 +351,13 @@ const ChatUi = {
     const lastUserMessageElement = this.getLastUserMessageElement();
     if (!lastUserMessageElement) return;
     lastUserMessageElement.style.cursor = 'pointer';
-    lastUserMessageElement.addEventListener('click', this.socketEmitChat.bind(this, this.lastQuestionData));
-    lastUserMessageElement.querySelector('.resend-icon').classList.remove('hidden');
+    lastUserMessageElement.addEventListener(
+      'click',
+      this.socketEmitChat.bind(this, this.lastQuestionData),
+    );
+    lastUserMessageElement
+      .querySelector('.resend-icon')
+      .classList.remove('hidden');
   },
   /**
    * Retrieves the last user message element from the message incrementor.
@@ -336,7 +366,10 @@ const ChatUi = {
    * @returns {Element|null} - The last user message element if found, otherwise null.
    */
   getLastUserMessageElement() {
-    const oldChild = this.elements.messageIncrementor.querySelectorAll('.user')[this.elements.messageIncrementor.querySelectorAll('.user').length - 1];
+    const oldChild =
+      this.elements.messageIncrementor.querySelectorAll('.user')[
+        this.elements.messageIncrementor.querySelectorAll('.user').length - 1
+      ];
     if (oldChild && oldChild.classList.contains('user')) {
       const newLast = oldChild.cloneNode(true);
       oldChild.parentNode.replaceChild(newLast, oldChild);
@@ -352,6 +385,7 @@ const ChatUi = {
    */
   closeWidget() {
     this.mainContainer.innerHTML = '';
+    this.toggleScroll();
     this.closeSocket();
     localStorage.setItem(CHAT_SEEN_KEY, true);
   },
@@ -361,10 +395,21 @@ const ChatUi = {
    * @returns {void}
    */
   attachListeners() {
-    this.elements.closeButton.addEventListener('click', this.closeWidget.bind(this));
-    this.elements.sendButton.addEventListener('click', this.sendMessage.bind(this));
-    this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
-    this.elements.messageInput.addEventListener('keydown', (event) => this.onKeyDown(event));
+    this.elements.closeButton.addEventListener(
+      'click',
+      this.closeWidget.bind(this),
+    );
+    this.elements.sendButton.addEventListener(
+      'click',
+      this.sendMessage.bind(this),
+    );
+    this.elements.ctaButton.addEventListener(
+      'click',
+      this.closeWidget.bind(this),
+    );
+    this.elements.messageInput.addEventListener('keydown', event =>
+      this.onKeyDown(event),
+    );
   },
   /**
    * Handles the keydown event and sends a message when the Enter key is pressed.
@@ -385,9 +430,13 @@ const ChatUi = {
    * @returns {void}
    */
   toggleActiveTextarea() {
-    this.elements.messageInput.style.pointerEvents = this.elements.messageInput.style.pointerEvents === 'none' ? 'auto' : 'none';
+    this.elements.messageInput.style.pointerEvents =
+      this.elements.messageInput.style.pointerEvents === 'none'
+        ? 'auto'
+        : 'none';
     this.elements.messageInput.disabled = !this.elements.messageInput.disabled;
-    this.elements.sendButton.style.pointerEvents = this.elements.sendButton.style.pointerEvents === 'none' ? 'auto' : 'none';
+    this.elements.sendButton.style.pointerEvents =
+      this.elements.sendButton.style.pointerEvents === 'none' ? 'auto' : 'none';
     this.elements.sendButton.disable = !this.elements.sendButton.disable;
     if (this.elements.messageInput === document.activeElement) {
       this.elements.messageInput.blur(); // Remove focus from the textarea
