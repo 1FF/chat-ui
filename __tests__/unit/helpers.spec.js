@@ -48,7 +48,7 @@ describe('extractLink', () => {
   test('should return the link when some other words are added', () => {
     // Act
     const result = constructLink(
-      'global https:// some https inserted before link' +
+      'global https:// some https inserted before link ' +
         link +
         ' you can visit this website for further assistance',
     );
@@ -144,7 +144,7 @@ describe('replaceLinksWithAnchors', () => {
     // Arrange
     const text = 'Visit www.example.com for more information';
     const expected =
-      'Visit <a class="underline" href="www.example.com">www.example.com</a>\n for more information';
+      'Visit <a class="underline" href="www.example.com">www.example.com</a> for more information';
     // Act
     const result = replaceLinksWithAnchors(text);
 
@@ -155,12 +155,12 @@ describe('replaceLinksWithAnchors', () => {
   test('should not do anything in case there are no links replace links with anchors', () => {
     // Arrange
     const text = 'Visit www for more information';
-    const expected = undefined;
+
     // Act
     const result = replaceLinksWithAnchors(text);
 
     // Assert
-    expect(result).toEqual(expected);
+    expect(result).toEqual(text);
   });
 
   test('should replace multiple links with anchors', () => {

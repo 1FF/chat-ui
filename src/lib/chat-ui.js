@@ -11,6 +11,7 @@ import {
   formatDateByLocale,
   getRandomInteger,
   getUserId,
+  initializeAddClassMethod,
   replaceLinksWithAnchors,
 } from './helpers';
 
@@ -78,7 +79,7 @@ const ChatUi = {
     config.assistantConfig = config.assistantConfig || {};
     config.customTheme = config.customTheme || {};
 
-    this.socketConfig = { ...this.socketConfig, ...config.socketConfig };
+    this.socketConfig = config.socketConfig || this.socketConfig;
     this.theme = { ...this.theme, ...config.customTheme };
     this.assistant = { ...this.assistant, ...config.assistantConfig };
     this.mainContainer = document.getElementById(this.containerId);
@@ -121,7 +122,7 @@ const ChatUi = {
 
     if (res.history.length > visualizedHistory) {
       this.elements.messageIncrementor.innerHTML = '';
-      res.history.unshift(assistant.initialMessage);
+      res.history.unshift(this.assistant.initialMessage);
       res.history.forEach(data => this.appendHtml(data));
     }
   },
@@ -171,10 +172,7 @@ const ChatUi = {
     }
 
     const lastMessage = messages[messages.length - 1];
-    const link = constructLink(
-      lastMessage.content,
-      this.lastQuestionData.user_id,
-    );
+    const link = constructLink(lastMessage.content);
     const wavingDots = document.getElementById('wave');
 
     setTimeout(() => {
@@ -205,7 +203,6 @@ const ChatUi = {
     }
     lastMessageElement.innerHTML = replaceLinksWithAnchors(
       lastMessageElement.textContent,
-      this.lastQuestionData.user_id,
     );
     this.elements.ctaButton.classList.remove('hidden');
     this.elements.ctaButton.setAttribute('href', link);
@@ -238,6 +235,7 @@ const ChatUi = {
     this.setElements();
     this.toggleScroll();
     this.attachListeners();
+    initializeAddClassMethod();
   },
   toggleScroll() {
     const body = document.body;
@@ -294,7 +292,7 @@ const ChatUi = {
     this.toggleActiveTextarea();
     setTimeout(() => {
       document.querySelector('#wave')?.remove();
-      this.appendHtml(assistant.initialMessage);
+      this.appendHtml(this.assistant.initialMessage);
       this.toggleActiveTextarea();
     }, 1500);
   },
@@ -329,14 +327,14 @@ const ChatUi = {
     if (this.socket.connected) {
       this.socket.emit(this.events.chat, this.lastQuestionData);
       this.elements.messageIncrementor.innerHTML += loadingDots;
+      document.querySelectorAll('.resend-icon').forEach(el => {
+        el.addClass('hidden');
+      });
     } else {
-      lastChild &&
-        lastChild.querySelector('.resend-icon').classList.add('hidden');
       setTimeout(() => {
         this.onError();
       }, 2000);
     }
-
     this.toggleActiveTextarea();
     this.scrollToBottom();
     this.elements.messageInput.value = '';
@@ -370,7 +368,7 @@ const ChatUi = {
       this.elements.messageIncrementor.querySelectorAll('.user')[
         this.elements.messageIncrementor.querySelectorAll('.user').length - 1
       ];
-    if (oldChild && oldChild.classList.contains('user')) {
+    if (oldChild) {
       const newLast = oldChild.cloneNode(true);
       oldChild.parentNode.replaceChild(newLast, oldChild);
       return newLast;
