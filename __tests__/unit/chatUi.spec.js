@@ -149,7 +149,7 @@ describe('ChatUi', () => {
     expect(sut.onError).toBeCalled();
   });
 
-  test('should not call onError when onChat we have no errors', async () => {
+  test('should not call onError when onChat we have no errors', () => {
     // Arrange
     jest.spyOn(ChatUi, 'toggleActiveTextarea');
     jest.spyOn(ChatUi, 'appendHtml');
@@ -158,7 +158,7 @@ describe('ChatUi', () => {
     sut.init({ containerId: 'chatbot-container' });
     sut.onChat({ messages: [testMessage], errors: [] });
     // advance the timer by this hardcoded value because it is the largest possible amount
-    jest.advanceTimersByTime(60000);
+    jest.advanceTimersByTime(8500);
 
     // Assert
     expect(sut.elements.messageIncrementor.innerHTML).toEqual(
