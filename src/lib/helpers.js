@@ -1,4 +1,4 @@
-const REGEX_URL = /((?:https?:\/\/|www\.)[^\s/$.?#].[^\s]*)\b/gi;
+const REGEX_URL = /\b((?:https?:\/\/|www\.)[^\s/$.?#][^\s]*)\b/gi;
 
 /**
  * Generates a random integer between the specified range (inclusive).
@@ -11,13 +11,12 @@ export function getRandomInteger(from, to) {
   return Math.floor(Math.random() * to) + from;
 }
 
-
 /**
-   * Formats a date string according to the locale, including the date and time.
-   *
-   * @param {string} dateString - The date string to be formatted.
-   * @returns {string} - The formatted date and time string.
-   */
+ * Formats a date string according to the locale, including the date and time.
+ *
+ * @param {string} dateString - The date string to be formatted.
+ * @returns {string} - The formatted date and time string.
+ */
 export function formatDateByLocale(dateString) {
   const date = new Date(dateString);
 
@@ -26,13 +25,13 @@ export function formatDateByLocale(dateString) {
     month: 'long',
     year: 'numeric',
     hour: 'numeric',
-    minute: 'numeric'
+    minute: 'numeric',
   };
 
   const formattedDate = date.toLocaleDateString(undefined, options);
 
   return `${formattedDate}`.toUpperCase();
-};
+}
 
 function hasQueryParams(url) {
   // Regular expression pattern to match query parameters
@@ -48,14 +47,15 @@ function hasQueryParams(url) {
  * @param {string} string - The input string from which the link will be extracted.
  * @returns {string} The extracted link, or an empty string if no link is found.
  */
-export function constructLink(string, user_id) {
+export function constructLink(string) {
+  const userId = getUserId();
   let search = '';
 
   if (window.location.search) {
     search = new URLSearchParams(window.location.search);
 
     search.delete('utm_chat');
-    search.append('__cid', user_id);
+    search.append('cid', userId);
     search = '/?' + search;
   }
 
@@ -76,13 +76,27 @@ export function constructLink(string, user_id) {
   return link + search;
 }
 
-export function replaceLinkWithAnchor(message, user_id) {
-  // Extract the link from the message
-  const matches = message.match(REGEX_URL);
-  const link = matches ? matches[0] : '';
+export function replaceLinksWithAnchors(text) {
+  const pattern = /((?:https?:\/\/|www\.)[^\s/$.?#].[^\s]*)/gi;
 
-  // Replace the link in the message with a clickable anchor tag
-  const replacedMessage = message.replace(REGEX_URL, `<a class="underline" href="${constructLink(message, user_id)}">${link}</a>`);
+  const link = text.replace(pattern, match => {
+    const urlWithParams = constructLink(match);
+    return `<a class="underline" href="${urlWithParams}">${match}</a>`;
+  });
 
-  return replacedMessage;
+  return link;
 }
+
+export const getUserId = () => {
+  return localStorage.getItem('__cid');
+};
+
+export const initializeAddClassMethod = () => {
+  if (!Element.prototype.hasOwnProperty('addClass')) {
+    Element.prototype.addClass = function (className) {
+      if (!this.classList.contains(className)) {
+        this.classList.add(className);
+      }
+    };
+  }
+};

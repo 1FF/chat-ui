@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Get changed files names via git which are in staging state, except files deleted
+CHANGED_FILES=$(git diff --name-only --cached --diff-filter=ACMRTUXB | xargs)
+
+# Run prettier formatter
+npx prettier $CHANGED_FILES --write
+
+# Add changed files before commit
+git add $CHANGED_FILES
+
+if [ -f ./.git/hooks/pre-commit ]; then
+	./.git/hooks/pre-commit $@
+fi
+
+exit 0 # do commit
