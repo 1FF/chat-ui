@@ -339,6 +339,7 @@ const ChatUi = {
 
     this.appendHtml(data);
     this.elements.messageInput.value = '';
+    this.typingHandler();
   },
   /**
    * Emits a chat event to the socket server with the last question data.
@@ -446,6 +447,8 @@ const ChatUi = {
       this.sendMessage();
       return;
     }
+  },
+  typingHandler() {
     clearTimeout(this.timerId);
     this.isTyping = true;
     this.timerId = setTimeout(() => {

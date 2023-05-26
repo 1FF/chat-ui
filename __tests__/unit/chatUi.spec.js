@@ -79,12 +79,14 @@ describe('ChatUi', () => {
     document.body.innerHTML = `<div id="${containerId}"></div>`;
 
     sut.init({ containerId });
+
     // Arrange
     const messageInput = document.getElementById('chat-prompt');
     const sendButton = document.getElementById('send-button');
     // Simulate user input and button click
     messageInput.value = 'Hello, chatbot!';
     sendButton.click();
+    jest.advanceTimersByTime(3000);
 
     // Assertions
     expect(sut.socket.emit).toHaveBeenCalledWith(
