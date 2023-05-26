@@ -54,7 +54,7 @@ export const rolesHTML = {
   assistant: content => `<span class="assistant">${content}</span>`,
 };
 
-export const loadingDots = `<div id="wave">
+export const loadingDots = `<div class="js-wave">
   <span class="dot"></span>
   <span class="dot"></span>
   <span class="dot"></span>
@@ -370,7 +370,7 @@ img {
   box-shadow: 0px 12px 24px -4px rgba(255, 174, 25, 0.2);
 }
 
-div#wave {
+div.js-wave {
   position: relative;
   text-align: center;
   width: 100px;
@@ -379,7 +379,7 @@ div#wave {
   margin-right: 0;
 }
 
-div#wave .dot {
+div.js-wave .dot {
   display: inline-block;
   width: 12px;
   height: 12px;
@@ -389,11 +389,11 @@ div#wave .dot {
   animation: wave 1.3s linear infinite;
 }
 
-div#wave .dot:nth-child(2) {
+div.js-wave .dot:nth-child(2) {
   animation-delay: -1.1s;
 }
 
-div#wave .dot:nth-child(3) {
+div.js-wave .dot:nth-child(3) {
   animation-delay: -0.9s;
 }
 
