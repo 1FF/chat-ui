@@ -110,6 +110,8 @@ const ChatUi = {
    * @returns {void}
    */
   onChatHistory(res) {
+    console.log('onChatHistory: ', res);
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
     const visualizedHistory =
       document.querySelectorAll('#message-incrementor .user').length +
@@ -144,14 +146,34 @@ const ChatUi = {
    */
   setSocket() {
     this.socket = io.connect(this.url, this.socketConfig);
+    this.socket.on(this.events.connect, this.onConnect.bind(this));
+    this.socket.on(this.events.disconnect, this.onDisconnect.bind(this));
     this.socket.on(this.events.chat, this.onChat.bind(this));
     this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
+
+    // TODO do something on server error
+    // this.socket.on("error", (reason) => {});
+  },
+  /**
+   * Handles the connect event.
+   * It emits the 'chatHistory' event to request chat history for the user.
+   *
+   * @returns {void}
+   */
+  onConnect() {
+    console.log(`Connected to ${this.url}, socket id: ${this.socket.id}`);
+
     this.socket.emit(this.events.chatHistory, {
       user_id: this.lastQuestionData.user_id,
     });
-    // TODO do something on server error or disconnection
-    // this.socket.on("disconnect", (reason) => {});
-    // this.socket.on("error", (reason) => {});
+  },
+  /**
+   * Handles the disconnect event.
+   *
+   * @returns {void}
+   */
+  onDisconnect() {
+    console.log(`Disconnected from ${this.url}`);
   },
   /**
    * Handles the chat response received from the server.
@@ -163,6 +185,8 @@ const ChatUi = {
    * @returns {void}
    */
   onChat(res) {
+    console.log('onChat: ', res);
+
     const { messages, errors } = res;
 
     if (errors && errors.length) {
@@ -346,6 +370,8 @@ const ChatUi = {
    * @returns {void}
    */
   onError() {
+    console.log('onError: ', this);
+
     const lastUserMessageElement = this.getLastUserMessageElement();
     if (!lastUserMessageElement) return;
     lastUserMessageElement.style.cursor = 'pointer';

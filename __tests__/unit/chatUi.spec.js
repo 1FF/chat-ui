@@ -88,7 +88,7 @@ describe('ChatUi', () => {
 
     // Assertions
     expect(sut.socket.emit).toHaveBeenCalledWith(
-      sut.events.chatHistory,
+      sut.events.chat,
       expect.any(Object),
     );
     expect(sut.elements.messageIncrementor.innerHTML).toContain(
@@ -108,7 +108,6 @@ describe('ChatUi', () => {
 
     // Assert
     expect(sut.socket.emit).not.toBeCalledWith('chat');
-    expect(sut.socket.emit).toBeCalledWith('chat-history', { user_id: userID });
     expect(sut.elements.messageIncrementor.innerHTML).toBe('');
   });
 
