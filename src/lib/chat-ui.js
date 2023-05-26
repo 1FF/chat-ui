@@ -32,6 +32,9 @@ const ChatUi = {
   url: null,
   initialHeight: null,
   containerId: 'chatbot-container',
+  isTyping: false,
+  timeStart: null,
+  timerId: null,
   lastQuestionData: {
     term: '',
     user_id: '',
@@ -197,16 +200,28 @@ const ChatUi = {
 
     const lastMessage = messages[messages.length - 1];
     const link = constructLink(lastMessage.content);
-    const wavingDots = document.getElementById('wave');
 
     setTimeout(() => {
-      wavingDots && wavingDots.remove();
-      this.toggleActiveTextarea();
+      this.clearWavesLoader();
       this.appendHtml(lastMessage);
+      this.lastQuestionData.message = '';
       if (link) {
         this.setLink(link);
       }
-    }, getRandomInteger(2500, 5000));
+    }, this.getResponseTime());
+  },
+  getResponseTime() {
+    const timeTookToResolvePromise = performance.now() - this.timeStart;
+
+    if (timeTookToResolvePromise > 5000) {
+      return 0;
+    }
+
+    return getRandomInteger(2500, 5000);
+  },
+  clearWavesLoader() {
+    const wavingDots = document.querySelectorAll('.js-wave');
+    wavingDots.forEach(dot => dot.remove());
   },
   /**
    * Sets the link and updates the last assistant message element to include an anchor tag with the link.
@@ -286,17 +301,6 @@ const ChatUi = {
   appendHtml(data) {
     const { time, role, content } = data;
 
-    // TODO this must be refactored
-    const historyElements = document.querySelector('#message-incrementor')
-      .children.length;
-    if (historyElements) {
-      const lastElementContent = document.querySelector('#message-incrementor')
-        .children[historyElements - 1].textContent;
-      if (lastElementContent.trim() === content.trim()) {
-        return;
-      }
-    }
-
     this.elements.messageIncrementor.innerHTML +=
       `<div class="date-formatted">${formatDateByLocale(time)}</div>` +
       rolesHTML[role](content);
@@ -313,11 +317,9 @@ const ChatUi = {
    */
   loadExistingMessage() {
     this.elements.messageIncrementor.innerHTML += loadingDots;
-    this.toggleActiveTextarea();
     setTimeout(() => {
-      document.querySelector('#wave')?.remove();
+      this.clearWavesLoader();
       this.appendHtml(this.assistant.initialMessage);
-      this.toggleActiveTextarea();
     }, 1500);
   },
   /**
@@ -333,10 +335,10 @@ const ChatUi = {
     }
 
     const data = { role: 'user', content, time: new Date().toISOString() };
-    this.lastQuestionData.message = content;
+    this.lastQuestionData.message += content + ' ';
 
     this.appendHtml(data);
-    this.socketEmitChat();
+    this.elements.messageInput.value = '';
   },
   /**
    * Emits a chat event to the socket server with the last question data.
@@ -346,8 +348,6 @@ const ChatUi = {
    * @returns {void}
    */
   socketEmitChat() {
-    const lastChild = this.getLastUserMessageElement();
-
     if (this.socket.connected) {
       this.socket.emit(this.events.chat, this.lastQuestionData);
       this.elements.messageIncrementor.innerHTML += loadingDots;
@@ -359,7 +359,6 @@ const ChatUi = {
         this.onError();
       }, 2000);
     }
-    this.toggleActiveTextarea();
     this.scrollToBottom();
     this.elements.messageInput.value = '';
   },
@@ -445,28 +444,17 @@ const ChatUi = {
     if (event.key === 'Enter') {
       event.preventDefault();
       this.sendMessage();
+      return;
     }
-  },
-  /**
-   * Toggles the pointer events for the message textarea and send button elements.
-   * Toggles focus event on the textarea also.
-   *
-   * @returns {void}
-   */
-  toggleActiveTextarea() {
-    this.elements.messageInput.style.pointerEvents =
-      this.elements.messageInput.style.pointerEvents === 'none'
-        ? 'auto'
-        : 'none';
-    this.elements.messageInput.disabled = !this.elements.messageInput.disabled;
-    this.elements.sendButton.style.pointerEvents =
-      this.elements.sendButton.style.pointerEvents === 'none' ? 'auto' : 'none';
-    this.elements.sendButton.disable = !this.elements.sendButton.disable;
-    if (this.elements.messageInput === document.activeElement) {
-      this.elements.messageInput.blur(); // Remove focus from the textarea
-    } else {
-      this.elements.messageInput.focus(); // Set focus on the textarea
-    }
+    clearTimeout(this.timerId);
+    this.isTyping = true;
+    this.timerId = setTimeout(() => {
+      if (this.isTyping && this.elements.messageInput.value.trim() === '') {
+        this.isTyping = false;
+        this.timeStart = performance.now();
+        this.socketEmitChat();
+      }
+    }, 2000);
   },
 };
 

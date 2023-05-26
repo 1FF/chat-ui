@@ -131,7 +131,7 @@ describe('ChatUi', () => {
   test('should setMessageObject correctly', () => {
     // Assert
     expect(sut.lastQuestionData).toEqual({
-      message: 'Hello, chatbot!',
+      message: 'Hello, chatbot! ',
       term: 'test',
       user_id: 'userID',
     });
