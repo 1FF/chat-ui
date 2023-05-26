@@ -4,5 +4,6 @@ export const io = {
     on: jest.fn(),
     emit: jest.fn(),
     close: jest.fn(),
+    connected: true,
   }),
 };
