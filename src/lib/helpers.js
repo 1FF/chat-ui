@@ -7,8 +7,10 @@ const REGEX_URL = /\b((?:https?:\/\/|www\.)[^\s/$.?#][^\s]*)\b/gi;
  * @param {number} to - The ending value of the range.
  * @returns {number} The random integer generated.
  */
-export function getRandomInteger(from, to) {
-  return Math.floor(Math.random() * to) + from;
+export function getRandomInteger(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
 }
 
 /**

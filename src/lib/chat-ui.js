@@ -200,7 +200,6 @@ const ChatUi = {
 
     const lastMessage = messages[messages.length - 1];
     const link = constructLink(lastMessage.content);
-
     setTimeout(() => {
       this.clearWavesLoader();
       this.appendHtml(lastMessage);
@@ -330,6 +329,8 @@ const ChatUi = {
    */
   sendMessage() {
     const content = this.elements.messageInput.value.trim();
+    this.typingHandler();
+
     if (content === '') {
       return;
     }
@@ -339,7 +340,6 @@ const ChatUi = {
 
     this.appendHtml(data);
     this.elements.messageInput.value = '';
-    this.typingHandler();
   },
   /**
    * Emits a chat event to the socket server with the last question data.
