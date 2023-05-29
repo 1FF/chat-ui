@@ -125,7 +125,7 @@ const ChatUi = {
       return;
     }
 
-    if (res.history.length > visualizedHistory) {
+    if (res.history.length + 1 > visualizedHistory) {
       this.elements.messageIncrementor.innerHTML = '';
       res.history.unshift(this.assistant.initialMessage);
       res.history.forEach(data => this.appendHtml(data));
