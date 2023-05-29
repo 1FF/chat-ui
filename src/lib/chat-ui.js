@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { chatMarkup, loadingDots, rolesHTML, styles } from './chat-widgets';
+import { chatMarkup, rolesHTML, styles } from './chat-widgets';
 import { assistant } from './config/assistant';
 import { events } from './config/events';
 import { roles } from './config/roles';
@@ -114,7 +114,7 @@ const ChatUi = {
    */
   onChatHistory(res) {
     console.log('onChatHistory: ', res);
-
+    this.errorMessage.hide();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
     const visualizedHistory =
       document.querySelectorAll('#message-incrementor .user').length +
@@ -199,7 +199,7 @@ const ChatUi = {
     const lastMessage = messages[messages.length - 1];
     const link = constructLink(lastMessage.content);
     setTimeout(() => {
-      this.clearWavesLoader();
+      this.loadingDots.hide();
       this.appendHtml(lastMessage);
       this.lastQuestionData.message = '';
       if (link) {
@@ -215,10 +215,6 @@ const ChatUi = {
     }
 
     return getRandomInteger(2500, 5000);
-  },
-  clearWavesLoader() {
-    const wavingDots = document.querySelectorAll('.js-wave');
-    wavingDots.forEach(dot => dot.remove());
   },
   /**
    * Sets the link and updates the last assistant message element to include an anchor tag with the link.
@@ -287,6 +283,7 @@ const ChatUi = {
       closeButton: document.getElementById('close-widget'),
       ctaButton: document.getElementById('cta-button'),
       promptContainer: document.getElementById('prompt-container'),
+      loadingDots: document.querySelector('.js-wave'),
     };
   },
   /**
@@ -313,9 +310,9 @@ const ChatUi = {
    * @returns {void}
    */
   loadExistingMessage() {
-    this.elements.messageIncrementor.innerHTML += loadingDots;
+    this.loadingDots.show();
     setTimeout(() => {
-      this.clearWavesLoader();
+      this.loadingDots.hide();
       this.appendHtml(this.assistant.initialMessage);
     }, 1500);
   },
@@ -333,8 +330,8 @@ const ChatUi = {
       return;
     }
 
-    const data = { role: 'user', content, time: new Date().toISOString() };
-    this.lastQuestionData.message += content + ' ';
+    const data = { role: roles.user, content, time: new Date().toISOString() };
+    this.lastQuestionData.message += content + '\n';
 
     this.appendHtml(data);
     this.elements.messageInput.value = '';
@@ -349,10 +346,7 @@ const ChatUi = {
   socketEmitChat() {
     if (this.socket.connected) {
       this.socket.emit(this.events.chat, this.lastQuestionData);
-      this.elements.messageIncrementor.innerHTML += loadingDots;
-      document.querySelectorAll('.resend-icon').forEach(el => {
-        el.addClass('hidden');
-      });
+      this.loadingDots.show();
     } else {
       setTimeout(() => {
         this.onError();
@@ -370,12 +364,12 @@ const ChatUi = {
   onError() {
     console.log('onError: ', this);
 
-    this.clearWavesLoader();
-
-    this.showErrorMessage();
+    this.loadingDots.hide();
+    this.errorMessage.show();
 
     const lastUserMessageElement = this.getLastUserMessageElement();
     if (!lastUserMessageElement) return;
+    console.log(lastUserMessageElement);
     lastUserMessageElement.style.cursor = 'pointer';
     lastUserMessageElement.addEventListener(
       'click',
@@ -385,12 +379,21 @@ const ChatUi = {
       .querySelector('.resend-icon')
       .classList.remove('hidden');
   },
-  showErrorMessage() {
-    console.log('showErrorMessage');
-
-    const lastUserMessageElement = this.getLastUserMessageElement();
-    if (!lastUserMessageElement) return;
-    lastUserMessageElement.parentElement.innerHTML += `<div class="error-message">Something went wrong!</div>`;
+  errorMessage: {
+    show() {
+      document.querySelector('.js-error').classList.remove('hidden');
+    },
+    hide() {
+      document.querySelector('.js-error').addClass('hidden');
+    },
+  },
+  loadingDots: {
+    show: () => {
+      document.querySelector('.js-wave').classList.remove('hidden');
+    },
+    hide: () => {
+      document.querySelector('.js-wave').addClass('hidden');
+    },
   },
   /**
    * Retrieves the last user message element from the message incrementor.
