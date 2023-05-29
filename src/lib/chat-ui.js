@@ -193,9 +193,7 @@ const ChatUi = {
     const { messages, errors } = res;
 
     if (errors && errors.length) {
-      document.getElementById('wave')?.remove();
       this.onError();
-      return;
     }
 
     const lastMessage = messages[messages.length - 1];
@@ -372,6 +370,10 @@ const ChatUi = {
   onError() {
     console.log('onError: ', this);
 
+    this.clearWavesLoader();
+
+    this.showErrorMessage();
+
     const lastUserMessageElement = this.getLastUserMessageElement();
     if (!lastUserMessageElement) return;
     lastUserMessageElement.style.cursor = 'pointer';
@@ -382,6 +384,13 @@ const ChatUi = {
     lastUserMessageElement
       .querySelector('.resend-icon')
       .classList.remove('hidden');
+  },
+  showErrorMessage() {
+    console.log('showErrorMessage');
+
+    const lastUserMessageElement = this.getLastUserMessageElement();
+    if (!lastUserMessageElement) return;
+    lastUserMessageElement.parentElement.innerHTML += `<div class="error-message">Something went wrong!</div>`;
   },
   /**
    * Retrieves the last user message element from the message incrementor.
