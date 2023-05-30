@@ -1,4 +1,5 @@
 import ChatUi from '../../src/lib/chat-ui';
+import { formatDateByLocale } from '../../src/lib/helpers';
 jest.mock('socket.io-client');
 
 describe('ChatUi', () => {
@@ -177,7 +178,9 @@ describe('ChatUi', () => {
 
     // Assert
     expect(sut.elements.messageIncrementor.innerHTML).toEqual(
-      '<div class="date-formatted">MAY 12, 2023, 1:30 PM</div><span class="assistant">hello</span>',
+      `<div class="date-formatted">${formatDateByLocale(
+        testMessage.time,
+      )}</div><span class="assistant">hello</span>`,
     );
   });
 
