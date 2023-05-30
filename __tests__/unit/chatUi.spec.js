@@ -81,14 +81,18 @@ describe('ChatUi', () => {
     sut.init({ containerId });
 
     // Arrange
+    jest.spyOn(sut.resendButton, 'hideAll');
+    jest.spyOn(sut.loadingDots, 'show');
+    jest.spyOn(sut, 'scrollToBottom');
     const messageInput = document.getElementById('chat-prompt');
     const sendButton = document.getElementById('send-button');
+
     // Simulate user input and button click
     messageInput.value = 'Hello, chatbot!';
     sendButton.click();
     jest.advanceTimersByTime(3000);
 
-    // Assertions
+    // Assert
     expect(sut.socket.emit).toHaveBeenCalledWith(
       sut.events.chat,
       expect.any(Object),
@@ -96,6 +100,9 @@ describe('ChatUi', () => {
     expect(sut.elements.messageIncrementor.innerHTML).toContain(
       'Hello, chatbot!',
     );
+    expect(sut.resendButton.hideAll).toHaveBeenCalled();
+    expect(sut.loadingDots.show).toHaveBeenCalled();
+    expect(sut.scrollToBottom).toHaveBeenCalled();
     expect(messageInput.value).toBe('');
     expect(sut.socket.on).toBeCalledWith(sut.events.chat, expect.any(Function));
   });
@@ -133,39 +140,46 @@ describe('ChatUi', () => {
   test('should setMessageObject correctly', () => {
     // Assert
     expect(sut.lastQuestionData).toEqual({
-      message: 'Hello, chatbot! ',
+      message: 'Hello, chatbot!\n',
       term: 'test',
       user_id: 'userID',
     });
   });
 
-  test('should call onError when onChat we have errors', () => {
+  test('should call onError and all its methods when onChat we have errors', () => {
     // Arrange
     jest.spyOn(ChatUi, 'onError');
+    sut.init({ containerId: 'chatbot-container' });
+    jest.spyOn(sut.loadingDots, 'hide');
+    jest.spyOn(sut.errorMessage, 'show');
+    jest.spyOn(sut.resendButton, 'hideAll');
+    jest.spyOn(sut.resendButton, 'show');
 
     // Act
     sut.onChat({ message: 'hello', errors: ['server error'] });
 
     // Assert
     expect(sut.onError).toBeCalled();
+    expect(sut.errorMessage.show).toBeCalled();
+    expect(sut.resendButton.hideAll).toBeCalled();
+    expect(sut.resendButton.show).toBeCalled();
   });
 
-  // test('should not call onError when onChat we have no errors', () => {
-  //   // Arrange
-  //   jest.spyOn(ChatUi, 'toggleActiveTextarea');
-  //   jest.spyOn(ChatUi, 'appendHtml');
+  test('should not call onError when onChat we have no errors', () => {
+    // Arrange
+    jest.spyOn(sut, 'appendHtml');
 
-  //   // Act
-  //   sut.init({ containerId: 'chatbot-container' });
-  //   sut.onChat({ messages: [testMessage], errors: [] });
-  //   // advance the timer by this hardcoded value because it is the largest possible amount
-  //   jest.advanceTimersByTime(8500);
+    // Act
+    sut.init({ containerId: 'chatbot-container' });
+    sut.onChat({ messages: [testMessage], errors: [] });
+    // advance the timer by this hardcoded value because it is the largest possible amount
+    jest.advanceTimersByTime(8500);
 
-  //   // Assert
-  //   expect(sut.elements.messageIncrementor.innerHTML).toEqual(
-  //     '<div class="date-formatted">MAY 12, 2023, 1:30 PM</div><span class="assistant">hello</span>',
-  //   );
-  // });
+    // Assert
+    expect(sut.elements.messageIncrementor.innerHTML).toEqual(
+      '<div class="date-formatted">MAY 12, 2023, 1:30 PM</div><span class="assistant">hello</span>',
+    );
+  });
 
   test('should setLink', () => {
     // Arrange
@@ -174,7 +188,7 @@ describe('ChatUi', () => {
     // Act
     sut.init({ containerId: 'chatbot-container' });
     sut.elements.messageIncrementor.innerHTML = `<div class="date-formatted">MAY 12, 2023, 1:30 PM</div><span class="assistant">${link}</span>`;
-    sut.setLink(link);
+    sut.setCtaButton(link);
 
     // Assert
     expect(sut.elements.ctaButton.getAttribute('href')).toBe(link);

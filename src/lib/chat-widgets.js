@@ -1,3 +1,4 @@
+import { formatDateByLocale } from './helpers';
 import { translations } from './config/translations';
 
 export const chatMarkup = config => `<div class="chat-widget">
@@ -10,14 +11,6 @@ export const chatMarkup = config => `<div class="chat-widget">
         <span class="widget-name">${config.assistant.name}</span>
         <span class="widget-role">${config.assistant.role}</span>
       </span>
-    </div>
-    <div class="chat-widget__close" id="close-widget">
-      <svg height="24px" viewBox="0 0 24 24" width="24px">
-        <g stroke="currentColor" stroke-linecap="round" stroke-width="2">
-          <line x1="6" x2="18" y1="6" y2="18"></line>
-          <line x1="6" x2="18" y1="18" y2="6"></line>
-        </g>
-      </svg>
     </div>
   </div>
   <div class="chat-widget__messages" id="scroll-incrementor">
@@ -39,7 +32,7 @@ export const chatMarkup = config => `<div class="chat-widget">
     ${loadingDots}
     <div class="chat-widget__prompt" id="prompt-container">
       <span class="widget__input">
-        <textarea id="chat-prompt" name="chat-prompt"></textarea>
+        <textarea id="chat-prompt" name="chat-prompt" placeholder="${translations.textareaPlaceholder}"></textarea>
       </span>
       <div class="widget__button" id="send-button">
         <svg fill="currentColor" height="20px" viewBox="0 0 24 24" width="20px">
@@ -50,6 +43,15 @@ export const chatMarkup = config => `<div class="chat-widget">
   </div>
 </div>`;
 
+const closeButton = `<div class="chat-widget__close" id="close-widget">
+  <svg height="24px" viewBox="0 0 24 24" width="24px">
+    <g stroke="currentColor" stroke-linecap="round" stroke-width="2">
+      <line x1="6" x2="18" y1="6" y2="18"></line>
+      <line x1="6" x2="18" y1="18" y2="6"></line>
+    </g>
+  </svg>
+</div>`;
+
 export const rolesHTML = {
   user: content => `<span class="user js-user">${content}<span class="resend-icon hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                             <path fill="none" d="M0 0h24v24H0V0z"/>
@@ -57,6 +59,9 @@ export const rolesHTML = {
                           </svg></span></span>`,
   assistant: content => `<span class="assistant">${content}</span>`,
 };
+
+export const timeMarkup = time =>
+  `<div class="date-formatted">${formatDateByLocale(time)}</div>`;
 
 export const loadingDots = `<div class="js-wave hidden">
   <span class="dot"></span>
@@ -329,6 +334,7 @@ img {
 
 .chat-widget__messages .assistant {
   background-color: var(--seraph);
+  width: 100%;
   color: #fff;
   margin-left: auto;
   margin-right: 0;
@@ -421,6 +427,33 @@ div.js-wave .dot:nth-child(3) {
 
 .underline {
   text-decoration: underline;
+}
+
+.cursor::after {
+  content:'';
+  display:inline-block;
+  margin-left:3px;
+  background-color:white;
+  animation-name:blink;
+  animation-duration:0.5s;
+  animation-iteration-count: infinite;
+  height:18px;
+  width:6px;
+}
+
+@keyframes blink {
+  0% {
+    opacity:1;
+  }
+  49% {
+    opacity:1;
+  }
+  50% {
+    opacity:0;
+  }
+  100% {
+    opacity:0;
+  }
 }
 
 .hidden {

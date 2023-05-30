@@ -4,29 +4,29 @@ const HTMLWebpackPlugin = require('html-webpack-plugin');
 const Terser = require('terser-webpack-plugin');
 
 module.exports = {
-  mode: 'production',
+  // mode: 'production',
   entry: './src/index.js',
   output: {
     library: 'ChatbotConnect',
     libraryTarget: 'umd',
     libraryExport: 'default',
     path: path.resolve(__dirname, 'dist'),
-    filename: 'index.js'
+    filename: 'index.js',
   },
   module: {
     rules: [
       {
         test: /\.js$/,
         exclude: /node_modules/,
-        use: ['babel-loader']
+        use: ['babel-loader'],
       },
-    ]
+    ],
   },
   plugins: [
     new Terser(),
     new HTMLWebpackPlugin({
-      template: path.resolve(__dirname, 'index.html')
+      template: path.resolve(__dirname, 'index.html'),
     }),
     new webpack.HotModuleReplacementPlugin(),
-  ]
+  ],
 };
