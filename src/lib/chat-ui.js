@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { chatMarkup, loadingDots, rolesHTML, styles } from './chat-widgets';
+import { chatMarkup, timeMarkup, rolesHTML, styles } from './chat-widgets';
 import { assistant } from './config/assistant';
 import { events } from './config/events';
 import { roles } from './config/roles';
@@ -8,7 +8,6 @@ import { theme } from './config/theme';
 import cssMinify from './css-minify';
 import {
   constructLink,
-  formatDateByLocale,
   getRandomInteger,
   getUserId,
   initializeAddClassMethod,
@@ -114,7 +113,7 @@ const ChatUi = {
    */
   onChatHistory(res) {
     console.log('onChatHistory: ', res);
-
+    this.errorMessage.hide();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
     const visualizedHistory =
       document.querySelectorAll('#message-incrementor .user').length +
@@ -193,21 +192,48 @@ const ChatUi = {
     const { messages, errors } = res;
 
     if (errors && errors.length) {
-      document.getElementById('wave')?.remove();
       this.onError();
       return;
     }
 
+    this.errorMessage.hide();
     const lastMessage = messages[messages.length - 1];
     const link = constructLink(lastMessage.content);
     setTimeout(() => {
-      this.clearWavesLoader();
-      this.appendHtml(lastMessage);
+      this.loadingDots.hide();
+      this.type(lastMessage);
       this.lastQuestionData.message = '';
       if (link) {
-        this.setLink(link);
+        this.setCtaButton(link);
       }
     }, this.getResponseTime());
+  },
+  type(data) {
+    const state = this;
+    const { time, role, content } = data;
+    this.elements.messageIncrementor.innerHTML +=
+      timeMarkup(time) + rolesHTML[role]('');
+    const lastMessageElement = this.getLastMessageElement('.assistant');
+    let i = 0;
+
+    function typeWriter() {
+      if (i < content.length) {
+        lastMessageElement.innerHTML += content.charAt(i);
+        lastMessageElement.addClass('cursor');
+        state.scrollToBottom();
+        i++;
+        setTimeout(typeWriter, 50);
+      }
+
+      if (i === content.length) {
+        lastMessageElement.innerHTML = replaceLinksWithAnchors(
+          lastMessageElement.textContent,
+        );
+        lastMessageElement.classList.remove('cursor');
+      }
+    }
+
+    typeWriter();
   },
   getResponseTime() {
     const timeTookToResolvePromise = performance.now() - this.timeStart;
@@ -218,30 +244,18 @@ const ChatUi = {
 
     return getRandomInteger(2500, 5000);
   },
-  clearWavesLoader() {
-    const wavingDots = document.querySelectorAll('.js-wave');
-    wavingDots.forEach(dot => dot.remove());
+  getLastMessageElement(role) {
+    return this.elements.messageIncrementor.querySelectorAll(role)[
+      this.elements.messageIncrementor.querySelectorAll(role).length - 1
+    ];
   },
   /**
-   * Sets the link and updates the last assistant message element to include an anchor tag with the link.
-   * It also shows the CTA button, sets the href attribute to the link, and hides the prompt container.
+   * It shows the CTA button, sets the href attribute to the link, and hides the prompt container.
    *
    * @param {string} link - The link to be set.
    * @returns {void}
    */
-  setLink(link) {
-    const lastMessageElement =
-      this.elements.messageIncrementor.querySelectorAll('.assistant')[
-        this.elements.messageIncrementor.querySelectorAll('.assistant').length -
-          1
-      ];
-
-    if (!lastMessageElement) {
-      return;
-    }
-    lastMessageElement.innerHTML = replaceLinksWithAnchors(
-      lastMessageElement.textContent,
-    );
+  setCtaButton(link) {
     this.elements.ctaButton.classList.remove('hidden');
     this.elements.ctaButton.setAttribute('href', link);
     this.elements.promptContainer.classList.add('hidden');
@@ -289,6 +303,7 @@ const ChatUi = {
       closeButton: document.getElementById('close-widget'),
       ctaButton: document.getElementById('cta-button'),
       promptContainer: document.getElementById('prompt-container'),
+      loadingDots: document.querySelector('.js-wave'),
     };
   },
   /**
@@ -299,10 +314,8 @@ const ChatUi = {
    */
   appendHtml(data) {
     const { time, role, content } = data;
-
     this.elements.messageIncrementor.innerHTML +=
-      `<div class="date-formatted">${formatDateByLocale(time)}</div>` +
-      rolesHTML[role](content);
+      timeMarkup(time) + rolesHTML[role](content);
     this.scrollToBottom();
   },
   scrollToBottom() {
@@ -315,9 +328,9 @@ const ChatUi = {
    * @returns {void}
    */
   loadExistingMessage() {
-    this.elements.messageIncrementor.innerHTML += loadingDots;
+    this.loadingDots.show();
     setTimeout(() => {
-      this.clearWavesLoader();
+      this.loadingDots.hide();
       this.appendHtml(this.assistant.initialMessage);
     }, 1500);
   },
@@ -329,14 +342,14 @@ const ChatUi = {
    */
   sendMessage() {
     const content = this.elements.messageInput.value.trim();
-    this.typingHandler();
 
     if (content === '') {
       return;
     }
 
-    const data = { role: 'user', content, time: new Date().toISOString() };
-    this.lastQuestionData.message += content + ' ';
+    this.typingHandler();
+    const data = { role: roles.user, content, time: new Date().toISOString() };
+    this.lastQuestionData.message += content + '\n';
 
     this.appendHtml(data);
     this.elements.messageInput.value = '';
@@ -349,12 +362,10 @@ const ChatUi = {
    * @returns {void}
    */
   socketEmitChat() {
+    this.resendButton.hideAll();
     if (this.socket.connected) {
       this.socket.emit(this.events.chat, this.lastQuestionData);
-      this.elements.messageIncrementor.innerHTML += loadingDots;
-      document.querySelectorAll('.resend-icon').forEach(el => {
-        el.addClass('hidden');
-      });
+      this.loadingDots.show();
     } else {
       setTimeout(() => {
         this.onError();
@@ -371,17 +382,10 @@ const ChatUi = {
    */
   onError() {
     console.log('onError: ', this);
-
-    const lastUserMessageElement = this.getLastUserMessageElement();
-    if (!lastUserMessageElement) return;
-    lastUserMessageElement.style.cursor = 'pointer';
-    lastUserMessageElement.addEventListener(
-      'click',
-      this.socketEmitChat.bind(this, this.lastQuestionData),
-    );
-    lastUserMessageElement
-      .querySelector('.resend-icon')
-      .classList.remove('hidden');
+    this.loadingDots.hide();
+    this.errorMessage.show();
+    this.resendButton.hideAll();
+    this.resendButton.show(this);
   },
   /**
    * Retrieves the last user message element from the message incrementor.
@@ -390,10 +394,8 @@ const ChatUi = {
    * @returns {Element|null} - The last user message element if found, otherwise null.
    */
   getLastUserMessageElement() {
-    const oldChild =
-      this.elements.messageIncrementor.querySelectorAll('.user')[
-        this.elements.messageIncrementor.querySelectorAll('.user').length - 1
-      ];
+    const oldChild = this.getLastMessageElement('.user');
+
     if (oldChild) {
       const newLast = oldChild.cloneNode(true);
       oldChild.parentNode.replaceChild(newLast, oldChild);
@@ -419,7 +421,7 @@ const ChatUi = {
    * @returns {void}
    */
   attachListeners() {
-    this.elements.closeButton.addEventListener(
+    this.elements.closeButton?.addEventListener(
       'click',
       this.closeWidget.bind(this),
     );
@@ -458,6 +460,45 @@ const ChatUi = {
         this.socketEmitChat();
       }
     }, 2000);
+  },
+  errorMessage: {
+    show() {
+      document.querySelector('.js-error').classList.remove('hidden');
+    },
+    hide() {
+      document.querySelector('.js-error').addClass('hidden');
+    },
+  },
+  loadingDots: {
+    show: () => {
+      document.querySelector('.js-wave').classList.remove('hidden');
+    },
+    hide: () => {
+      document.querySelector('.js-wave').addClass('hidden');
+    },
+  },
+  resendButton: {
+    show: state => {
+      const lastUserMessageElement = state.getLastUserMessageElement();
+      if (lastUserMessageElement) {
+        lastUserMessageElement.style.cursor = 'pointer';
+        lastUserMessageElement
+          .querySelector('.resend-icon')
+          .classList.remove('hidden');
+        lastUserMessageElement.addEventListener(
+          'click',
+          state.socketEmitChat.bind(state, state.lastQuestionData),
+        );
+      }
+    },
+    hideAll: () => {
+      document.querySelectorAll('.user').forEach(element => {
+        element.style.cursor = 'default';
+      });
+      document.querySelectorAll('.resend-icon').forEach(element => {
+        element.addClass('hidden');
+      });
+    },
   },
 };
 
