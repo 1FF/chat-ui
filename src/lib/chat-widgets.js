@@ -32,7 +32,7 @@ export const chatMarkup = config => `<div class="chat-widget">
     ${loadingDots}
     <div class="chat-widget__prompt" id="prompt-container">
       <span class="widget__input">
-        <textarea id="chat-prompt" name="chat-prompt" placeholder="${translations.textareaPlaceholder}"></textarea>
+        <textarea id="chat-prompt" minlength="1" name="chat-prompt" placeholder="${translations.textareaPlaceholder}"></textarea>
       </span>
       <div class="widget__button" id="send-button">
         <svg fill="currentColor" height="20px" viewBox="0 0 24 24" width="20px">
@@ -53,15 +53,31 @@ const closeButton = `<div class="chat-widget__close" id="close-widget">
 </div>`;
 
 export const rolesHTML = {
-  user: content => `<span class="user js-user">${content}<span class="resend-icon hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                            <path fill="none" d="M0 0h24v24H0V0z"/>
-                            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-                          </svg></span></span>`,
-  assistant: content => `<span class="assistant">${content}</span>`,
+  user: content => {
+    const element = document.createElement('span');
+    element.classList.add('user');
+    element.classList.add('js-user');
+    element.innerHTML = content;
+    element.innerHTML += `<span class="resend-icon hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path fill="none" d="M0 0h24v24H0V0z"/>
+    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+  </svg></span>`;
+    return element;
+  },
+  assistant: content => {
+    const element = document.createElement('span');
+    element.classList.add('assistant');
+    element.innerHTML = content;
+    return element;
+  },
 };
 
-export const timeMarkup = time =>
-  `<div class="date-formatted">${formatDateByLocale(time)}</div>`;
+export const timeMarkup = time => {
+  const element = document.createElement('div');
+  element.classList.add('date-formatted');
+  element.textContent = formatDateByLocale(time);
+  return element;
+};
 
 export const loadingDots = `<div class="js-wave hidden">
   <span class="dot"></span>
@@ -125,12 +141,14 @@ textarea {
 textarea {
   resize: none;
   width: 100%;
-  height: 100%;
+  height: auto;
   font-size: 16px;
   font-weight: 600;
   line-height: 1.5;
   position: relative;
   font-family: inherit;
+  overflow: auto;
+  padding: 11px 15px;
 }
 
 img {
@@ -235,10 +253,9 @@ img {
   border-radius: 20px;
   background-color: var(--lumina);
   width: 100%;
-  max-height: 46px;
-  overflow: hidden;
-  padding: 11px 15px;
+  height: auto;
   margin-right: 11px;
+  overflow: hidden;
 }
 
 .widget__button {
@@ -290,7 +307,8 @@ img {
 
 .resend-icon {
   position: absolute;
-  top: 60%;
+  bottom: -10px;
+  right: -10px;
   width: 24px;
   height: 24px;
   border-radius: 100%;

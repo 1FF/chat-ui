@@ -4,7 +4,6 @@ const HTMLWebpackPlugin = require('html-webpack-plugin');
 const Terser = require('terser-webpack-plugin');
 
 module.exports = {
-  mode: 'production',
   entry: './src/index.js',
   output: {
     library: 'ChatbotConnect',
