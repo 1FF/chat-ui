@@ -5,10 +5,10 @@ import { events } from './config/events';
 import { roles } from './config/roles';
 import { socketConfig } from './config/socket';
 import { theme } from './config/theme';
+import { translations } from './config/translations';
 import cssMinify from './css-minify';
 import {
   constructLink,
-  getRandomInteger,
   getUserId,
   initializeAddClassMethod,
   replaceLinksWithAnchors,
@@ -24,6 +24,7 @@ const ChatUi = {
   events,
   roles,
   socketConfig,
+  translations,
   socket: null,
   elements: null,
   userId: null,
@@ -32,8 +33,11 @@ const ChatUi = {
   initialHeight: null,
   containerId: 'chatbot-container',
   isTyping: false,
+  typingEvents: [],
   timeStart: null,
   timerId: null,
+  lastReceivedMessage: null,
+  currentMessages: [],
   lastQuestionData: {
     term: '',
     user_id: '',
@@ -80,11 +84,13 @@ const ChatUi = {
     this.containerId = config.containerId || this.containerId;
     config.assistantConfig = config.assistantConfig || {};
     config.customTheme = config.customTheme || {};
+    config.translations = config.translations || {};
 
     this.socketConfig = config.socketConfig || this.socketConfig;
     this.theme = { ...this.theme, ...config.customTheme };
     this.assistant = { ...this.assistant, ...config.assistantConfig };
     this.mainContainer = document.getElementById(this.containerId);
+    this.translations = { ...this.translations, ...config.translations };
   },
   setMessageObject() {
     this.lastQuestionData.term = this.getTerm();
@@ -198,31 +204,37 @@ const ChatUi = {
 
     this.errorMessage.hide();
     const lastMessage = messages[messages.length - 1];
+    this.lastReceivedMessage = lastMessage.role === 'user' ? lastMessage : null;
     const link = constructLink(lastMessage.content);
-    setTimeout(() => {
-      this.loadingDots.hide();
-      this.type(lastMessage);
-      this.lastQuestionData.message = '';
-      if (link) {
-        this.setCtaButton(link);
-      }
-    }, this.getResponseTime());
+    this.loadingDots.hide();
+    this.type(lastMessage);
+
+    if (link) {
+      this.setCtaButton(link);
+    }
   },
   type(data) {
     const state = this;
     const { time, role, content } = data;
-    this.elements.messageIncrementor.innerHTML +=
-      timeMarkup(time) + rolesHTML[role]('');
+    this.elements.messageIncrementor.appendChild(timeMarkup(time));
+    this.elements.messageIncrementor.appendChild(rolesHTML[role](''));
     const lastMessageElement = this.getLastMessageElement('.assistant');
     let i = 0;
+    this.typingEvents.push({
+      content,
+      timerIds: [],
+      element: lastMessageElement,
+    });
+    this.resetPreviousTyping();
 
     function typeWriter() {
       if (i < content.length) {
         lastMessageElement.innerHTML += content.charAt(i);
         lastMessageElement.addClass('cursor');
         state.scrollToBottom();
+        const timerId = setTimeout(typeWriter, 50);
+        state.typingEvents[0].timerIds.push(timerId);
         i++;
-        setTimeout(typeWriter, 50);
       }
 
       if (i === content.length) {
@@ -235,14 +247,13 @@ const ChatUi = {
 
     typeWriter();
   },
-  getResponseTime() {
-    const timeTookToResolvePromise = performance.now() - this.timeStart;
-
-    if (timeTookToResolvePromise > 5000) {
-      return 0;
+  resetPreviousTyping() {
+    if (this.typingEvents.length === 2) {
+      this.typingEvents[0].timerIds.forEach(evId => clearTimeout(evId));
+      this.typingEvents[0].element.textContent = this.typingEvents[0].content;
+      this.typingEvents[0].element.classList.remove('cursor');
+      this.typingEvents = [this.typingEvents[1]];
     }
-
-    return getRandomInteger(2500, 5000);
   },
   getLastMessageElement(role) {
     return this.elements.messageIncrementor.querySelectorAll(role)[
@@ -314,8 +325,8 @@ const ChatUi = {
    */
   appendHtml(data) {
     const { time, role, content } = data;
-    this.elements.messageIncrementor.innerHTML +=
-      timeMarkup(time) + rolesHTML[role](content);
+    this.elements.messageIncrementor.appendChild(timeMarkup(time));
+    this.elements.messageIncrementor.appendChild(rolesHTML[role](content));
     this.scrollToBottom();
   },
   scrollToBottom() {
@@ -347,9 +358,9 @@ const ChatUi = {
       return;
     }
 
-    this.typingHandler();
     const data = { role: roles.user, content, time: new Date().toISOString() };
-    this.lastQuestionData.message += content + '\n';
+    this.currentMessages.push(content);
+    this.typingHandler();
 
     this.appendHtml(data);
     this.elements.messageInput.value = '';
@@ -363,7 +374,10 @@ const ChatUi = {
    */
   socketEmitChat() {
     this.resendButton.hideAll();
+    this.errorMessage.hide();
     if (this.socket.connected) {
+      this.lastQuestionData.message =
+        this.currentMessages.join('\n') || this.lastReceivedMessage;
       this.socket.emit(this.events.chat, this.lastQuestionData);
       this.loadingDots.show();
     } else {
@@ -451,12 +465,10 @@ const ChatUi = {
     }
   },
   typingHandler() {
-    clearTimeout(this.timerId);
     this.isTyping = true;
-    this.timerId = setTimeout(() => {
+    setTimeout(() => {
       if (this.isTyping && this.elements.messageInput.value.trim() === '') {
         this.isTyping = false;
-        this.timeStart = performance.now();
         this.socketEmitChat();
       }
     }, 2000);

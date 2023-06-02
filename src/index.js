@@ -15,5 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
   ChatUi.init({
     url: 'http://localhost:5000',
     assistantConfig: { ctaTextContent: 'goodbuy' },
+    translations: { error: 'custom error tmsg' },
   });
 });
