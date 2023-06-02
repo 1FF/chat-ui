@@ -35,6 +35,7 @@ const ChatUi = {
   timeStart: null,
   timerId: null,
   lastReceivedMessage: null,
+  currentMessages: [],
   lastQuestionData: {
     term: '',
     user_id: '',
@@ -354,7 +355,7 @@ const ChatUi = {
     }
 
     const data = { role: roles.user, content, time: new Date().toISOString() };
-    this.lastQuestionData.message += content + '\n';
+    this.currentMessages.push(content);
     this.typingHandler();
 
     this.appendHtml(data);
@@ -372,7 +373,7 @@ const ChatUi = {
     this.errorMessage.hide();
     if (this.socket.connected) {
       this.lastQuestionData.message =
-        this.lastQuestionData.message || this.lastReceivedMessage;
+        this.currentMessages.join('\n') || this.lastReceivedMessage;
       this.socket.emit(this.events.chat, this.lastQuestionData);
       this.loadingDots.show();
     } else {
