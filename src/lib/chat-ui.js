@@ -375,9 +375,9 @@ const ChatUi = {
   socketEmitChat() {
     this.resendButton.hideAll();
     this.errorMessage.hide();
-    if (this.socket.connected) {
-      this.lastQuestionData.message =
-        this.currentMessages.join('\n') || this.lastReceivedMessage;
+    this.lastQuestionData.message =
+      this.currentMessages.join('\n') || this.lastReceivedMessage;
+    if (this.socket.connected && this.lastQuestionData.message) {
       this.socket.emit(this.events.chat, this.lastQuestionData);
       this.currentMessages = [];
       this.loadingDots.show();
@@ -387,7 +387,6 @@ const ChatUi = {
       }, 2000);
     }
     this.scrollToBottom();
-    this.elements.messageInput.value = '';
   },
   /**
    * Handles the error event by updating the last user message element to allow resending the message.
@@ -468,7 +467,7 @@ const ChatUi = {
   typingHandler() {
     this.isTyping = true;
     setTimeout(() => {
-      if (this.isTyping && this.elements.messageInput.value.trim() === '') {
+      if (this.isTyping) {
         this.isTyping = false;
         this.socketEmitChat();
       }

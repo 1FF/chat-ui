@@ -32,7 +32,7 @@ export const chatMarkup = config => `<div class="chat-widget">
     ${loadingDots}
     <div class="chat-widget__prompt" id="prompt-container">
       <span class="widget__input">
-        <textarea id="chat-prompt" minlength="1" name="chat-prompt" placeholder="${translations.textareaPlaceholder}"></textarea>
+        <input id="chat-prompt" minlength="1" name="chat-prompt" placeholder="${translations.textareaPlaceholder}"></input>
       </span>
       <div class="widget__button" id="send-button">
         <svg fill="currentColor" height="20px" viewBox="0 0 24 24" width="20px">
@@ -138,9 +138,9 @@ textarea {
   box-sizing: content-box;
 }
 
-textarea {
+input {
   resize: none;
-  width: 100%;
+  width: 93%;
   height: auto;
   font-size: 16px;
   font-weight: 600;
@@ -255,7 +255,6 @@ img {
   width: 100%;
   height: auto;
   margin-right: 11px;
-  overflow: hidden;
 }
 
 .widget__button {
