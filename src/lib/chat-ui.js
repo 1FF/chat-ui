@@ -5,6 +5,7 @@ import { events } from './config/events';
 import { roles } from './config/roles';
 import { socketConfig } from './config/socket';
 import { theme } from './config/theme';
+import { translations } from './config/translations';
 import cssMinify from './css-minify';
 import {
   constructLink,
@@ -23,6 +24,7 @@ const ChatUi = {
   events,
   roles,
   socketConfig,
+  translations,
   socket: null,
   elements: null,
   userId: null,
@@ -82,11 +84,13 @@ const ChatUi = {
     this.containerId = config.containerId || this.containerId;
     config.assistantConfig = config.assistantConfig || {};
     config.customTheme = config.customTheme || {};
+    config.translations = config.translations || {};
 
     this.socketConfig = config.socketConfig || this.socketConfig;
     this.theme = { ...this.theme, ...config.customTheme };
     this.assistant = { ...this.assistant, ...config.assistantConfig };
     this.mainContainer = document.getElementById(this.containerId);
+    this.translations = { ...this.translations, ...config.translations };
   },
   setMessageObject() {
     this.lastQuestionData.term = this.getTerm();

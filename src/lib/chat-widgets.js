@@ -28,7 +28,7 @@ export const chatMarkup = config => `<div class="chat-widget">
   </div>
   <a class="chat-widget__cta hidden" id="cta-button">${config.assistant.ctaTextContent}</a>
   <div>
-    <div class="js-error error-message hidden">Error occurred. Please try again.</div>
+    <div class="js-error error-message hidden">${config.translations.error}</div>
     ${loadingDots}
     <div class="chat-widget__prompt" id="prompt-container">
       <span class="widget__input">
