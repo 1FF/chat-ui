@@ -379,6 +379,7 @@ const ChatUi = {
       this.lastQuestionData.message =
         this.currentMessages.join('\n') || this.lastReceivedMessage;
       this.socket.emit(this.events.chat, this.lastQuestionData);
+      this.lastQuestionData = [];
       this.loadingDots.show();
     } else {
       setTimeout(() => {
