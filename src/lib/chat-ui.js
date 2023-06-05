@@ -296,15 +296,9 @@ const ChatUi = {
     this.mainContainer.innerHTML += chatMarkup(this);
     this.mainContainer.appendChild(style);
     this.setElements();
-    this.toggleScroll();
+    this.scroll.remove();
     this.attachListeners();
     initializeAddClassMethod();
-  },
-  toggleScroll() {
-    const body = document.body;
-    const getCurrent = () =>
-      body.style.overflowY === 'hidden' ? 'visible' : 'hidden';
-    body.style.overflowY = getCurrent();
   },
   setElements() {
     this.elements = {
@@ -425,7 +419,7 @@ const ChatUi = {
    */
   closeWidget() {
     this.mainContainer.innerHTML = '';
-    this.toggleScroll();
+    this.scroll.add();
     this.closeSocket();
     localStorage.setItem(CHAT_SEEN_KEY, true);
   },
@@ -511,6 +505,10 @@ const ChatUi = {
         element.addClass('hidden');
       });
     },
+  },
+  scroll: {
+    add: () => { document.body.classList.remove('scroll-stop') },
+    remove: () => { document.body.classList.add('scroll-stop') },
   },
 };
 
