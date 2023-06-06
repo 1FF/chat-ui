@@ -101,6 +101,14 @@ input:focus {
   outline: 0;
 }
 
+html, body {
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -156,23 +164,37 @@ img {
   height: auto;
 }
 
-.chat-widget {
+.chat-container {
+  background: var(--lumina);
   width: 100%;
+  height: 100%;
   position: fixed;
+  left: 0;
+  right: 0;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-  height: ${height}px;
+  z-index: 99999;
   overflow: hidden;
+  font-family: inherit;
+  pointer-events: all;
+}
+
+.scroll-stop {
+  overflow: hidden;
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+}
+
+.chat-widget {
   display: flex;
   justify-content: space-between;
   flex-direction: column;
   color: rgb(var(--zephyr));
   background-color: var(--whisper);
-  margin: auto;
+  margin: 0 auto;
   max-width: 800px;
-  font-family: inherit;
+  height: ${height}px;
 }
 
 .chat-widget__head {
@@ -355,18 +377,6 @@ img {
   color: #fff;
   margin-left: auto;
   margin-right: 0;
-}
-
-.chat-container {
-  font-family: inherit;
-  background: var(--lumina);
-  width: 100%;
-  height: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
 }
 
 .assistant-welcome {

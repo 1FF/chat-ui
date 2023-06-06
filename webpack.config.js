@@ -27,5 +27,10 @@ module.exports = {
       template: path.resolve(__dirname, 'index.html'),
     }),
     new webpack.HotModuleReplacementPlugin(),
+    new webpack.ProvidePlugin({
+      process: 'process/browser',
+      Buffer: ['buffer', 'Buffer'],
+      // Add other core modules as needed
+    }),
   ],
 };
