@@ -1,5 +1,6 @@
 import { io } from 'socket.io-client';
-import { chatMarkup, timeMarkup, rolesHTML, styles } from './chat-widgets';
+import { chatMarkup, timeMarkup, rolesHTML } from './chat-widgets';
+import { styles } from './styles';
 import { assistant } from './config/assistant';
 import { events } from './config/events';
 import { roles } from './config/roles';
@@ -134,6 +135,11 @@ const ChatUi = {
       this.elements.messageIncrementor.innerHTML = '';
       res.history.unshift(this.assistant.initialMessage);
       res.history.forEach(data => this.appendHtml(data));
+      if (res.errors.length) {
+        const lastUserMessage = res.history.pop();
+        this.lastReceivedMessage = lastUserMessage.role === 'user' ? lastUserMessage.content : null;
+        this.onError()
+      }
     }
   },
   /**
@@ -238,14 +244,35 @@ const ChatUi = {
       }
 
       if (i === content.length) {
-        lastMessageElement.innerHTML = replaceLinksWithAnchors(
-          lastMessageElement.textContent,
-        );
+        lastMessageElement.innerHTML = replaceLinksWithAnchors(content);
         lastMessageElement.classList.remove('cursor');
+        state.addOptions(lastMessageElement);
       }
     }
 
     typeWriter();
+  },
+  singleChoice(e) {
+    this.lastQuestionData.message = e.target.textContent;
+    const data = { role: roles.user, content: e.target.textContent, time: new Date().toISOString() };
+    this.socket.emit(events.chat, this.lastQuestionData);
+    this.appendHtml(data);
+    e.target.parentElement.remove();
+  },
+  addOptions(element) {
+    // TODO there must be some method to determine what options we should list to the user
+    const answerConfig = { answersType: 'singleChoice', list: [{ content: 'yes' }, { content: 'no' }] };
+
+    const answersContainer = document.createElement('div');
+    answersContainer.classList.add('answers-container');
+    [...answerConfig.list].forEach(answer => {
+      const optionElement = document.createElement('div');
+      optionElement.textContent = answer.content;
+      optionElement.addEventListener('click', this[answerConfig.answersType].bind(this));
+      answersContainer.appendChild(optionElement);
+    });
+    element.appendChild(answersContainer);
+    this.scrollToBottom();
   },
   resetPreviousTyping() {
     if (this.typingEvents.length === 2) {
@@ -270,6 +297,7 @@ const ChatUi = {
     this.elements.ctaButton.classList.remove('hidden');
     this.elements.ctaButton.setAttribute('href', link);
     this.elements.promptContainer.classList.add('hidden');
+    this.elements.messageInput.disabled = true;
   },
   /**
    * Sets custom variables and applies them to the main container element and font family.
