@@ -102,3 +102,47 @@ export const initializeAddClassMethod = () => {
     };
   }
 };
+
+export const extractStringWithBrackets = (message) => {
+  const regex = /\[(.*?)\]/; // Matches the string inside square brackets
+  const match = regex.exec(message);
+
+  if (match && match.length > 1) {
+    const extractedString = match[1];
+    const updatedMessage = message.replace(match[0], '');
+
+    return {
+      extractedString,
+      updatedMessage
+    };
+  }
+
+  // No brackets found, return original message
+  return {
+    extractedString: '',
+    updatedMessage: message
+  };
+}
+
+export const getAnswerConfig = (output) => {
+  const choicesOptions = output.split('|');
+  const config = { answersType: 'singleChoice', list: [] };
+  choicesOptions.forEach(option => {
+    const optionConfig = { content: '' };
+    optionConfig.content = option.trim();
+    config.list.push(optionConfig)
+  });
+  return config;
+}
+
+/**
+ * Retrieves the value of the 'utm_chat' parameter from the current URL.
+ *
+ * @returns {string|null} The value of the 'utm_chat' parameter, or null if it is not present.
+ */
+export const getTerm = () => {
+  const url = window.location.search;
+  const urlParams = new URLSearchParams(url);
+
+  return urlParams.get('utm_chat');
+};

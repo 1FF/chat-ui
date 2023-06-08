@@ -1,4 +1,4 @@
-import { formatDateByLocale } from './helpers';
+import { extractStringWithBrackets, formatDateByLocale } from './helpers';
 import { translations } from './config/translations';
 import ChatUi from './chat-ui';
 import { roles } from './config/roles';
@@ -70,7 +70,8 @@ export const rolesHTML = {
   assistant: (content) => {
     const element = document.createElement('span');
     element.classList.add('assistant');
-    element.innerHTML = content;
+    const { updatedMessage } = extractStringWithBrackets(content);
+    element.innerHTML = updatedMessage;
     return element;
   },
 };

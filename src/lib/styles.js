@@ -382,11 +382,14 @@ div.js-wave .dot:nth-child(3) {
   text-decoration: underline;
 }
 
+.assistant.cursor {
+  width:100%;
+}
+
 .cursor::after {
   content:'';
   display:inline-block;
   margin-left:3px;
-  width: 100%;
   background-color: rgb(var(--zephyr));
   animation-name:blink;
   animation-duration:0.5s;
