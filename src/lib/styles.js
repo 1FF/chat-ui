@@ -338,8 +338,8 @@ div.js-wave {
   text-align: center;
   width: 100px;
   height: auto;
-  margin-left: auto;
-  margin-right: 25px;
+  margin-right: auto;
+  margin-left: 25px;
 }
 
 div.js-wave .dot {
@@ -348,7 +348,7 @@ div.js-wave .dot {
   height: 12px;
   border-radius: 50%;
   margin-right: 3px;
-  background: var(--seraph);
+  background: rgba(var(--zephyr), .4);
   animation: wave 1.3s linear infinite;
 }
 
