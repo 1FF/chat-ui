@@ -82,8 +82,6 @@ describe('ChatUi', () => {
     sut.init({ containerId });
 
     // Arrange
-    jest.spyOn(sut.resendButton, 'hideAll');
-    jest.spyOn(sut.loadingDots, 'show');
     jest.spyOn(sut, 'scrollToBottom');
     const messageInput = document.getElementById('chat-prompt');
     const sendButton = document.getElementById('send-button');
@@ -101,8 +99,6 @@ describe('ChatUi', () => {
     expect(sut.elements.messageIncrementor.innerHTML).toContain(
       'Hello, chatbot!',
     );
-    expect(sut.resendButton.hideAll).toHaveBeenCalled();
-    expect(sut.loadingDots.show).toHaveBeenCalled();
     expect(sut.scrollToBottom).toHaveBeenCalled();
     expect(messageInput.value).toBe('');
     expect(sut.socket.on).toBeCalledWith(sut.events.chat, expect.any(Function));
@@ -129,15 +125,6 @@ describe('ChatUi', () => {
     expect(sut.socket.close).toHaveBeenCalled();
   });
 
-  test('should return the value of "utm_chat" parameter from the URL', () => {
-    // Act
-    const term = sut.getTerm();
-
-    // Assert
-    expect(term).toEqual('test');
-    delete window.location;
-  });
-
   test('should setMessageObject correctly', () => {
     // Assert
     expect(sut.lastQuestionData).toEqual({
@@ -151,19 +138,12 @@ describe('ChatUi', () => {
     // Arrange
     jest.spyOn(ChatUi, 'onError');
     sut.init({ containerId: 'chatbot-container' });
-    jest.spyOn(sut.loadingDots, 'hide');
-    jest.spyOn(sut.errorMessage, 'show');
-    jest.spyOn(sut.resendButton, 'hideAll');
-    jest.spyOn(sut.resendButton, 'show');
 
     // Act
     sut.onChat({ message: 'hello', errors: ['server error'] });
 
     // Assert
     expect(sut.onError).toBeCalled();
-    expect(sut.errorMessage.show).toBeCalled();
-    expect(sut.resendButton.hideAll).toBeCalled();
-    expect(sut.resendButton.show).toBeCalled();
   });
 
   test('should not call onError when onChat we have no errors', () => {

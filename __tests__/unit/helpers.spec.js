@@ -1,4 +1,8 @@
-import { constructLink, replaceLinksWithAnchors } from '../../src/lib/helpers';
+import {
+  constructLink, replaceLinksWithAnchors, extractStringWithBrackets,
+  getAnswerConfig,
+  getTerm
+} from '../../src/lib/helpers';
 
 describe('extractLink', () => {
   const link =
@@ -36,8 +40,8 @@ describe('extractLink', () => {
     // Act
     const result = constructLink(
       'global https://' +
-        link +
-        ' you can visit this website for further assistance',
+      link +
+      ' you can visit this website for further assistance',
     );
     const expected = 'https://' + link;
 
@@ -49,8 +53,8 @@ describe('extractLink', () => {
     // Act
     const result = constructLink(
       'global https:// some https inserted before link ' +
-        link +
-        ' you can visit this website for further assistance',
+      link +
+      ' you can visit this website for further assistance',
     );
 
     // Assert
@@ -181,5 +185,94 @@ describe('replaceLinksWithAnchors', () => {
     expect(result).toContain(
       '<a class="underline" href="www.example3.com">www.example3.com</a>',
     );
+  });
+});
+
+describe('extractStringWithBrackets', () => {
+  test('should extract string with brackets from the message', () => {
+    const message = 'Hello [World]!';
+    const expected = {
+      extractedString: 'World',
+      updatedMessage: 'Hello !'
+    };
+    const result = extractStringWithBrackets(message);
+    expect(result).toEqual(expected);
+  });
+
+  test('should handle multiple brackets in the message', () => {
+    const message = 'Hello [World]! [How] are [you]?';
+    const expected = {
+      extractedString: 'World',
+      updatedMessage: 'Hello ! [How] are [you]?'
+    };
+    const result = extractStringWithBrackets(message);
+    expect(result).toEqual(expected);
+  });
+
+  test('should return original message if no brackets are found', () => {
+    const message = 'Hello World!';
+    const expected = {
+      extractedString: '',
+      updatedMessage: 'Hello World!'
+    };
+    const result = extractStringWithBrackets(message);
+    expect(result).toEqual(expected);
+  });
+});
+
+describe('getAnswerConfig', () => {
+  test('should return answer config with singleChoice type', () => {
+    const output = 'Option 1 | Option 2 | Option 3';
+    const expected = {
+      answersType: 'singleChoice',
+      list: [
+        { content: 'Option 1' },
+        { content: 'Option 2' },
+        { content: 'Option 3' }
+      ]
+    };
+    const result = getAnswerConfig(output);
+    expect(result).toEqual(expected);
+  });
+
+  test('should handle trimmed options with empty content', () => {
+    const output = '   Option 1   |   Option 2   |   Option 3   ';
+    const expected = {
+      answersType: 'singleChoice',
+      list: [
+        { content: 'Option 1' },
+        { content: 'Option 2' },
+        { content: 'Option 3' }
+      ]
+    };
+    const result = getAnswerConfig(output);
+    expect(result).toEqual(expected);
+  });
+});
+
+describe('getTerm', () => {
+  test('should retrieve the value of the utm_chat parameter', () => {
+    // Mocking the URLSearchParams
+    global.URLSearchParams = jest.fn(() => ({
+      get: jest.fn(param => {
+        if (param === 'utm_chat') {
+          return 'example-value';
+        }
+        return null;
+      })
+    }));
+
+    const result = getTerm();
+    expect(result).toBe('example-value');
+  });
+
+  test('should return null if utm_chat parameter is not present', () => {
+    // Mocking the URLSearchParams
+    global.URLSearchParams = jest.fn(() => ({
+      get: jest.fn(() => null)
+    }));
+
+    const result = getTerm();
+    expect(result).toBeNull();
   });
 });
