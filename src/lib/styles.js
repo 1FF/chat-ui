@@ -207,6 +207,7 @@ img {
 
 .answers-container {
   margin-top: 30px;
+  color: var(--glaze-text);
 }
 
 .answers-container div{
