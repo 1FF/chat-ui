@@ -6,6 +6,7 @@ export const theme = {
   // '--zephyr': '255, 255, 255',
   // '--enigma': '#FFAE19',
   // '--glaze': '#B3BAC6',
+  // '--glaze-text': '#151226',
   // '--glaze-bg': '#B3BAC6',
   // or
   '--lumina': '#f0f2f5',
@@ -15,5 +16,6 @@ export const theme = {
   '--zephyr': '43, 49, 57',
   '--enigma': '#FFAE19',
   '--glaze': '#21bb5a',
+  '--glaze-text': '#151226',
   '--glaze-bg': '#ffff',
 };
