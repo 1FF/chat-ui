@@ -37,12 +37,12 @@ const ChatUi = {
   url: null,
   initialHeight: null,
   containerId: 'chatbot-container',
-  isTyping: false,
   typingEvents: [],
   timeStart: null,
   timerId: null,
   lastReceivedMessage: null,
   currentMessages: [],
+  typingTimerIds: [],
   lastQuestionData: {
     term: '',
     user_id: '',
@@ -101,7 +101,7 @@ const ChatUi = {
     this.lastQuestionData.term = getTerm();
     this.lastQuestionData.user_id = getUserId();
   }
-,
+  ,
   /**
    * Handles the response from the server containing the chat history.
    * Prepends the initial assistant message to the history.
@@ -371,13 +371,13 @@ const ChatUi = {
     }, 1500);
   },
   /**
-   * Sends a user message by extracting the content from the message input,
-   * adding the message to the socketData, updating the UI, and emitting the chat event.
+   * adds new message to currentMessages, clears the input field and visualizes it
    *
    * @returns {void}
    */
-  sendMessage() {
+  addNewMessage() {
     const content = this.elements.messageInput.value.trim();
+    this.typingHandler();
 
     if (content === '') {
       return;
@@ -385,7 +385,6 @@ const ChatUi = {
 
     const data = { role: roles.user, content, time: new Date().toISOString() };
     this.currentMessages.push(content);
-    this.typingHandler();
 
     this.appendHtml(data);
     this.elements.messageInput.value = '';
@@ -466,7 +465,7 @@ const ChatUi = {
     );
     this.elements.sendButton.addEventListener(
       'click',
-      this.sendMessage.bind(this),
+      this.addNewMessage.bind(this),
     );
     this.elements.ctaButton.addEventListener(
       'click',
@@ -485,18 +484,17 @@ const ChatUi = {
   onKeyDown(event) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      this.sendMessage();
-      return;
+      this.addNewMessage();
     }
+    this.typingHandler();
   },
   typingHandler() {
-    this.isTyping = true;
-    setTimeout(() => {
-      if (this.isTyping) {
-        this.isTyping = false;
-        this.socketEmitChat();
-      }
-    }, 2000);
+    const timerId = setTimeout(() => {
+      this.socketEmitChat();
+    }, 3000);
+
+    this.typingTimerIds.forEach(t => clearTimeout(t));
+    this.typingTimerIds.push(timerId);
   },
   getLastMessageData() {
     this.lastQuestionData.message =
