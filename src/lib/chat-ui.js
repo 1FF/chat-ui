@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { chatMarkup, timeMarkup, rolesHTML } from './chat-widgets';
+import { chatMarkup, timeMarkup, rolesHTML, initiatorProfile } from './chat-widgets';
 import { styles } from './styles';
 import { assistant } from './config/assistant';
 import { events } from './config/events';
@@ -126,7 +126,7 @@ const ChatUi = {
     }
 
     if (res.history.length + 1 > visualizedHistory) {
-      this.elements.messageIncrementor.innerHTML = '';
+      this.messages.clear();
       res.history.unshift(this.assistant.initialMessage);
       res.history.forEach(data => this.appendHtml(data));
       if (res.errors.length) {
@@ -233,7 +233,6 @@ const ChatUi = {
       if (i < updatedMessage.length) {
         lastMessageElement.innerHTML += updatedMessage.charAt(i);
         lastMessageElement.addClass('cursor');
-        state.scrollToBottom();
         const timerId = setTimeout(typeWriter, 50);
         state.typingEvents[0].timerIds.push(timerId);
         i++;
@@ -268,7 +267,6 @@ const ChatUi = {
       answersContainer.appendChild(optionElement);
     });
     element.appendChild(answersContainer);
-    this.scrollToBottom();
   },
   resetPreviousTyping() {
     if (this.typingEvents.length === 2) {
@@ -320,6 +318,7 @@ const ChatUi = {
     this.mainContainer.innerHTML += chatMarkup(this);
     this.mainContainer.appendChild(style);
     this.setElements();
+    this.elements.messageIncrementor.appendChild(initiatorProfile(this));
     scroll.remove();
     this.attachListeners();
     initializeAddClassMethod();
@@ -345,11 +344,6 @@ const ChatUi = {
     const { time, role, content } = data;
     this.elements.messageIncrementor.appendChild(timeMarkup(time));
     this.elements.messageIncrementor.appendChild(rolesHTML[role](content));
-    this.scrollToBottom();
-  },
-  scrollToBottom() {
-    const scrollContainer = this.elements.messageIncrementor.parentElement;
-    scrollContainer.scrollTop = scrollContainer.scrollHeight;
   },
   /**
    * Loads and displays existing messages from localStorage.
@@ -410,7 +404,6 @@ const ChatUi = {
         this.onError();
       }, 2000);
     }
-    this.scrollToBottom();
   },
   /**
    * Handles the error event by updating the last user message element to allow resending the message.
@@ -459,21 +452,10 @@ const ChatUi = {
    * @returns {void}
    */
   attachListeners() {
-    this.elements.closeButton?.addEventListener(
-      'click',
-      this.closeWidget.bind(this),
-    );
-    this.elements.sendButton.addEventListener(
-      'click',
-      this.addNewMessage.bind(this),
-    );
-    this.elements.ctaButton.addEventListener(
-      'click',
-      this.closeWidget.bind(this),
-    );
-    this.elements.messageInput.addEventListener('keydown', event =>
-      this.onKeyDown(event),
-    );
+    this.elements.closeButton?.addEventListener('click', this.closeWidget.bind(this));
+    this.elements.sendButton.addEventListener('click', this.addNewMessage.bind(this));
+    this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
+    this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
   },
   /**
    * Handles the keydown event and sends a message when the Enter key is pressed.
@@ -500,6 +482,12 @@ const ChatUi = {
     this.lastQuestionData.message =
       this.currentMessages.join('\n') || this.lastReceivedMessage || this.getLastMessageElement('.user').innerText;
     return this.lastQuestionData;
+  },
+  messages: {
+    clear: () => {
+      const messages = [...document.querySelectorAll('.assistant'), ...document.querySelectorAll('.date-formatted'), ...document.querySelectorAll('.user')];
+      messages.forEach(m => m.remove);
+    }
   }
 };
 

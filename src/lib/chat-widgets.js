@@ -17,17 +17,7 @@ export const chatMarkup = config => `<div class="chat-widget">
     </div>
   </div>
   <div class="chat-widget__messages" id="scroll-incrementor">
-  <div class="chat-widget__initiator-profile">
-  <span class="assistant-welcome">${config.assistant.welcome}</span>
-  <span class="img">
-  <img src="${config.assistant.image}" alt="image">
-  </span>
-  <span class="w-start-profile">
-  <div class="w-name">${config.assistant.name}</div>
-  <div class="w-role">${config.assistant.role}</div>
-  </span>
-  </div>
-  <div class="chat-widget__messages-container" id="message-incrementor"></div>
+    <div class="chat-widget__messages-container" id="message-incrementor"></div>
   </div>
   <a class="chat-widget__cta hidden" id="cta-button">${config.assistant.ctaTextContent}</a>
   <div>
@@ -45,6 +35,20 @@ export const chatMarkup = config => `<div class="chat-widget">
     </div>
   </div>
 </div>`;
+
+export const initiatorProfile = (config) => {
+  const initiatorContainer = document.createElement('div');
+  initiatorContainer.className = "chat-widget__initiator-profile";
+  initiatorContainer.innerHTML = `<span class="assistant-welcome">${config.assistant.welcome}</span>
+  <span class="img">
+  <img src="${config.assistant.image}" alt="image">
+  </span>
+  <span class="w-start-profile">
+  <div class="w-name">${config.assistant.name}</div>
+  <div class="w-role">${config.assistant.role}</div>
+  </span>`;
+  return initiatorContainer;
+};
 
 const closeButton = `<div class="chat-widget__close" id="close-widget">
   <svg height="24px" viewBox="0 0 24 24" width="24px">

@@ -228,6 +228,13 @@ img {
   font-weight: 600;
   line-height: 1.5;
   overflow-y: scroll;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.chat-widget__messages-container {
+  margin-top: 0;
+  margin-bottom: auto;
 }
 
 .chat-widget__initiator-profile {
