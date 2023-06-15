@@ -100,8 +100,7 @@ const ChatUi = {
   setMessageObject() {
     this.lastQuestionData.term = getTerm();
     this.lastQuestionData.user_id = getUserId();
-  }
-  ,
+  },
   /**
    * Handles the response from the server containing the chat history.
    * Prepends the initial assistant message to the history.
@@ -187,7 +186,7 @@ const ChatUi = {
    * Handles the chat response received from the server.
    * It checks for errors in the response and triggers an error state if any errors are present.
    * It extracts the last message from the response, along with a link if present.
-   * After a delay, it removes the wave element, performs necessary UI updates, and sets the link if available.
+   * it removes the wave element, performs necessary UI updates, and sets the link if available.
    *
    * @param {Object} res - The chat response object containing messages and errors.
    * @returns {void}
@@ -242,6 +241,10 @@ const ChatUi = {
         lastMessageElement.innerHTML = replaceLinksWithAnchors(updatedMessage);
         lastMessageElement.classList.remove('cursor');
         extractedString && state.addOptions(lastMessageElement, extractedString);
+        if (!extractedString) {
+          input.show(state);
+          input.focus(state);
+        }
       }
     }
 
@@ -252,7 +255,6 @@ const ChatUi = {
     const data = { role: roles.user, content: e.target.textContent, time: new Date().toISOString() };
     this.socket.emit(events.chat, this.lastQuestionData);
     this.appendHtml(data);
-    input.show(this);
     e.target.parentElement.remove();
   },
   addOptions(element, extractedString) {
