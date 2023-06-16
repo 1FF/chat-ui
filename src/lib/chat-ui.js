@@ -121,7 +121,7 @@ const ChatUi = {
       this.onError()
       return;
     }
-    
+
     const visualizedHistory =
       document.querySelectorAll('#message-incrementor .user').length +
       document.querySelectorAll('#message-incrementor .assistant').length;
@@ -167,6 +167,34 @@ const ChatUi = {
     this.socket.on(this.events.disconnect, this.onDisconnect.bind(this));
     this.socket.on(this.events.chat, this.onChat.bind(this));
     this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
+
+    this.socket.on('streamStart', () => {
+      loadingDots.hide();
+      this.elements.messageIncrementor.appendChild(rolesHTML['assistant'](''));
+    })
+
+    // Listen for the 'stream' event from the server
+    this.socket.on('stream', (data) => {
+      // Handle the received data
+      console.log('Received stream data:', data);
+      const lastMessageElement = this.getLastMessageElement('.assistant');
+      lastMessageElement.innerHTML += data.chunk;
+      lastMessageElement.addClass('cursor');
+      // You can perform any desired operations with the received data here
+    });
+
+    // Listen for the 'streamEnd' event from the server
+    this.socket.on('streamEnd', () => {
+      // Handle the end of the stream
+      const lastMessageElement = this.getLastMessageElement('.assistant');
+      lastMessageElement.classList.remove('cursor');
+      console.log('Stream ended');
+    });
+
+    // Optionally, handle any errors from the server
+    this.socket.on('error', (error) => {
+      console.error('Socket error:', error);
+    });
 
     // TODO do something on server error
     // this.socket.on("error", (reason) => {});
@@ -220,50 +248,47 @@ const ChatUi = {
     const lastMessage = messages[messages.length - 1];
     this.link = constructLink(answer);
     loadingDots.hide();
-    this.type(lastMessage);
+    // this.type(lastMessage);
 
     if (this.link) {
       this.setCtaButton();
     }
   },
-  type(data) {
-    const state = this;
-    const { time, role, content } = data;
-    const { extractedString, updatedMessage } = extractStringWithBrackets(content);
-    this.elements.messageIncrementor.appendChild(timeMarkup(time));
-    this.elements.messageIncrementor.appendChild(rolesHTML[role](''));
-    const lastMessageElement = this.getLastMessageElement('.assistant');
-    let i = 0;
-    this.typingEvents.push({
-      content: updatedMessage,
-      timerIds: [],
-      element: lastMessageElement,
-    });
-    this.resetPreviousTyping();
-    extractedString && input.hide(this);
+  // type(data) {
+  //   const state = this;
+  //   const { time, role, content } = data;
+  //   const { extractedString, updatedMessage } = extractStringWithBrackets(content);
+  //   this.elements.messageIncrementor.appendChild(timeMarkup(time));
+  //   this.elements.messageIncrementor.appendChild(rolesHTML[role](''));
+  //   const lastMessageElement = this.getLastMessageElement('.assistant');
+  //   let i = 0;
+  //   this.typingEvents.push({
+  //     content: updatedMessage,
+  //     timerIds: [],
+  //     element: lastMessageElement,
+  //   });
+  //   this.resetPreviousTyping();
+  //   extractedString && input.hide(this);
 
-    function typeWriter() {
-      if (i < updatedMessage.length) {
-        lastMessageElement.innerHTML += updatedMessage.charAt(i);
-        lastMessageElement.addClass('cursor');
-        const timerId = setTimeout(typeWriter, 50);
-        state.typingEvents[0].timerIds.push(timerId);
-        i++;
-      }
+  //   function typeWriter() {
+  //     if (i < updatedMessage.length) {
+  //       lastMessageElement.innerHTML += updatedMessage.charAt(i);
+  //       lastMessageElement.addClass('cursor');
+  //       state.scrollToBottom();
+  //       const timerId = setTimeout(typeWriter, 50);
+  //       state.typingEvents[0].timerIds.push(timerId);
+  //       i++;
+  //     }
 
-      if (i === updatedMessage.length) {
-        lastMessageElement.innerHTML = replaceLinksWithAnchors(updatedMessage);
-        lastMessageElement.classList.remove('cursor');
-        extractedString && state.addOptions(lastMessageElement, extractedString);
-        if (!extractedString && !state.link) {
-          input.show(state);
-          input.focus(state);
-        }
-      }
-    }
+    //   if (i === updatedMessage.length) {
+    //     lastMessageElement.innerHTML = replaceLinksWithAnchors(updatedMessage);
+    //     lastMessageElement.classList.remove('cursor');
+    //     extractedString && state.addOptions(lastMessageElement, extractedString);
+    //   }
+    // }
 
-    typeWriter();
-  },
+  //   typeWriter();
+  // },
   singleChoice(e) {
     this.lastQuestionData.message = e.target.textContent;
     const data = { role: roles.user, content: e.target.textContent, time: new Date().toISOString() };
@@ -273,7 +298,7 @@ const ChatUi = {
     e.target.parentElement.remove();
   },
   addOptions(element, extractedString) {
-    // set the listed answers inside the container    
+    // set the listed answers inside the container
     const answerConfig = getAnswerConfig(extractedString);
     const answersContainer = document.createElement('div');
     answersContainer.classList.add('answers-container');
