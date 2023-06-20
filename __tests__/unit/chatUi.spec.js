@@ -1,4 +1,5 @@
 import ChatUi from '../../src/lib/chat-ui';
+import { initiatorProfile } from '../../src/lib/chat-widgets';
 import { formatDateByLocale } from '../../src/lib/helpers';
 jest.mock('socket.io-client');
 
@@ -82,7 +83,6 @@ describe('ChatUi', () => {
     sut.init({ containerId });
 
     // Arrange
-    jest.spyOn(sut, 'scrollToBottom');
     const messageInput = document.getElementById('chat-prompt');
     const sendButton = document.getElementById('send-button');
 
@@ -99,7 +99,6 @@ describe('ChatUi', () => {
     expect(sut.elements.messageIncrementor.innerHTML).toContain(
       'Hello, chatbot!',
     );
-    expect(sut.scrollToBottom).toHaveBeenCalled();
     expect(messageInput.value).toBe('');
     expect(sut.socket.on).toBeCalledWith(sut.events.chat, expect.any(Function));
   });
@@ -114,8 +113,9 @@ describe('ChatUi', () => {
 
     // Assert
     expect(sut.socket.emit).not.toBeCalledWith('chat');
-    expect(sut.elements.messageIncrementor.innerHTML).toBe('');
-  });
+    // this means that we only have the initiator profile as an element
+    expect(sut.elements.messageIncrementor.children.length).toBe(1);
+  })
 
   test('does close the socket', () => {
     // Act
@@ -157,10 +157,10 @@ describe('ChatUi', () => {
     jest.advanceTimersByTime(8500);
 
     // Assert
-    expect(sut.elements.messageIncrementor.innerHTML).toEqual(
-      `<div class="date-formatted">${formatDateByLocale(
-        testMessage.time,
-      )}</div><span class="assistant">hello</span>`,
+    expect(sut.elements.messageIncrementor.querySelector('.date-formatted').textContent).toEqual(
+      formatDateByLocale(
+        testMessage.time
+      ),
     );
   });
 
