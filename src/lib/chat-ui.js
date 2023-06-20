@@ -114,6 +114,7 @@ const ChatUi = {
   onChatHistory(res) {
     console.log('onChatHistory: ', res);
     errorMessage.hide();
+    loadingDots.hide()
     localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
     const visualizedHistory =
       document.querySelectorAll('#message-incrementor .user').length +
