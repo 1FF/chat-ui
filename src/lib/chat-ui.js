@@ -388,6 +388,7 @@ const ChatUi = {
   addNewMessage() {
     const content = this.elements.messageInput.value.trim();
     this.typingHandler();
+    input.focus(this);
 
     if (content === '') {
       return;
