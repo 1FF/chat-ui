@@ -35,13 +35,12 @@ const ChatUi = {
   userId: null,
   term: null,
   url: null,
+  link: null,
   initialHeight: null,
   containerId: 'chatbot-container',
   typingEvents: [],
   timeStart: null,
   timerId: null,
-  lastReceivedMessage: null,
-  currentMessages: [],
   typingTimerIds: [],
   lastQuestionData: {
     term: '',
@@ -115,7 +114,8 @@ const ChatUi = {
     console.log('onChatHistory: ', res);
     errorMessage.hide();
     loadingDots.hide()
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(res.history));
+    this.refreshLocalStorageHistory(res.history);
+
     const visualizedHistory =
       document.querySelectorAll('#message-incrementor .user').length +
       document.querySelectorAll('#message-incrementor .assistant').length;
@@ -127,14 +127,22 @@ const ChatUi = {
 
     if (res.history.length + 1 > visualizedHistory) {
       this.messages.clear();
+      input.show(this);
       res.history.unshift(this.assistant.initialMessage);
       res.history.forEach(data => this.appendHtml(data));
       if (res.errors.length) {
-        const lastUserMessage = res.history.pop();
-        this.lastReceivedMessage = lastUserMessage.role === 'user' ? lastUserMessage.content : null;
+        this.lastQuestionData.message = this.getLastUserMessage();
         this.onError()
       }
     }
+  },
+  getLastUserMessage() {
+    console.log(localStorage.getItem(STORAGE_KEY));
+    const messages = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const messageFound = messages.reverse().find(message => message.role === roles.user);
+    const lastMessage = messageFound ? messageFound.content : '';
+
+    return lastMessage;
   },
   /**
    * Closes the socket connection if it is open.
@@ -183,6 +191,9 @@ const ChatUi = {
   onDisconnect() {
     console.log(`Disconnected from ${this.url}`);
   },
+  refreshLocalStorageHistory(history) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  },
   /**
    * Handles the chat response received from the server.
    * It checks for errors in the response and triggers an error state if any errors are present.
@@ -195,22 +206,23 @@ const ChatUi = {
   onChat(res) {
     console.log('onChat: ', res);
 
-    const { messages, errors } = res;
+    const { answer, messages, errors } = res;
+    this.refreshLocalStorageHistory(messages);
 
     if (errors && errors.length) {
+      this.lastQuestionData.message = this.getLastUserMessage();
       this.onError();
       return;
     }
 
     errorMessage.hide();
     const lastMessage = messages[messages.length - 1];
-    this.lastReceivedMessage = lastMessage.role === 'user' ? lastMessage : null;
-    const link = constructLink(lastMessage.content);
+    this.link = constructLink(answer);
     loadingDots.hide();
     this.type(lastMessage);
 
-    if (link) {
-      this.setCtaButton(link);
+    if (this.link) {
+      this.setCtaButton();
     }
   },
   type(data) {
@@ -242,7 +254,7 @@ const ChatUi = {
         lastMessageElement.innerHTML = replaceLinksWithAnchors(updatedMessage);
         lastMessageElement.classList.remove('cursor');
         extractedString && state.addOptions(lastMessageElement, extractedString);
-        if (!extractedString) {
+        if (!extractedString && !state.link) {
           input.show(state);
           input.focus(state);
         }
@@ -255,6 +267,7 @@ const ChatUi = {
     this.lastQuestionData.message = e.target.textContent;
     const data = { role: roles.user, content: e.target.textContent, time: new Date().toISOString() };
     this.socket.emit(events.chat, this.lastQuestionData);
+    this.lastQuestionData.message = '';
     this.appendHtml(data);
     e.target.parentElement.remove();
   },
@@ -290,9 +303,9 @@ const ChatUi = {
    * @param {string} link - The link to be set.
    * @returns {void}
    */
-  setCtaButton(link) {
+  setCtaButton() {
     this.elements.ctaButton.classList.remove('hidden');
-    this.elements.ctaButton.setAttribute('href', link);
+    this.elements.ctaButton.setAttribute('href', this.link);
     this.elements.promptContainer.classList.add('hidden');
     this.elements.messageInput.disabled = true;
   },
@@ -368,7 +381,7 @@ const ChatUi = {
     }, 1500);
   },
   /**
-   * adds new message to currentMessages, clears the input field and visualizes it
+   * adds new message to lastQuestionData.message, clears the input field and visualizes it
    *
    * @returns {void}
    */
@@ -381,7 +394,9 @@ const ChatUi = {
     }
 
     const data = { role: roles.user, content, time: new Date().toISOString() };
-    this.currentMessages.push(content);
+    const lastMessages = this.lastQuestionData.message ? this.lastQuestionData.message.split('\n') : [];
+    lastMessages.push(content);
+    this.lastQuestionData.message = lastMessages.join('\n');
 
     this.appendHtml(data);
     this.elements.messageInput.value = '';
@@ -396,16 +411,17 @@ const ChatUi = {
   socketEmitChat() {
     resendButton.hideAll();
     errorMessage.hide();
-    const data = this.getLastMessageData();
-    console.log('Emit chat:', data);
-    if (this.socket.connected && data.message) {
-      this.socket.emit(this.events.chat, data);
-      this.currentMessages = [];
-      loadingDots.show();
-    } else {
-      setTimeout(() => {
-        this.onError();
-      }, 2000);
+    if (this.lastQuestionData.message) {
+      if (this.socket.connected) {
+        this.socket.emit(this.events.chat, this.lastQuestionData);
+        console.log('Emit chat: ', this.lastQuestionData);
+        this.lastQuestionData.message = '';
+        loadingDots.show();
+      } else {
+        setTimeout(() => {
+          this.onError();
+        }, 2000);
+      }
     }
   },
   /**
@@ -420,6 +436,7 @@ const ChatUi = {
     errorMessage.show();
     resendButton.hideAll();
     resendButton.show(this);
+    this.lastQuestionData.message = this.getLastUserMessage();
   },
   /**
    * Retrieves the last user message element from the message incrementor.
@@ -459,6 +476,12 @@ const ChatUi = {
     this.elements.sendButton.addEventListener('click', this.addNewMessage.bind(this));
     this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
     this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
+    window.onresize = this.onResize;
+  },
+  onResize() {
+    const element = document.querySelector('.chat-widget');
+    const windowHeight = window.innerHeight;
+    element.style.height = windowHeight + 'px';
   },
   /**
    * Handles the keydown event and sends a message when the Enter key is pressed.
@@ -480,11 +503,6 @@ const ChatUi = {
 
     this.typingTimerIds.forEach(t => clearTimeout(t));
     this.typingTimerIds.push(timerId);
-  },
-  getLastMessageData() {
-    this.lastQuestionData.message =
-      this.currentMessages.join('\n') || this.lastReceivedMessage || this.getLastMessageElement('.user').innerText;
-    return this.lastQuestionData;
   },
   messages: {
     clear: () => {

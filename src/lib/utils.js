@@ -26,7 +26,7 @@ export const resendButton = {
         .classList.remove('hidden');
       lastUserMessageElement.addEventListener(
         'click',
-        state.socketEmitChat.bind(state, state.lastQuestionData),
+        state.socketEmitChat.bind(state)
       );
     }
   },

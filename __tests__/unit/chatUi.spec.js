@@ -1,5 +1,4 @@
 import ChatUi from '../../src/lib/chat-ui';
-import { initiatorProfile } from '../../src/lib/chat-widgets';
 import { formatDateByLocale } from '../../src/lib/helpers';
 jest.mock('socket.io-client');
 
@@ -128,7 +127,7 @@ describe('ChatUi', () => {
   test('should setMessageObject correctly', () => {
     // Assert
     expect(sut.lastQuestionData).toEqual({
-      message: 'Hello, chatbot!',
+      message: '',
       term: 'test',
       user_id: 'userID',
     });
@@ -140,7 +139,7 @@ describe('ChatUi', () => {
     sut.init({ containerId: 'chatbot-container' });
 
     // Act
-    sut.onChat({ message: 'hello', errors: ['server error'] });
+    sut.onChat({ answer: 'hello', messages: [{}, {}], errors: ['server error'] });
 
     // Assert
     expect(sut.onError).toBeCalled();
@@ -152,7 +151,7 @@ describe('ChatUi', () => {
 
     // Act
     sut.init({ containerId: 'chatbot-container' });
-    sut.onChat({ messages: [testMessage], errors: [] });
+    sut.onChat({ answer: 'hello', messages: [testMessage], errors: [] });
     // advance the timer by this hardcoded value because it is the largest possible amount
     jest.advanceTimersByTime(8500);
 
@@ -170,8 +169,8 @@ describe('ChatUi', () => {
 
     // Act
     sut.init({ containerId: 'chatbot-container' });
-    sut.elements.messageIncrementor.innerHTML = `<div class="date-formatted">MAY 12, 2023, 1:30 PM</div><span class="assistant">${link}</span>`;
-    sut.setCtaButton(link);
+    sut.link = link;
+    sut.setCtaButton();
 
     // Assert
     expect(sut.elements.ctaButton.getAttribute('href')).toBe(link);

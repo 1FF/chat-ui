@@ -297,6 +297,7 @@ img {
   white-space: pre-wrap;
   text-align: left;
   font-family: inherit;
+  transform: translateZ(0);
 }
 
 .chat-widget__messages .date-formatted {
