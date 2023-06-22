@@ -82,7 +82,6 @@ describe('ChatUi', () => {
     sut.init({ containerId });
 
     // Arrange
-    jest.spyOn(sut, 'scrollToBottom');
     const messageInput = document.getElementById('chat-prompt');
     const sendButton = document.getElementById('send-button');
 
@@ -99,7 +98,6 @@ describe('ChatUi', () => {
     expect(sut.elements.messageIncrementor.innerHTML).toContain(
       'Hello, chatbot!',
     );
-    expect(sut.scrollToBottom).toHaveBeenCalled();
     expect(messageInput.value).toBe('');
     expect(sut.socket.on).toBeCalledWith(sut.events.chat, expect.any(Function));
   });
@@ -114,8 +112,9 @@ describe('ChatUi', () => {
 
     // Assert
     expect(sut.socket.emit).not.toBeCalledWith('chat');
-    expect(sut.elements.messageIncrementor.innerHTML).toBe('');
-  });
+    // this means that we only have the initiator profile as an element
+    expect(sut.elements.messageIncrementor.children.length).toBe(1);
+  })
 
   test('does close the socket', () => {
     // Act
@@ -128,7 +127,7 @@ describe('ChatUi', () => {
   test('should setMessageObject correctly', () => {
     // Assert
     expect(sut.lastQuestionData).toEqual({
-      message: 'Hello, chatbot!',
+      message: '',
       term: 'test',
       user_id: 'userID',
     });
@@ -140,7 +139,7 @@ describe('ChatUi', () => {
     sut.init({ containerId: 'chatbot-container' });
 
     // Act
-    sut.onChat({ message: 'hello', errors: ['server error'] });
+    sut.onChat({ answer: 'hello', messages: [{}, {}], errors: ['server error'] });
 
     // Assert
     expect(sut.onError).toBeCalled();
@@ -152,15 +151,15 @@ describe('ChatUi', () => {
 
     // Act
     sut.init({ containerId: 'chatbot-container' });
-    sut.onChat({ messages: [testMessage], errors: [] });
+    sut.onChat({ answer: 'hello', messages: [testMessage], errors: [] });
     // advance the timer by this hardcoded value because it is the largest possible amount
     jest.advanceTimersByTime(8500);
 
     // Assert
-    expect(sut.elements.messageIncrementor.innerHTML).toEqual(
-      `<div class="date-formatted">${formatDateByLocale(
-        testMessage.time,
-      )}</div><span class="assistant">hello</span>`,
+    expect(sut.elements.messageIncrementor.querySelector('.date-formatted').textContent).toEqual(
+      formatDateByLocale(
+        testMessage.time
+      ),
     );
   });
 
@@ -170,8 +169,8 @@ describe('ChatUi', () => {
 
     // Act
     sut.init({ containerId: 'chatbot-container' });
-    sut.elements.messageIncrementor.innerHTML = `<div class="date-formatted">MAY 12, 2023, 1:30 PM</div><span class="assistant">${link}</span>`;
-    sut.setCtaButton(link);
+    sut.link = link;
+    sut.setCtaButton();
 
     // Assert
     expect(sut.elements.ctaButton.getAttribute('href')).toBe(link);

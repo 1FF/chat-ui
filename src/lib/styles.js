@@ -210,6 +210,10 @@ img {
   color: var(--glaze-text);
 }
 
+#scroll-incrementor * {
+  transform: translateZ(0);
+}
+
 .answers-container div{
   cursor: pointer;
   text-align: center;
@@ -228,6 +232,13 @@ img {
   font-weight: 600;
   line-height: 1.5;
   overflow-y: scroll;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.chat-widget__messages-container {
+  margin-top: 0;
+  margin-bottom: auto;
 }
 
 .chat-widget__initiator-profile {
@@ -271,7 +282,7 @@ img {
   height: 20px;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) !important;
   fill: var(--seraph);
 }
 

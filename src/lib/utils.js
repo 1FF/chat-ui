@@ -26,7 +26,7 @@ export const resendButton = {
         .classList.remove('hidden');
       lastUserMessageElement.addEventListener(
         'click',
-        state.socketEmitChat.bind(state, state.lastQuestionData),
+        state.socketEmitChat.bind(state)
       );
     }
   },
@@ -47,5 +47,12 @@ export const scroll = {
 
 export const input = {
   hide: (state) => { state.elements.promptContainer.addClass('hidden') },
-  show: (state) => { state.elements.promptContainer.classList.remove('hidden') }
+  show: (state) => { state.elements.promptContainer.classList.remove('hidden') },
+  focus: (state) => {
+    // it scrolls to top 0 because we have flex-direction: column-reverse;
+    // so we can always see the last message;
+    state.elements.messageIncrementor.scrollTop = 0;
+    const inputField = state.elements.promptContainer.querySelector('input');
+    inputField.focus();
+  }
 };
