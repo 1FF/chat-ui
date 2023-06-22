@@ -282,7 +282,7 @@ img {
   height: 20px;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) !important;
   fill: var(--seraph);
 }
 

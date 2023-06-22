@@ -137,7 +137,6 @@ const ChatUi = {
     }
   },
   getLastUserMessage() {
-    console.log(localStorage.getItem(STORAGE_KEY));
     const messages = JSON.parse(localStorage.getItem(STORAGE_KEY));
     const messageFound = messages.reverse().find(message => message.role === roles.user);
     const lastMessage = messageFound ? messageFound.content : '';
