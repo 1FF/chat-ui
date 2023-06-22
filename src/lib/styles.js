@@ -210,6 +210,10 @@ img {
   color: var(--glaze-text);
 }
 
+#scroll-incrementor * {
+  transform: translateZ(0);
+}
+
 .answers-container div{
   cursor: pointer;
   text-align: center;
@@ -297,7 +301,6 @@ img {
   white-space: pre-wrap;
   text-align: left;
   font-family: inherit;
-  transform: translateZ(0);
 }
 
 .chat-widget__messages .date-formatted {
