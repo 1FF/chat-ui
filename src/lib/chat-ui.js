@@ -22,6 +22,7 @@ import { errorMessage, loadingDots, resendButton, scroll, input } from './utils'
 const STORAGE_KEY = 'history';
 const CHAT_SEEN_KEY = 'chatSeen';
 const SOCKET_IO_URL = 'http://localhost:5000';
+const UNSENT_MESSAGES_KEY = 'unsent';
 
 const ChatUi = {
   theme,
@@ -115,7 +116,12 @@ const ChatUi = {
     errorMessage.hide();
     loadingDots.hide()
     this.refreshLocalStorageHistory(res.history);
-
+    if (res.errors.length) {
+      this.lastQuestionData.message = this.getLastUserMessage();
+      this.onError()
+      return;
+    }
+    
     const visualizedHistory =
       document.querySelectorAll('#message-incrementor .user').length +
       document.querySelectorAll('#message-incrementor .assistant').length;
@@ -130,10 +136,6 @@ const ChatUi = {
       input.show(this);
       res.history.unshift(this.assistant.initialMessage);
       res.history.forEach(data => this.appendHtml(data));
-      if (res.errors.length) {
-        this.lastQuestionData.message = this.getLastUserMessage();
-        this.onError()
-      }
     }
   },
   getLastUserMessage() {
@@ -416,8 +418,10 @@ const ChatUi = {
         this.socket.emit(this.events.chat, this.lastQuestionData);
         console.log('Emit chat: ', this.lastQuestionData);
         this.lastQuestionData.message = '';
+        localStorage.removeItem(UNSENT_MESSAGES_KEY);
         loadingDots.show();
       } else {
+        localStorage.setItem(UNSENT_MESSAGES_KEY, this.lastQuestionData.message);
         setTimeout(() => {
           this.onError();
         }, 2000);
@@ -435,8 +439,8 @@ const ChatUi = {
     loadingDots.hide();
     errorMessage.show();
     resendButton.hideAll();
+    this.lastQuestionData.message = localStorage.getItem(UNSENT_MESSAGES_KEY) || this.getLastUserMessage();
     resendButton.show(this);
-    this.lastQuestionData.message = this.getLastUserMessage();
   },
   /**
    * Retrieves the last user message element from the message incrementor.
