@@ -1,5 +1,10 @@
 import { io } from 'socket.io-client';
-import { chatMarkup, timeMarkup, rolesHTML, initiatorProfile } from './chat-widgets';
+import {
+  chatMarkup,
+  initiatorProfile,
+  rolesHTML,
+  timeMarkup,
+} from './chat-widgets';
 import { styles } from './styles';
 import { assistant } from './config/assistant';
 import { events } from './config/events';
@@ -15,9 +20,14 @@ import {
   getTerm,
   getUserId,
   initializeAddClassMethod,
-  replaceLinksWithAnchors,
 } from './helpers';
-import { errorMessage, loadingDots, resendButton, scroll, input } from './utils';
+import {
+  errorMessage,
+  input,
+  loadingDots,
+  resendButton,
+  scroll,
+} from './utils';
 
 const STORAGE_KEY = 'history';
 const CHAT_SEEN_KEY = 'chatSeen';
@@ -114,11 +124,11 @@ const ChatUi = {
   onChatHistory(res) {
     console.log('onChatHistory: ', res);
     errorMessage.hide();
-    loadingDots.hide()
+    loadingDots.hide();
     this.refreshLocalStorageHistory(res.history);
     if (res.errors.length) {
       this.lastQuestionData.message = this.getLastUserMessage();
-      this.onError()
+      this.onError();
       return;
     }
 
@@ -131,16 +141,16 @@ const ChatUi = {
       return;
     }
 
-    if (res.history.length + 1 > visualizedHistory) {
-      this.messages.clear();
-      input.show(this);
-      res.history.unshift(this.assistant.initialMessage);
-      res.history.forEach(data => this.appendHtml(data));
-    }
+    this.messages.clear();
+    input.show(this);
+    res.history.unshift(this.assistant.initialMessage);
+    res.history.forEach(data => this.appendHtml(data));
   },
   getLastUserMessage() {
     const messages = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    const messageFound = messages.reverse().find(message => message.role === roles.user);
+    const messageFound = messages
+      .reverse()
+      .find(message => message.role === roles.user);
     const lastMessage = messageFound ? messageFound.content : '';
 
     return lastMessage;
@@ -168,13 +178,13 @@ const ChatUi = {
     this.socket.on(this.events.chat, this.onChat.bind(this));
     this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
 
-    this.socket.on('streamStart', () => {
+    this.socket.on('stream-start', () => {
       loadingDots.hide();
       this.elements.messageIncrementor.appendChild(rolesHTML['assistant'](''));
-    })
+    });
 
-    // Listen for the 'stream' event from the server
-    this.socket.on('stream', (data) => {
+    // Listen for the 'stream-data' event from the server
+    this.socket.on('stream-data', data => {
       // Handle the received data
       console.log('Received stream data:', data);
       const lastMessageElement = this.getLastMessageElement('.assistant');
@@ -183,8 +193,8 @@ const ChatUi = {
       // You can perform any desired operations with the received data here
     });
 
-    // Listen for the 'streamEnd' event from the server
-    this.socket.on('streamEnd', () => {
+    // Listen for the 'stream-end' event from the server
+    this.socket.on('stream-end', () => {
       // Handle the end of the stream
       const lastMessageElement = this.getLastMessageElement('.assistant');
       lastMessageElement.classList.remove('cursor');
@@ -192,7 +202,7 @@ const ChatUi = {
     });
 
     // Optionally, handle any errors from the server
-    this.socket.on('error', (error) => {
+    this.socket.on('error', error => {
       console.error('Socket error:', error);
     });
 
@@ -280,18 +290,22 @@ const ChatUi = {
   //       i++;
   //     }
 
-    //   if (i === updatedMessage.length) {
-    //     lastMessageElement.innerHTML = replaceLinksWithAnchors(updatedMessage);
-    //     lastMessageElement.classList.remove('cursor');
-    //     extractedString && state.addOptions(lastMessageElement, extractedString);
-    //   }
-    // }
+  //   if (i === updatedMessage.length) {
+  //     lastMessageElement.innerHTML = replaceLinksWithAnchors(updatedMessage);
+  //     lastMessageElement.classList.remove('cursor');
+  //     extractedString && state.addOptions(lastMessageElement, extractedString);
+  //   }
+  // }
 
   //   typeWriter();
   // },
   singleChoice(e) {
     this.lastQuestionData.message = e.target.textContent;
-    const data = { role: roles.user, content: e.target.textContent, time: new Date().toISOString() };
+    const data = {
+      role: roles.user,
+      content: e.target.textContent,
+      time: new Date().toISOString(),
+    };
     this.socket.emit(events.chat, this.lastQuestionData);
     this.lastQuestionData.message = '';
     this.appendHtml(data);
@@ -305,18 +319,13 @@ const ChatUi = {
     [...answerConfig.list].forEach(answer => {
       const optionElement = document.createElement('div');
       optionElement.textContent = answer.content;
-      optionElement.addEventListener('click', this[answerConfig.answersType].bind(this));
+      optionElement.addEventListener(
+        'click',
+        this[answerConfig.answersType].bind(this),
+      );
       answersContainer.appendChild(optionElement);
     });
     element.appendChild(answersContainer);
-  },
-  resetPreviousTyping() {
-    if (this.typingEvents.length === 2) {
-      this.typingEvents[0].timerIds.forEach(evId => clearTimeout(evId));
-      this.typingEvents[0].element.textContent = this.typingEvents[0].content;
-      this.typingEvents[0].element.classList.remove('cursor');
-      this.typingEvents = [this.typingEvents[1]];
-    }
   },
   getLastMessageElement(role) {
     return this.elements.messageIncrementor.querySelectorAll(role)[
@@ -396,7 +405,9 @@ const ChatUi = {
     loadingDots.show();
     setTimeout(() => {
       loadingDots.hide();
-      const { extractedString, updatedMessage } = extractStringWithBrackets(this.assistant.initialMessage.content);
+      const { extractedString, updatedMessage } = extractStringWithBrackets(
+        this.assistant.initialMessage.content,
+      );
       this.assistant.initialMessage.content = updatedMessage;
       this.appendHtml(this.assistant.initialMessage);
       const lastMessageElement = this.getLastMessageElement('.assistant');
@@ -421,7 +432,9 @@ const ChatUi = {
     }
 
     const data = { role: roles.user, content, time: new Date().toISOString() };
-    const lastMessages = this.lastQuestionData.message ? this.lastQuestionData.message.split('\n') : [];
+    const lastMessages = this.lastQuestionData.message
+      ? this.lastQuestionData.message.split('\n')
+      : [];
     lastMessages.push(content);
     this.lastQuestionData.message = lastMessages.join('\n');
 
@@ -446,7 +459,10 @@ const ChatUi = {
         localStorage.removeItem(UNSENT_MESSAGES_KEY);
         loadingDots.show();
       } else {
-        localStorage.setItem(UNSENT_MESSAGES_KEY, this.lastQuestionData.message);
+        localStorage.setItem(
+          UNSENT_MESSAGES_KEY,
+          this.lastQuestionData.message,
+        );
         setTimeout(() => {
           this.onError();
         }, 2000);
@@ -464,7 +480,8 @@ const ChatUi = {
     loadingDots.hide();
     errorMessage.show();
     resendButton.hideAll();
-    this.lastQuestionData.message = localStorage.getItem(UNSENT_MESSAGES_KEY) || this.getLastUserMessage();
+    this.lastQuestionData.message =
+      localStorage.getItem(UNSENT_MESSAGES_KEY) || this.getLastUserMessage();
     resendButton.show(this);
   },
   /**
@@ -501,10 +518,22 @@ const ChatUi = {
    * @returns {void}
    */
   attachListeners() {
-    this.elements.closeButton?.addEventListener('click', this.closeWidget.bind(this));
-    this.elements.sendButton.addEventListener('click', this.addNewMessage.bind(this));
-    this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
-    this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
+    this.elements.closeButton?.addEventListener(
+      'click',
+      this.closeWidget.bind(this),
+    );
+    this.elements.sendButton.addEventListener(
+      'click',
+      this.addNewMessage.bind(this),
+    );
+    this.elements.ctaButton.addEventListener(
+      'click',
+      this.closeWidget.bind(this),
+    );
+    this.elements.messageInput.addEventListener(
+      'keydown',
+      this.onKeyDown.bind(this),
+    );
     window.onresize = this.onResize;
   },
   onResize() {
@@ -535,10 +564,14 @@ const ChatUi = {
   },
   messages: {
     clear: () => {
-      const messages = [...document.querySelectorAll('.assistant'), ...document.querySelectorAll('.date-formatted'), ...document.querySelectorAll('.user')];
+      const messages = [
+        ...document.querySelectorAll('.assistant'),
+        ...document.querySelectorAll('.date-formatted'),
+        ...document.querySelectorAll('.user'),
+      ];
       messages.forEach(m => m.remove);
-    }
-  }
+    },
+  },
 };
 
 export default ChatUi;
