@@ -53,6 +53,7 @@ const ChatUi = {
   timeStart: null,
   timerId: null,
   typingTimerIds: [],
+  answersFromStream: '',
   lastQuestionData: {
     term: '',
     user_id: '',
@@ -179,27 +180,13 @@ const ChatUi = {
     this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
 
     this.socket.on('stream-start', () => {
+      console.log('stream-start');
       loadingDots.hide();
       this.elements.messageIncrementor.appendChild(rolesHTML['assistant'](''));
     });
 
-    // Listen for the 'stream-data' event from the server
-    this.socket.on('stream-data', data => {
-      // Handle the received data
-      console.log('Received stream data:', data);
-      const lastMessageElement = this.getLastMessageElement('.assistant');
-      lastMessageElement.innerHTML += data.chunk;
-      lastMessageElement.addClass('cursor');
-      // You can perform any desired operations with the received data here
-    });
-
-    // Listen for the 'stream-end' event from the server
-    this.socket.on('stream-end', () => {
-      // Handle the end of the stream
-      const lastMessageElement = this.getLastMessageElement('.assistant');
-      lastMessageElement.classList.remove('cursor');
-      console.log('Stream ended');
-    });
+    this.socket.on('stream-data', this.onStreamData.bind(this));
+    this.socket.on('stream-end', this.onStreamEnd.bind(this));
 
     // Optionally, handle any errors from the server
     this.socket.on('error', error => {
@@ -208,6 +195,33 @@ const ChatUi = {
 
     // TODO do something on server error
     // this.socket.on("error", (reason) => {});
+  },
+  onStreamData(data) {
+    // Handle the received data
+    console.log('Received stream data:', data);
+    const lastMessageElement = this.getLastMessageElement('.assistant');
+
+    if (data.chunk.includes('[')) {
+      this.answersFromStream = data.chunk;
+    };
+
+    if (this.answersFromStream) {
+      this.answersFromStream += data.chunk;
+    };
+
+    if (data.chunk.includes(']')) {
+      this.addOptions();
+    };
+
+    this.answersFromStream && (lastMessageElement.innerHTML += data.chunk)
+    lastMessageElement.addClass('cursor');
+  },
+  onStreamEnd() {
+    // Handle the end of the stream
+    const lastMessageElement = this.getLastMessageElement('.assistant');
+    lastMessageElement.classList.remove('cursor');
+
+    console.log('Stream ended');
   },
   /**
    * Handles the connect event.
@@ -255,50 +269,13 @@ const ChatUi = {
     }
 
     errorMessage.hide();
-    const lastMessage = messages[messages.length - 1];
     this.link = constructLink(answer);
     loadingDots.hide();
-    // this.type(lastMessage);
 
     if (this.link) {
       this.setCtaButton();
     }
   },
-  // type(data) {
-  //   const state = this;
-  //   const { time, role, content } = data;
-  //   const { extractedString, updatedMessage } = extractStringWithBrackets(content);
-  //   this.elements.messageIncrementor.appendChild(timeMarkup(time));
-  //   this.elements.messageIncrementor.appendChild(rolesHTML[role](''));
-  //   const lastMessageElement = this.getLastMessageElement('.assistant');
-  //   let i = 0;
-  //   this.typingEvents.push({
-  //     content: updatedMessage,
-  //     timerIds: [],
-  //     element: lastMessageElement,
-  //   });
-  //   this.resetPreviousTyping();
-  //   extractedString && input.hide(this);
-
-  //   function typeWriter() {
-  //     if (i < updatedMessage.length) {
-  //       lastMessageElement.innerHTML += updatedMessage.charAt(i);
-  //       lastMessageElement.addClass('cursor');
-  //       state.scrollToBottom();
-  //       const timerId = setTimeout(typeWriter, 50);
-  //       state.typingEvents[0].timerIds.push(timerId);
-  //       i++;
-  //     }
-
-  //   if (i === updatedMessage.length) {
-  //     lastMessageElement.innerHTML = replaceLinksWithAnchors(updatedMessage);
-  //     lastMessageElement.classList.remove('cursor');
-  //     extractedString && state.addOptions(lastMessageElement, extractedString);
-  //   }
-  // }
-
-  //   typeWriter();
-  // },
   singleChoice(e) {
     this.lastQuestionData.message = e.target.textContent;
     const data = {
@@ -311,9 +288,12 @@ const ChatUi = {
     this.appendHtml(data);
     e.target.parentElement.remove();
   },
-  addOptions(element, extractedString) {
-    // set the listed answers inside the container
-    const answerConfig = getAnswerConfig(extractedString);
+  addOptions() {
+    const element = this.getLastMessageElement('.assistant');
+    const answerConfig = getAnswerConfig(this.answersFromStream);
+
+    console.log(answerConfig, this.answersFromStream);
+
     const answersContainer = document.createElement('div');
     answersContainer.classList.add('answers-container');
     [...answerConfig.list].forEach(answer => {
@@ -325,6 +305,7 @@ const ChatUi = {
       );
       answersContainer.appendChild(optionElement);
     });
+    this.answersFromStream = '';
     element.appendChild(answersContainer);
   },
   getLastMessageElement(role) {
@@ -408,12 +389,13 @@ const ChatUi = {
       const { extractedString, updatedMessage } = extractStringWithBrackets(
         this.assistant.initialMessage.content,
       );
+      this.answersFromStream = extractedString;
       this.assistant.initialMessage.content = updatedMessage;
       this.appendHtml(this.assistant.initialMessage);
-      const lastMessageElement = this.getLastMessageElement('.assistant');
+
       if (extractedString) {
         input.hide(this);
-        this.addOptions(lastMessageElement, extractedString);
+        this.addOptions();
       }
     }, 1500);
   },
