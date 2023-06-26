@@ -199,7 +199,7 @@ const ChatUi = {
   onStreamData(data) {
     // Handle the received data
     console.log('Received stream data:', data);
-    const lastMessageElement = this.getLastMessageElement('.assistant');
+    const lastMessageElement = this.getLastMessageElement('.assistant .js-assistant-message');
 
     if (data.chunk.includes('[')) {
       this.answersFromStream = data.chunk;
@@ -209,18 +209,27 @@ const ChatUi = {
       this.answersFromStream += data.chunk;
     };
 
-    if (data.chunk.includes(']')) {
+    if (this.answersFromStream.includes(']')) {
       this.addOptions();
+      data.chunk = '';
     };
 
-    this.answersFromStream && (lastMessageElement.innerHTML += data.chunk)
+    !this.answersFromStream && (lastMessageElement.innerHTML += data.chunk);
     lastMessageElement.addClass('cursor');
   },
   onStreamEnd() {
     // Handle the end of the stream
     const lastMessageElement = this.getLastMessageElement('.assistant');
-    lastMessageElement.classList.remove('cursor');
-
+    lastMessageElement.querySelector('.js-assistant-message').classList.remove('cursor');
+    this.hasAnswers = lastMessageElement.querySelector('.answers-container');
+    
+    if (this.hasAnswers) {
+      input.hide(this);
+      return;
+    };
+    
+    input.show(this);
+    input.focus(this);
     console.log('Stream ended');
   },
   /**
