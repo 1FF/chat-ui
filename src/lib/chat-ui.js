@@ -127,16 +127,13 @@ const ChatUi = {
    */
   onChatHistory(res) {
     console.log('onChatHistory: ', res);
+    messages.clear();
     errorMessage.hide();
     loadingDots.hide();
     this.refreshLocalStorageHistory(res.history);
 
-    const visualizedHistory =
-      document.querySelectorAll('#message-incrementor .user').length +
-      document.querySelectorAll('#message-incrementor .assistant').length;
-
     // when it is a fresh user without any history
-    if (!res.history.length && !visualizedHistory) {
+    if (!res.history.length) {
       this.loadAssistantInitialMessage();
       return;
     }
@@ -154,7 +151,6 @@ const ChatUi = {
     }
   },
   loadUserHistory(history) {
-    messages.clear();
     input.show(this);
     history.unshift(this.assistant.initialMessage);
     history.forEach(data => this.appendHtml(data));
@@ -202,24 +198,24 @@ const ChatUi = {
   onStreamStart() {
     console.log('stream-start');
     loadingDots.hide();
+    this.elements.messageIncrementor.appendChild(timeMarkup(new Date().toISOString()));
     this.elements.messageIncrementor.appendChild(rolesHTML['assistant'](''));
   },
   onStreamData(data) {
     console.log('Received stream data:', data);
-    
+
     const { messages, errors } = data;
     this.refreshLocalStorageHistory(messages);
-    
+
     if (errors && errors.length) {
       this.lastQuestionData.message = this.getLastUserMessage();
       this.onError();
       return;
     }
-    
+
     const lastMessageElement = this.getLastMessageElement('.assistant .js-assistant-message');
     this.chunk = data.chunk;
-    console.log(this.elements.messageIncrementor);
-    
+
     this.processTextInCaseOfSquareBrackets(this.chunk);
 
     !this.answersFromStream && (lastMessageElement.innerHTML += this.chunk);
@@ -400,12 +396,13 @@ const ChatUi = {
       const { extractedString, updatedMessage } = extractStringWithBrackets(
         this.assistant.initialMessage.content,
       );
-      this.answersFromStream = extractedString;
-      this.assistant.initialMessage.content = updatedMessage;
-      this.appendHtml(this.assistant.initialMessage);
 
+      const data = { content: updatedMessage, ...this.assistant.initialMessage };
+      this.appendHtml(data);
+      
       if (extractedString) {
         input.hide(this);
+        this.answersFromStream = extractedString;
         this.addOptions();
       }
     }, 1500);

@@ -70,6 +70,6 @@ export const messages = {
       ...document.querySelectorAll('.date-formatted'),
       ...document.querySelectorAll('.user'),
     ];
-    messages.forEach(m => m.remove);
+    messages.forEach(m => m.remove());
   },
 };
