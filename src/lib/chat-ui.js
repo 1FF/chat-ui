@@ -34,7 +34,7 @@ import {
 const STORAGE_KEY = 'history';
 const CHAT_SEEN_KEY = 'chatSeen';
 const SOCKET_IO_URL = 'http://localhost:5000';
-const UNSENT_MESSAGES_KEY = 'unsent';
+export const UNSENT_MESSAGES_KEY = 'unsent';
 
 const ChatUi = {
   theme,
@@ -126,7 +126,7 @@ const ChatUi = {
    * @returns {void}
    */
   onChatHistory(res) {
-    console.log('onChatHistory: ', res);
+    window.debugMode && console.log('onChatHistory: ', res);
     messages.clear();
     errorMessage.hide();
     loadingDots.hide();
@@ -192,17 +192,18 @@ const ChatUi = {
     this.socket.on(this.events.streamStart, this.onStreamStart.bind(this));
     this.socket.on(this.events.streamData, this.onStreamData.bind(this));
     this.socket.on(this.events.streamEnd, this.onStreamEnd.bind(this));
+    this.socket.on(this.events.streamError, this.onStreamError.bind(this));
     // TODO do something on server error
     // this.socket.on("error", (reason) => {});
   },
   onStreamStart() {
-    console.log('stream-start');
+    window.debugMode && console.log('stream-start');
     loadingDots.hide();
     this.elements.messageIncrementor.appendChild(timeMarkup(new Date().toISOString()));
     this.elements.messageIncrementor.appendChild(rolesHTML['assistant'](''));
   },
   onStreamData(data) {
-    console.log('Received stream data:', data);
+    window.debugMode && console.log('Received stream data:', data);
 
     const { messages, errors } = data;
     this.refreshLocalStorageHistory(messages);
@@ -222,7 +223,7 @@ const ChatUi = {
     lastMessageElement.addClass('cursor');
   },
   onStreamEnd() {
-    console.log('Stream ended');
+    window.debugMode && console.log('Stream ended');
     const lastMessageElement = this.getLastMessageElement('.assistant');
     const lastMessageTextContainer = lastMessageElement.querySelector('.js-assistant-message');
 
@@ -242,6 +243,11 @@ const ChatUi = {
 
     input.show(this);
     input.focus(this);
+  },
+  onStreamError(error) {
+    window.debugMode && console.log('Stream error:', error);
+    this.lastQuestionData.message = this.getLastUserMessage();
+    this.onError();
   },
   processTextInCaseOfSquareBrackets(string) {
     if (string.includes('[')) {
@@ -264,7 +270,7 @@ const ChatUi = {
    * @returns {void}
    */
   onConnect() {
-    console.log(`Connected to ${this.url}, socket id: ${this.socket.id}`);
+    window.debugMode && console.log(`Connected to ${this.url}, socket id: ${this.socket.id}`);
 
     this.socket.emit(this.events.chatHistory, {
       user_id: this.lastQuestionData.user_id,
@@ -276,7 +282,7 @@ const ChatUi = {
    * @returns {void}
    */
   onDisconnect() {
-    console.log(`Disconnected from ${this.url}`);
+    window.debugMode && console.log(`Disconnected from ${this.url}`);
   },
   refreshLocalStorageHistory(history) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
@@ -399,7 +405,7 @@ const ChatUi = {
 
       const data = { content: updatedMessage, ...this.assistant.initialMessage };
       this.appendHtml(data);
-      
+
       if (extractedString) {
         input.hide(this);
         this.answersFromStream = extractedString;
@@ -444,7 +450,7 @@ const ChatUi = {
     if (this.lastQuestionData.message) {
       if (this.socket.connected) {
         this.socket.emit(this.events.chat, this.lastQuestionData);
-        console.log('Emit chat: ', this.lastQuestionData);
+        window.debugMode && console.log('Emit chat: ', this.lastQuestionData);
         this.lastQuestionData.message = '';
         localStorage.removeItem(UNSENT_MESSAGES_KEY);
         loadingDots.show();
@@ -466,7 +472,7 @@ const ChatUi = {
    * @returns {void}
    */
   onError() {
-    console.log('onError: ', this);
+    window.debugMode && console.log('onError: ', this);
     loadingDots.hide();
     errorMessage.show();
     resendButton.hideAll();

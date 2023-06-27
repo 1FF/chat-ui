@@ -6,4 +6,5 @@ export const events = {
     streamStart: 'stream-start',
     streamData: 'stream-data',
     streamEnd: 'stream-end',
+    streamError: 'stream-error',
 };
