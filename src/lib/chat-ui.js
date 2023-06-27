@@ -20,6 +20,7 @@ import {
   getTerm,
   getUserId,
   initializeAddClassMethod,
+  replaceLinksWithAnchors,
 } from './helpers';
 import {
   errorMessage,
@@ -27,6 +28,7 @@ import {
   loadingDots,
   resendButton,
   scroll,
+  messages
 } from './utils';
 
 const STORAGE_KEY = 'history';
@@ -54,6 +56,7 @@ const ChatUi = {
   timerId: null,
   typingTimerIds: [],
   answersFromStream: '',
+  boldedText: '',
   lastQuestionData: {
     term: '',
     user_id: '',
@@ -127,25 +130,39 @@ const ChatUi = {
     errorMessage.hide();
     loadingDots.hide();
     this.refreshLocalStorageHistory(res.history);
-    if (res.errors.length) {
-      this.lastQuestionData.message = this.getLastUserMessage();
-      this.onError();
-      return;
-    }
 
     const visualizedHistory =
       document.querySelectorAll('#message-incrementor .user').length +
       document.querySelectorAll('#message-incrementor .assistant').length;
 
+    // when it is a fresh user without any history
     if (!res.history.length && !visualizedHistory) {
-      this.loadExistingMessage();
+      this.loadAssistantInitialMessage();
       return;
     }
 
-    this.messages.clear();
+    // when it is an user with history load all its messages
+    this.loadUserHistory(res.history);
+
+    if (localStorage.getItem(UNSENT_MESSAGES_KEY)) {
+      this.appendUnsentMessage();
+    }
+
+    if (res.errors.length) {
+      this.lastQuestionData.message = this.getLastUserMessage();
+      this.onError();
+    }
+  },
+  loadUserHistory(history) {
+    messages.clear();
     input.show(this);
-    res.history.unshift(this.assistant.initialMessage);
-    res.history.forEach(data => this.appendHtml(data));
+    history.unshift(this.assistant.initialMessage);
+    history.forEach(data => this.appendHtml(data));
+  },
+  appendUnsentMessage() {
+    const data = { content: localStorage.getItem(UNSENT_MESSAGES_KEY), time: new Date().toISOString(), role: roles.user }
+    this.appendHtml(data);
+    this.onError();
   },
   getLastUserMessage() {
     const messages = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -167,8 +184,7 @@ const ChatUi = {
   /**
    * Initializes the socket connection with the server.
    * It connects to the server using the specified URL and socket options.
-   * Sets up event listeners for 'chat' and 'chatHistory' events.
-   * Emits the 'chatHistory' event to request chat history for the user.
+   * Sets up event listeners for all events defined
    *
    * @returns {void}
    */
@@ -176,61 +192,74 @@ const ChatUi = {
     this.socket = io.connect(this.url, this.socketConfig);
     this.socket.on(this.events.connect, this.onConnect.bind(this));
     this.socket.on(this.events.disconnect, this.onDisconnect.bind(this));
-    this.socket.on(this.events.chat, this.onChat.bind(this));
     this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
-
-    this.socket.on('stream-start', () => {
-      console.log('stream-start');
-      loadingDots.hide();
-      this.elements.messageIncrementor.appendChild(rolesHTML['assistant'](''));
-    });
-
-    this.socket.on('stream-data', this.onStreamData.bind(this));
-    this.socket.on('stream-end', this.onStreamEnd.bind(this));
-
-    // Optionally, handle any errors from the server
-    this.socket.on('error', error => {
-      console.error('Socket error:', error);
-    });
-
+    this.socket.on(this.events.streamStart, this.onStreamStart.bind(this));
+    this.socket.on(this.events.streamData, this.onStreamData.bind(this));
+    this.socket.on(this.events.streamEnd, this.onStreamEnd.bind(this));
     // TODO do something on server error
     // this.socket.on("error", (reason) => {});
   },
+  onStreamStart() {
+    console.log('stream-start');
+    loadingDots.hide();
+    this.elements.messageIncrementor.appendChild(rolesHTML['assistant'](''));
+  },
   onStreamData(data) {
-    // Handle the received data
     console.log('Received stream data:', data);
+    
+    const { messages, errors } = data;
+    this.refreshLocalStorageHistory(messages);
+    
+    if (errors && errors.length) {
+      this.lastQuestionData.message = this.getLastUserMessage();
+      this.onError();
+      return;
+    }
+    
     const lastMessageElement = this.getLastMessageElement('.assistant .js-assistant-message');
+    this.chunk = data.chunk;
+    console.log(this.elements.messageIncrementor);
+    
+    this.processTextInCaseOfSquareBrackets(this.chunk);
 
-    if (data.chunk.includes('[')) {
-      this.answersFromStream = data.chunk;
-    };
-
-    if (this.answersFromStream) {
-      this.answersFromStream += data.chunk;
-    };
-
-    if (this.answersFromStream.includes(']')) {
-      this.addOptions();
-      data.chunk = '';
-    };
-
-    !this.answersFromStream && (lastMessageElement.innerHTML += data.chunk);
+    !this.answersFromStream && (lastMessageElement.innerHTML += this.chunk);
     lastMessageElement.addClass('cursor');
   },
   onStreamEnd() {
-    // Handle the end of the stream
+    console.log('Stream ended');
     const lastMessageElement = this.getLastMessageElement('.assistant');
-    lastMessageElement.querySelector('.js-assistant-message').classList.remove('cursor');
+    const lastMessageTextContainer = lastMessageElement.querySelector('.js-assistant-message');
+
+    lastMessageTextContainer.classList.remove('cursor');
     this.hasAnswers = lastMessageElement.querySelector('.answers-container');
-    
+    this.link = constructLink(lastMessageTextContainer.textContent);
+    if (this.link) {
+      this.setCtaButton();
+      lastMessageTextContainer.innerHTML = replaceLinksWithAnchors(lastMessageTextContainer.textContent);
+      return;
+    }
+
     if (this.hasAnswers) {
       input.hide(this);
       return;
     };
-    
+
     input.show(this);
     input.focus(this);
-    console.log('Stream ended');
+  },
+  processTextInCaseOfSquareBrackets(string) {
+    if (string.includes('[')) {
+      this.answersFromStream = string;
+    };
+
+    if (this.answersFromStream) {
+      this.answersFromStream += string;
+    };
+
+    if (this.answersFromStream.includes(']')) {
+      this.addOptions();
+      this.chunk = '';
+    };
   },
   /**
    * Handles the connect event.
@@ -256,35 +285,6 @@ const ChatUi = {
   refreshLocalStorageHistory(history) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   },
-  /**
-   * Handles the chat response received from the server.
-   * It checks for errors in the response and triggers an error state if any errors are present.
-   * It extracts the last message from the response, along with a link if present.
-   * it removes the wave element, performs necessary UI updates, and sets the link if available.
-   *
-   * @param {Object} res - The chat response object containing messages and errors.
-   * @returns {void}
-   */
-  onChat(res) {
-    console.log('onChat: ', res);
-
-    const { answer, messages, errors } = res;
-    this.refreshLocalStorageHistory(messages);
-
-    if (errors && errors.length) {
-      this.lastQuestionData.message = this.getLastUserMessage();
-      this.onError();
-      return;
-    }
-
-    errorMessage.hide();
-    this.link = constructLink(answer);
-    loadingDots.hide();
-
-    if (this.link) {
-      this.setCtaButton();
-    }
-  },
   singleChoice(e) {
     this.lastQuestionData.message = e.target.textContent;
     const data = {
@@ -300,8 +300,6 @@ const ChatUi = {
   addOptions() {
     const element = this.getLastMessageElement('.assistant');
     const answerConfig = getAnswerConfig(this.answersFromStream);
-
-    console.log(answerConfig, this.answersFromStream);
 
     const answersContainer = document.createElement('div');
     answersContainer.classList.add('answers-container');
@@ -331,8 +329,8 @@ const ChatUi = {
   setCtaButton() {
     this.elements.ctaButton.classList.remove('hidden');
     this.elements.ctaButton.setAttribute('href', this.link);
-    this.elements.promptContainer.classList.add('hidden');
-    this.elements.messageInput.disabled = true;
+    input.hide(this);
+
   },
   /**
    * Sets custom variables and applies them to the main container element and font family.
@@ -376,7 +374,7 @@ const ChatUi = {
     };
   },
   /**
-   * Appends the HTML content to the chat message container and scrolls to the bottom.
+   * Appends the HTML content to the chat message container.
    *
    * @param {Object} data - The chat message data object.
    * @returns {void}
@@ -387,11 +385,15 @@ const ChatUi = {
     this.elements.messageIncrementor.appendChild(rolesHTML[role](content));
   },
   /**
-   * Loads and displays existing messages from localStorage.
+   * Loads initial message from the assistant object and checks if the message contains any brackets.
+   * If it does, it extracts the string between the brackets and sets the initial message to the extracted string.
+   * It also adds the options to the chat widget.
+   * If the message doesn't contain any brackets, it sets the initial message to the message content.
+   * It also hides the input field and adds the options to the chat widget.
    *
    * @returns {void}
    */
-  loadExistingMessage() {
+  loadAssistantInitialMessage() {
     loadingDots.show();
     setTimeout(() => {
       loadingDots.hide();
@@ -552,16 +554,6 @@ const ChatUi = {
 
     this.typingTimerIds.forEach(t => clearTimeout(t));
     this.typingTimerIds.push(timerId);
-  },
-  messages: {
-    clear: () => {
-      const messages = [
-        ...document.querySelectorAll('.assistant'),
-        ...document.querySelectorAll('.date-formatted'),
-        ...document.querySelectorAll('.user'),
-      ];
-      messages.forEach(m => m.remove);
-    },
   },
 };
 

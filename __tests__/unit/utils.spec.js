@@ -126,12 +126,13 @@ describe('input', () => {
 
   beforeEach(() => {
     document.body.innerHTML = `
-      <div class="prompt-container"></div>
+      <div class="prompt-container"><input type="text" id="chat-prompt" placeholder="Type your message here" value=""/></div>
     `;
     initializeAddClassMethod()
     mockState = {
       elements: {
-        promptContainer: document.querySelector('.prompt-container')
+        promptContainer: document.querySelector('.prompt-container'),
+        messageInput: document.querySelector('#chat-prompt')
       }
     };
   });
