@@ -8,6 +8,12 @@ To install 1ff-chat-ui, use the following command:
 
 `npm install 1ff-chat-ui`
 
+## **Updates**
+
+To update 1ff-chat-ui, use the following command:
+
+`npm update 1ff-chat-ui`
+
 ## **Usage**
 
 To use ChatUi in your Node.js project, follow these steps:
@@ -89,7 +95,5 @@ ChatUi provides the following methods:
 ## **Example**
 
 NOTE: everything outside of `lib` is a boilerplate example of how 1ff-chat-ui could be used in your project with an example, `index.js file and index.html` file where the index.js file is placed into a script tag;
-
-![](https://33333.cdn.cke-cs.com/kSW7V9NHUXugvhoQeFaf/images/5a4e8db41e500fad13153ba6a24967509663ff5badc56422.png)
 
 Remember to replace **SOCKET\_IO\_URL** with the actual URL of your socket server.

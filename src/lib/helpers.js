@@ -125,9 +125,10 @@ export const extractStringWithBrackets = (message) => {
 }
 
 export const getAnswerConfig = (output) => {
-  const choicesOptions = output.split('|');
+  const optionsString = output.replace(/\[|\]/g, '')
+  const choicesArray = optionsString.split('|');
   const config = { answersType: 'singleChoice', list: [] };
-  choicesOptions.forEach(option => {
+  choicesArray.forEach(option => {
     const optionConfig = { content: '' };
     optionConfig.content = option.trim();
     config.list.push(optionConfig)

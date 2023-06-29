@@ -1,5 +1,6 @@
-import ChatUi from '../../src/lib/chat-ui';
-import { formatDateByLocale } from '../../src/lib/helpers';
+import ChatUi, { UNSENT_MESSAGES_KEY } from '../../src/lib/chat-ui';
+import { roles } from '../../src/lib/config/roles';
+import { errorMessage, loadingDots, resendButton } from '../../src/lib/utils';
 jest.mock('socket.io-client');
 
 describe('ChatUi', () => {
@@ -33,6 +34,12 @@ describe('ChatUi', () => {
   });
 
   test('initializes the chatbot with default theme and container ID', () => {
+    jest.spyOn(sut, 'setConfig');
+    jest.spyOn(sut, 'setMessageObject');
+    jest.spyOn(sut, 'setCustomVars');
+    jest.spyOn(sut, 'setDomContent');
+    jest.spyOn(sut, 'setSocket');
+
     // Act
     sut.init();
 
@@ -49,6 +56,10 @@ describe('ChatUi', () => {
       }),
     );
     expect(sut.mainContainer).not.toBeEmptyDOMElement();
+    expect(sut.setConfig).toHaveBeenCalledTimes(1);
+    expect(sut.setMessageObject).toHaveBeenCalledTimes(1);
+    expect(sut.setCustomVars).toHaveBeenCalledTimes(1);
+    expect(sut.setSocket).toHaveBeenCalledTimes(1);
     expect(sut.socket).toBeDefined();
   });
 
@@ -74,7 +85,22 @@ describe('ChatUi', () => {
     expect(sut.theme).toEqual(expect.objectContaining(customTheme));
   });
 
-  test('sends an user message', () => {
+  test('should setConfig correctly and override default set ones', () => {
+    // Arrange
+    const config = { url: 'test.url', containerId: 'new-id', assistantConfig: {}, customTheme: { '--lumina': '0' }, translations: { error: 'some custom error message' }, socketConfig: { pingInterval: 0 } };
+
+    // Act
+    sut.setConfig(config);
+
+    // Assert
+    expect(sut.url).toEqual(config.url);
+    expect(sut.containerId).toEqual(config.containerId);
+    expect(sut.socketConfig.pingInterval).toEqual(config.socketConfig.pingInterval);
+    expect(sut.theme['--lumina']).toEqual(config.customTheme['--lumina']);
+    expect(sut.translations.error).toEqual(config.translations.error);
+  });
+
+  test('sends an user message after 3 seconds of not typing', () => {
     // Act
     const containerId = 'custom-container';
     document.body.innerHTML = `<div id="${containerId}"></div>`;
@@ -88,18 +114,24 @@ describe('ChatUi', () => {
     // Simulate user input and button click
     messageInput.value = 'Hello, chatbot!';
     sendButton.click();
-    jest.advanceTimersByTime(3000);
 
     // Assert
-    expect(sut.socket.emit).toHaveBeenCalledWith(
+    expect(sut.socket.emit).not.toHaveBeenCalledWith(
       sut.events.chat,
       expect.any(Object),
     );
     expect(sut.elements.messageIncrementor.innerHTML).toContain(
       'Hello, chatbot!',
     );
+
+    jest.advanceTimersByTime(3000);
+
+    expect(sut.socket.emit).toHaveBeenCalledWith(
+      sut.events.chat,
+      expect.any(Object),
+    );
+
     expect(messageInput.value).toBe('');
-    expect(sut.socket.on).toBeCalledWith(sut.events.chat, expect.any(Function));
   });
 
   test('does not send an empty user message', () => {
@@ -109,6 +141,7 @@ describe('ChatUi', () => {
     // Arrange
     const sendButton = document.getElementById('send-button');
     sendButton.click();
+    jest.advanceTimersByTime(3000);
 
     // Assert
     expect(sut.socket.emit).not.toBeCalledWith('chat');
@@ -133,34 +166,72 @@ describe('ChatUi', () => {
     });
   });
 
-  test('should call onError and all its methods when onChat we have errors', () => {
+  test('should call onError and all its methods when onStreamData we have errors', () => {
     // Arrange
     jest.spyOn(ChatUi, 'onError');
+    jest.spyOn(loadingDots, 'hide');
+    jest.spyOn(errorMessage, 'show');
+    jest.spyOn(resendButton, 'hideAll');
+    jest.spyOn(resendButton, 'show');
     sut.init({ containerId: 'chatbot-container' });
+    const unsentMessage = 'unsent message'
+    localStorage.setItem(UNSENT_MESSAGES_KEY,unsentMessage);
 
     // Act
-    sut.onChat({ answer: 'hello', messages: [{}, {}], errors: ['server error'] });
+    sut.onStreamData({ chunk: 'chunk', messages: [{}, {}], errors: ['server error'] });
 
     // Assert
     expect(sut.onError).toBeCalled();
+    expect(sut.lastQuestionData.message).toBe(unsentMessage);
+    expect(loadingDots.hide).toBeCalled();
+    expect(errorMessage.show).toBeCalled();
+    expect(resendButton.hideAll).toBeCalled();
+    expect(resendButton.show).toBeCalled();
   });
 
-  test('should not call onError when onChat we have no errors', () => {
+  test('should not call onError when onStreamData we have no errors', () => {
     // Arrange
-    jest.spyOn(sut, 'appendHtml');
+    jest.spyOn(loadingDots, 'hide');
+    jest.spyOn(errorMessage, 'hide');
+    jest.spyOn(sut, 'onError');
 
     // Act
     sut.init({ containerId: 'chatbot-container' });
-    sut.onChat({ answer: 'hello', messages: [testMessage], errors: [] });
+    sut.onStreamStart();
+    sut.onStreamData({ chunk: 'chunk', messages: [testMessage], errors: [] });
+
+    // Assert
+    expect(sut.onError).not.toBeCalled();
+    expect(loadingDots.hide).toBeCalled();
+  });
+
+  test('should set ctaButton onStreamEnd when no errors', () => {
+    // Arrange
+    jest.spyOn(sut, 'setCtaButton');
+
+    // Act
+    sut.init({ containerId: 'chatbot-container' });
+    sut.appendHtml({ time: new Date().toISOString(), content: 'https://test.com', role: roles.assistant })
+    sut.onStreamEnd();
     // advance the timer by this hardcoded value because it is the largest possible amount
     jest.advanceTimersByTime(8500);
 
     // Assert
-    expect(sut.elements.messageIncrementor.querySelector('.date-formatted').textContent).toEqual(
-      formatDateByLocale(
-        testMessage.time
-      ),
-    );
+    expect(sut.link).toBeTruthy();
+    expect(sut.setCtaButton).toBeCalled();
+  });
+
+  test('setCtaButton sets link to an element and disables the field', () => {
+    // Arrange
+    // Act
+    sut.init({ containerId: 'chatbot-container' });
+    sut.link = 'https://www.test.com';
+    sut.setCtaButton();
+    // Assert
+    expect(sut.elements.ctaButton.classList.contains('hidden')).toBe(false);
+    expect(sut.elements.promptContainer.classList.contains('hidden')).toBe(true);
+    expect(sut.elements.messageInput.disabled).toBe(true);
+    expect(sut.elements.ctaButton.getAttribute('href')).toBe(sut.link);
   });
 
   test('should setLink', () => {

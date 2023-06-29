@@ -46,8 +46,14 @@ export const scroll = {
 };
 
 export const input = {
-  hide: (state) => { state.elements.promptContainer.addClass('hidden') },
-  show: (state) => { state.elements.promptContainer.classList.remove('hidden') },
+  hide: (state) => {
+    state.elements.promptContainer.addClass('hidden');
+    state.elements.messageInput.disabled = true;
+  },
+  show: (state) => {
+    state.elements.promptContainer.classList.remove('hidden');
+    state.elements.messageInput.disabled = false;
+  },
   focus: (state) => {
     // it scrolls to top 0 because we have flex-direction: column-reverse;
     // so we can always see the last message;
@@ -55,4 +61,15 @@ export const input = {
     const inputField = state.elements.promptContainer.querySelector('input');
     inputField.focus();
   }
+};
+
+export const messages = {
+  clear: () => {
+    const messages = [
+      ...document.querySelectorAll('.assistant'),
+      ...document.querySelectorAll('.date-formatted'),
+      ...document.querySelectorAll('.user'),
+    ];
+    messages.forEach(m => m.remove());
+  },
 };

@@ -1,5 +1,10 @@
 import { io } from 'socket.io-client';
-import { chatMarkup, timeMarkup, rolesHTML, initiatorProfile } from './chat-widgets';
+import {
+  chatMarkup,
+  initiatorProfile,
+  rolesHTML,
+  timeMarkup,
+} from './chat-widgets';
 import { styles } from './styles';
 import { assistant } from './config/assistant';
 import { events } from './config/events';
@@ -17,12 +22,19 @@ import {
   initializeAddClassMethod,
   replaceLinksWithAnchors,
 } from './helpers';
-import { errorMessage, loadingDots, resendButton, scroll, input } from './utils';
+import {
+  errorMessage,
+  input,
+  loadingDots,
+  resendButton,
+  scroll,
+  messages
+} from './utils';
 
 const STORAGE_KEY = 'history';
 const CHAT_SEEN_KEY = 'chatSeen';
 const SOCKET_IO_URL = 'http://localhost:5000';
-const UNSENT_MESSAGES_KEY = 'unsent';
+export const UNSENT_MESSAGES_KEY = 'unsent';
 
 const ChatUi = {
   theme,
@@ -43,6 +55,8 @@ const ChatUi = {
   timeStart: null,
   timerId: null,
   typingTimerIds: [],
+  answersFromStream: '',
+  boldedText: '',
   lastQuestionData: {
     term: '',
     user_id: '',
@@ -112,35 +126,45 @@ const ChatUi = {
    * @returns {void}
    */
   onChatHistory(res) {
-    console.log('onChatHistory: ', res);
+    window.debugMode && console.log('onChatHistory: ', res);
+    messages.clear();
     errorMessage.hide();
-    loadingDots.hide()
+    loadingDots.hide();
     this.refreshLocalStorageHistory(res.history);
+
+    // when it is a fresh user without any history
+    if (!res.history.length) {
+      this.loadAssistantInitialMessage();
+      return;
+    }
+
+    // when it is an user with history load all its messages
+    this.loadUserHistory(res.history);
+
+    if (localStorage.getItem(UNSENT_MESSAGES_KEY)) {
+      this.appendUnsentMessage();
+    }
+
     if (res.errors.length) {
       this.lastQuestionData.message = this.getLastUserMessage();
-      this.onError()
-      return;
+      this.onError();
     }
-    
-    const visualizedHistory =
-      document.querySelectorAll('#message-incrementor .user').length +
-      document.querySelectorAll('#message-incrementor .assistant').length;
-
-    if (!res.history.length && !visualizedHistory) {
-      this.loadExistingMessage();
-      return;
-    }
-
-    if (res.history.length + 1 > visualizedHistory) {
-      this.messages.clear();
-      input.show(this);
-      res.history.unshift(this.assistant.initialMessage);
-      res.history.forEach(data => this.appendHtml(data));
-    }
+  },
+  loadUserHistory(history) {
+    input.show(this);
+    history.unshift(this.assistant.initialMessage);
+    history.forEach(data => this.appendHtml(data));
+  },
+  appendUnsentMessage() {
+    const data = { content: localStorage.getItem(UNSENT_MESSAGES_KEY), time: new Date().toISOString(), role: roles.user }
+    this.appendHtml(data);
+    this.onError();
   },
   getLastUserMessage() {
     const messages = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    const messageFound = messages.reverse().find(message => message.role === roles.user);
+    const messageFound = messages
+      .reverse()
+      .find(message => message.role === roles.user);
     const lastMessage = messageFound ? messageFound.content : '';
 
     return lastMessage;
@@ -156,8 +180,7 @@ const ChatUi = {
   /**
    * Initializes the socket connection with the server.
    * It connects to the server using the specified URL and socket options.
-   * Sets up event listeners for 'chat' and 'chatHistory' events.
-   * Emits the 'chatHistory' event to request chat history for the user.
+   * Sets up event listeners for all events defined
    *
    * @returns {void}
    */
@@ -165,11 +188,80 @@ const ChatUi = {
     this.socket = io.connect(this.url, this.socketConfig);
     this.socket.on(this.events.connect, this.onConnect.bind(this));
     this.socket.on(this.events.disconnect, this.onDisconnect.bind(this));
-    this.socket.on(this.events.chat, this.onChat.bind(this));
     this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
-
+    this.socket.on(this.events.streamStart, this.onStreamStart.bind(this));
+    this.socket.on(this.events.streamData, this.onStreamData.bind(this));
+    this.socket.on(this.events.streamEnd, this.onStreamEnd.bind(this));
+    this.socket.on(this.events.streamError, this.onStreamError.bind(this));
     // TODO do something on server error
     // this.socket.on("error", (reason) => {});
+  },
+  onStreamStart() {
+    window.debugMode && console.log('stream-start');
+    loadingDots.hide();
+    this.elements.messageIncrementor.appendChild(timeMarkup(new Date().toISOString()));
+    this.elements.messageIncrementor.appendChild(rolesHTML['assistant'](''));
+  },
+  onStreamData(data) {
+    window.debugMode && console.log('Received stream data:', data);
+
+    const { messages, errors } = data;
+    this.refreshLocalStorageHistory(messages);
+
+    if (errors && errors.length) {
+      this.lastQuestionData.message = this.getLastUserMessage();
+      this.onError();
+      return;
+    }
+
+    const lastMessageElement = this.getLastMessageElement('.assistant .js-assistant-message');
+    this.chunk = data.chunk;
+
+    this.processTextInCaseOfSquareBrackets(this.chunk);
+
+    !this.answersFromStream && (lastMessageElement.innerHTML += this.chunk);
+    lastMessageElement.addClass('cursor');
+  },
+  onStreamEnd() {
+    window.debugMode && console.log('Stream ended');
+    const lastMessageElement = this.getLastMessageElement('.assistant');
+    const lastMessageTextContainer = lastMessageElement.querySelector('.js-assistant-message');
+
+    lastMessageTextContainer.classList.remove('cursor');
+    this.hasAnswers = lastMessageElement.querySelector('.answers-container');
+    this.link = constructLink(lastMessageTextContainer.textContent);
+    if (this.link) {
+      this.setCtaButton();
+      lastMessageTextContainer.innerHTML = replaceLinksWithAnchors(lastMessageTextContainer.textContent);
+      return;
+    }
+
+    if (this.hasAnswers) {
+      input.hide(this);
+      return;
+    };
+
+    input.show(this);
+    input.focus(this);
+  },
+  onStreamError(error) {
+    window.debugMode && console.log('Stream error:', error);
+    this.lastQuestionData.message = this.getLastUserMessage();
+    this.onError();
+  },
+  processTextInCaseOfSquareBrackets(string) {
+    if (string.includes('[')) {
+      this.answersFromStream = string;
+    };
+
+    if (this.answersFromStream) {
+      this.answersFromStream += string;
+    };
+
+    if (this.answersFromStream.includes(']')) {
+      this.addOptions();
+      this.chunk = '';
+    };
   },
   /**
    * Handles the connect event.
@@ -178,7 +270,7 @@ const ChatUi = {
    * @returns {void}
    */
   onConnect() {
-    console.log(`Connected to ${this.url}, socket id: ${this.socket.id}`);
+    window.debugMode && console.log(`Connected to ${this.url}, socket id: ${this.socket.id}`);
 
     this.socket.emit(this.events.chatHistory, {
       user_id: this.lastQuestionData.user_id,
@@ -190,108 +282,40 @@ const ChatUi = {
    * @returns {void}
    */
   onDisconnect() {
-    console.log(`Disconnected from ${this.url}`);
+    window.debugMode && console.log(`Disconnected from ${this.url}`);
   },
   refreshLocalStorageHistory(history) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   },
-  /**
-   * Handles the chat response received from the server.
-   * It checks for errors in the response and triggers an error state if any errors are present.
-   * It extracts the last message from the response, along with a link if present.
-   * it removes the wave element, performs necessary UI updates, and sets the link if available.
-   *
-   * @param {Object} res - The chat response object containing messages and errors.
-   * @returns {void}
-   */
-  onChat(res) {
-    console.log('onChat: ', res);
-
-    const { answer, messages, errors } = res;
-    this.refreshLocalStorageHistory(messages);
-
-    if (errors && errors.length) {
-      this.lastQuestionData.message = this.getLastUserMessage();
-      this.onError();
-      return;
-    }
-
-    errorMessage.hide();
-    const lastMessage = messages[messages.length - 1];
-    this.link = constructLink(answer);
-    loadingDots.hide();
-    this.type(lastMessage);
-
-    if (this.link) {
-      this.setCtaButton();
-    }
-  },
-  type(data) {
-    const state = this;
-    const { time, role, content } = data;
-    const { extractedString, updatedMessage } = extractStringWithBrackets(content);
-    this.elements.messageIncrementor.appendChild(timeMarkup(time));
-    this.elements.messageIncrementor.appendChild(rolesHTML[role](''));
-    const lastMessageElement = this.getLastMessageElement('.assistant');
-    let i = 0;
-    this.typingEvents.push({
-      content: updatedMessage,
-      timerIds: [],
-      element: lastMessageElement,
-    });
-    this.resetPreviousTyping();
-    extractedString && input.hide(this);
-
-    function typeWriter() {
-      if (i < updatedMessage.length) {
-        lastMessageElement.innerHTML += updatedMessage.charAt(i);
-        lastMessageElement.addClass('cursor');
-        const timerId = setTimeout(typeWriter, 50);
-        state.typingEvents[0].timerIds.push(timerId);
-        i++;
-      }
-
-      if (i === updatedMessage.length) {
-        lastMessageElement.innerHTML = replaceLinksWithAnchors(updatedMessage);
-        lastMessageElement.classList.remove('cursor');
-        extractedString && state.addOptions(lastMessageElement, extractedString);
-        if (!extractedString && !state.link) {
-          input.show(state);
-          input.focus(state);
-        }
-      }
-    }
-
-    typeWriter();
-  },
   singleChoice(e) {
     this.lastQuestionData.message = e.target.textContent;
-    const data = { role: roles.user, content: e.target.textContent, time: new Date().toISOString() };
+    const data = {
+      role: roles.user,
+      content: e.target.textContent,
+      time: new Date().toISOString(),
+    };
     this.socket.emit(events.chat, this.lastQuestionData);
     this.lastQuestionData.message = '';
     this.appendHtml(data);
     e.target.parentElement.remove();
   },
-  addOptions(element, extractedString) {
-    // set the listed answers inside the container    
-    const answerConfig = getAnswerConfig(extractedString);
+  addOptions() {
+    const element = this.getLastMessageElement('.assistant');
+    const answerConfig = getAnswerConfig(this.answersFromStream);
+
     const answersContainer = document.createElement('div');
     answersContainer.classList.add('answers-container');
     [...answerConfig.list].forEach(answer => {
       const optionElement = document.createElement('div');
       optionElement.textContent = answer.content;
-      optionElement.addEventListener('click', this[answerConfig.answersType].bind(this));
+      optionElement.addEventListener(
+        'click',
+        this[answerConfig.answersType].bind(this),
+      );
       answersContainer.appendChild(optionElement);
     });
+    this.answersFromStream = '';
     element.appendChild(answersContainer);
-  },
-  resetPreviousTyping() {
-    if (this.typingEvents.length === 2) {
-      this.typingEvents[0].timerIds.forEach(evId => clearTimeout(evId));
-      this.typingEvents[0].element.textContent = this.typingEvents[0].content;
-      this.typingEvents[0].element.classList.remove('cursor');
-      this.typingEvents = [this.typingEvents[1]];
-    }
   },
   getLastMessageElement(role) {
     return this.elements.messageIncrementor.querySelectorAll(role)[
@@ -307,8 +331,8 @@ const ChatUi = {
   setCtaButton() {
     this.elements.ctaButton.classList.remove('hidden');
     this.elements.ctaButton.setAttribute('href', this.link);
-    this.elements.promptContainer.classList.add('hidden');
-    this.elements.messageInput.disabled = true;
+    input.hide(this);
+
   },
   /**
    * Sets custom variables and applies them to the main container element and font family.
@@ -352,7 +376,7 @@ const ChatUi = {
     };
   },
   /**
-   * Appends the HTML content to the chat message container and scrolls to the bottom.
+   * Appends the HTML content to the chat message container.
    *
    * @param {Object} data - The chat message data object.
    * @returns {void}
@@ -363,21 +387,29 @@ const ChatUi = {
     this.elements.messageIncrementor.appendChild(rolesHTML[role](content));
   },
   /**
-   * Loads and displays existing messages from localStorage.
+   * Loads initial message from the assistant object and checks if the message contains any brackets.
+   * If it does, it extracts the string between the brackets and sets the initial message to the extracted string.
+   * It also adds the options to the chat widget.
+   * If the message doesn't contain any brackets, it sets the initial message to the message content.
+   * It also hides the input field and adds the options to the chat widget.
    *
    * @returns {void}
    */
-  loadExistingMessage() {
+  loadAssistantInitialMessage() {
     loadingDots.show();
     setTimeout(() => {
       loadingDots.hide();
-      const { extractedString, updatedMessage } = extractStringWithBrackets(this.assistant.initialMessage.content);
-      this.assistant.initialMessage.content = updatedMessage;
-      this.appendHtml(this.assistant.initialMessage);
-      const lastMessageElement = this.getLastMessageElement('.assistant');
+      const { extractedString, updatedMessage } = extractStringWithBrackets(
+        this.assistant.initialMessage.content,
+      );
+
+      const data = { content: updatedMessage, ...this.assistant.initialMessage };
+      this.appendHtml(data);
+
       if (extractedString) {
         input.hide(this);
-        this.addOptions(lastMessageElement, extractedString);
+        this.answersFromStream = extractedString;
+        this.addOptions();
       }
     }, 1500);
   },
@@ -396,7 +428,9 @@ const ChatUi = {
     }
 
     const data = { role: roles.user, content, time: new Date().toISOString() };
-    const lastMessages = this.lastQuestionData.message ? this.lastQuestionData.message.split('\n') : [];
+    const lastMessages = this.lastQuestionData.message
+      ? this.lastQuestionData.message.split('\n')
+      : [];
     lastMessages.push(content);
     this.lastQuestionData.message = lastMessages.join('\n');
 
@@ -416,12 +450,15 @@ const ChatUi = {
     if (this.lastQuestionData.message) {
       if (this.socket.connected) {
         this.socket.emit(this.events.chat, this.lastQuestionData);
-        console.log('Emit chat: ', this.lastQuestionData);
+        window.debugMode && console.log('Emit chat: ', this.lastQuestionData);
         this.lastQuestionData.message = '';
         localStorage.removeItem(UNSENT_MESSAGES_KEY);
         loadingDots.show();
       } else {
-        localStorage.setItem(UNSENT_MESSAGES_KEY, this.lastQuestionData.message);
+        localStorage.setItem(
+          UNSENT_MESSAGES_KEY,
+          this.lastQuestionData.message,
+        );
         setTimeout(() => {
           this.onError();
         }, 2000);
@@ -435,11 +472,12 @@ const ChatUi = {
    * @returns {void}
    */
   onError() {
-    console.log('onError: ', this);
+    window.debugMode && console.log('onError: ', this);
     loadingDots.hide();
     errorMessage.show();
     resendButton.hideAll();
-    this.lastQuestionData.message = localStorage.getItem(UNSENT_MESSAGES_KEY) || this.getLastUserMessage();
+    this.lastQuestionData.message =
+      localStorage.getItem(UNSENT_MESSAGES_KEY) || this.getLastUserMessage();
     resendButton.show(this);
   },
   /**
@@ -476,10 +514,22 @@ const ChatUi = {
    * @returns {void}
    */
   attachListeners() {
-    this.elements.closeButton?.addEventListener('click', this.closeWidget.bind(this));
-    this.elements.sendButton.addEventListener('click', this.addNewMessage.bind(this));
-    this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
-    this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
+    this.elements.closeButton?.addEventListener(
+      'click',
+      this.closeWidget.bind(this),
+    );
+    this.elements.sendButton.addEventListener(
+      'click',
+      this.addNewMessage.bind(this),
+    );
+    this.elements.ctaButton.addEventListener(
+      'click',
+      this.closeWidget.bind(this),
+    );
+    this.elements.messageInput.addEventListener(
+      'keydown',
+      this.onKeyDown.bind(this),
+    );
     window.onresize = this.onResize;
   },
   onResize() {
@@ -508,12 +558,6 @@ const ChatUi = {
     this.typingTimerIds.forEach(t => clearTimeout(t));
     this.typingTimerIds.push(timerId);
   },
-  messages: {
-    clear: () => {
-      const messages = [...document.querySelectorAll('.assistant'), ...document.querySelectorAll('.date-formatted'), ...document.querySelectorAll('.user')];
-      messages.forEach(m => m.remove);
-    }
-  }
 };
 
 export default ChatUi;
