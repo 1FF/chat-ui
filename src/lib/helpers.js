@@ -79,7 +79,8 @@ export function constructLink(string) {
 }
 
 export function replaceLinksWithAnchors(text) {
-  const pattern = /((?:https?:\/\/|www\.)[^\s/$.?#].[^\s]*)/gi;
+  // this pattern will exclude {https://test.test.test} any of those symbols {}[]()<> at the end of the link
+  const pattern = /((?:https?:\/\/|www\.)[^\s/$.?#].[^\s{}\[\]()<>]*)/gi;
 
   const link = text.replace(pattern, match => {
     const urlWithParams = constructLink(match);
@@ -147,3 +148,14 @@ export const getTerm = () => {
 
   return urlParams.get('utm_chat');
 };
+
+/**
+ * Replaces the string in curly brackets with a string wrapped in <strong> tags.
+ *
+ * @function replaceStringInCurlyBracketsWithStrong
+ * @param {string} input - The input string to process.
+ * @returns {string} The modified string with replaced content.
+ */
+export function replaceStringInCurlyBracketsWithStrong(input) {
+  return input.replace(/\{([^}]+)\}/g, '<strong>$1</strong>');
+}

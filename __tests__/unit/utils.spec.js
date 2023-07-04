@@ -1,5 +1,7 @@
 
 import { initializeAddClassMethod } from '../../src/lib/helpers';
+import * as socketServices from '../../src/lib/socket-services';
+
 import {
   errorMessage,
   loadingDots,
@@ -57,17 +59,17 @@ describe('resendButton', () => {
     document.body.innerHTML = `
       <div class="user">
         <div class="resend-icon"></div>
+        <div class="js-error"></div>
       </div>
     `;
     initializeAddClassMethod()
   });
 
   test('show should add click event listener to last user message element', () => {
-    const mockSocketEmitChat = jest.fn();
+    jest.spyOn(socketServices, 'socketEmitChat');
     const mockLastQuestionData = {};
     const mockState = {
       getLastUserMessageElement: () => document.querySelector('.user'),
-      socketEmitChat: mockSocketEmitChat,
       lastQuestionData: mockLastQuestionData
     };
 
@@ -75,7 +77,7 @@ describe('resendButton', () => {
 
     const lastUserMessageElement = document.querySelector('.user');
     lastUserMessageElement.click();
-    expect(mockSocketEmitChat).toBeCalled();
+    expect(socketServices.socketEmitChat).toHaveBeenCalled();
   });
 
   test('hideAll should add hidden class to all resend icons and reset cursor', () => {

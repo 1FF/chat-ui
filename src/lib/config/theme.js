@@ -8,6 +8,8 @@ export const theme = {
   // '--glaze': '#B3BAC6',
   // '--glaze-text': '#151226',
   // '--glaze-bg': '#B3BAC6',
+  // '--font-weight-normal': '400',
+  // '--font-weight-bold': '600',
   // or
   '--lumina': '#f0f2f5',
   '--whisper': '#ffffff',
@@ -18,4 +20,6 @@ export const theme = {
   '--glaze': '#21bb5a',
   '--glaze-text': '#151226',
   '--glaze-bg': '#ffff',
+  '--font-weight-normal': '500',
+  '--font-weight-bold': '600',
 };

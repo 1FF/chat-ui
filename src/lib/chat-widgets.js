@@ -1,4 +1,4 @@
-import { extractStringWithBrackets, formatDateByLocale } from './helpers';
+import { extractStringWithBrackets, formatDateByLocale, replaceLinksWithAnchors, replaceStringInCurlyBracketsWithStrong } from './helpers';
 import { translations } from './config/translations';
 import ChatUi from './chat-ui';
 import { roles } from './config/roles';
@@ -20,9 +20,9 @@ export const chatMarkup = config => `<div class="chat-widget">
     <div class="chat-widget__messages-container" id="message-incrementor"></div>
   </div>
   <a class="chat-widget__cta hidden" id="cta-button">${config.assistant.ctaTextContent}</a>
+  ${loadingDots}
   <div>
     <div class="js-error error-message hidden">${config.translations.error}</div>
-    ${loadingDots}
     <div class="chat-widget__prompt" id="prompt-container">
       <span class="widget__input">
         <input id="chat-prompt" minlength="1" name="chat" autofocus="chat" name="chat-prompt" type="text" placeholder="${translations.textareaPlaceholder}">
@@ -78,7 +78,7 @@ export const rolesHTML = {
     element.classList.add('assistant');
     element.appendChild(elementContent);
     const { updatedMessage } = extractStringWithBrackets(content);
-    elementContent.innerHTML = updatedMessage;
+    elementContent.innerHTML = replaceLinksWithAnchors(replaceStringInCurlyBracketsWithStrong(updatedMessage));
     return element;
   },
 };

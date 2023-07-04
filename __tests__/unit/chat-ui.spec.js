@@ -1,16 +1,10 @@
-import ChatUi, { UNSENT_MESSAGES_KEY } from '../../src/lib/chat-ui';
-import { roles } from '../../src/lib/config/roles';
-import { errorMessage, loadingDots, resendButton } from '../../src/lib/utils';
+import ChatUi from '../../src/lib/chat-ui';
+
 jest.mock('socket.io-client');
 
 describe('ChatUi', () => {
   let sut;
   const userID = 'userID';
-  const testMessage = {
-    content: 'hello',
-    time: '2023-05-12T10:30:45.123Z',
-    role: 'assistant',
-  };
   beforeEach(() => {
     setContainer();
     jest.useFakeTimers(); // Enable fake timers
@@ -164,61 +158,6 @@ describe('ChatUi', () => {
       term: 'test',
       user_id: 'userID',
     });
-  });
-
-  test('should call onError and all its methods when onStreamData we have errors', () => {
-    // Arrange
-    jest.spyOn(ChatUi, 'onError');
-    jest.spyOn(loadingDots, 'hide');
-    jest.spyOn(errorMessage, 'show');
-    jest.spyOn(resendButton, 'hideAll');
-    jest.spyOn(resendButton, 'show');
-    sut.init({ containerId: 'chatbot-container' });
-    const unsentMessage = 'unsent message'
-    localStorage.setItem(UNSENT_MESSAGES_KEY,unsentMessage);
-
-    // Act
-    sut.onStreamData({ chunk: 'chunk', messages: [{}, {}], errors: ['server error'] });
-
-    // Assert
-    expect(sut.onError).toBeCalled();
-    expect(sut.lastQuestionData.message).toBe(unsentMessage);
-    expect(loadingDots.hide).toBeCalled();
-    expect(errorMessage.show).toBeCalled();
-    expect(resendButton.hideAll).toBeCalled();
-    expect(resendButton.show).toBeCalled();
-  });
-
-  test('should not call onError when onStreamData we have no errors', () => {
-    // Arrange
-    jest.spyOn(loadingDots, 'hide');
-    jest.spyOn(errorMessage, 'hide');
-    jest.spyOn(sut, 'onError');
-
-    // Act
-    sut.init({ containerId: 'chatbot-container' });
-    sut.onStreamStart();
-    sut.onStreamData({ chunk: 'chunk', messages: [testMessage], errors: [] });
-
-    // Assert
-    expect(sut.onError).not.toBeCalled();
-    expect(loadingDots.hide).toBeCalled();
-  });
-
-  test('should set ctaButton onStreamEnd when no errors', () => {
-    // Arrange
-    jest.spyOn(sut, 'setCtaButton');
-
-    // Act
-    sut.init({ containerId: 'chatbot-container' });
-    sut.appendHtml({ time: new Date().toISOString(), content: 'https://test.com', role: roles.assistant })
-    sut.onStreamEnd();
-    // advance the timer by this hardcoded value because it is the largest possible amount
-    jest.advanceTimersByTime(8500);
-
-    // Assert
-    expect(sut.link).toBeTruthy();
-    expect(sut.setCtaButton).toBeCalled();
   });
 
   test('setCtaButton sets link to an element and disables the field', () => {

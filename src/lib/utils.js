@@ -1,3 +1,5 @@
+import { socketEmitChat } from "./socket-services";
+
 export const errorMessage = {
   show() {
     document.querySelector('.js-error').classList.remove('hidden');
@@ -25,8 +27,7 @@ export const resendButton = {
         .querySelector('.resend-icon')
         .classList.remove('hidden');
       lastUserMessageElement.addEventListener(
-        'click',
-        state.socketEmitChat.bind(state)
+        'click', () => socketEmitChat(state)
       );
     }
   },

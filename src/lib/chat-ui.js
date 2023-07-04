@@ -14,13 +14,11 @@ import { theme } from './config/theme';
 import { translations } from './config/translations';
 import cssMinify from './css-minify';
 import {
-  constructLink,
   extractStringWithBrackets,
   getAnswerConfig,
   getTerm,
   getUserId,
   initializeAddClassMethod,
-  replaceLinksWithAnchors,
 } from './helpers';
 import {
   errorMessage,
@@ -28,8 +26,9 @@ import {
   loadingDots,
   resendButton,
   scroll,
-  messages
 } from './utils';
+import { onChatHistory, onConnect, onDisconnect, onStreamData, onStreamEnd, onStreamError, onStreamStart, socketEmitChat } from './socket-services';
+import { constructLink } from "./helpers";
 
 const STORAGE_KEY = 'history';
 const CHAT_SEEN_KEY = 'chatSeen';
@@ -101,6 +100,7 @@ const ChatUi = {
   setConfig(config) {
     this.url = config.url || SOCKET_IO_URL;
     this.containerId = config.containerId || this.containerId;
+    // optional parts of the config that need to be initialized as object at least
     config.assistantConfig = config.assistantConfig || {};
     config.customTheme = config.customTheme || {};
     config.translations = config.translations || {};
@@ -115,45 +115,16 @@ const ChatUi = {
     this.lastQuestionData.term = getTerm();
     this.lastQuestionData.user_id = getUserId();
   },
-  /**
-   * Handles the response from the server containing the chat history.
-   * Prepends the initial assistant message to the history.
-   * Updates the local storage with the updated history.
-   * If the history is empty except for the initial message, displays loading dots and appends the initial message.
-   * Otherwise, loads the existing messages from the history.
-   *
-   * @param {Object} res - The response object containing the chat history.
-   * @returns {void}
-   */
-  onChatHistory(res) {
-    window.debugMode && console.log('onChatHistory: ', res);
-    messages.clear();
-    errorMessage.hide();
-    loadingDots.hide();
-    this.refreshLocalStorageHistory(res.history);
-
-    // when it is a fresh user without any history
-    if (!res.history.length) {
-      this.loadAssistantInitialMessage();
-      return;
-    }
-
-    // when it is an user with history load all its messages
-    this.loadUserHistory(res.history);
-
-    if (localStorage.getItem(UNSENT_MESSAGES_KEY)) {
-      this.appendUnsentMessage();
-    }
-
-    if (res.errors.length) {
-      this.lastQuestionData.message = this.getLastUserMessage();
-      this.onError();
-    }
-  },
   loadUserHistory(history) {
     input.show(this);
     history.unshift(this.assistant.initialMessage);
+    this.elements.messageIncrementor.appendChild(timeMarkup(history[0].time));
     history.forEach(data => this.appendHtml(data));
+    const lastMessageByAssistant = this.getLastMessageElement('.assistant');
+    this.link = lastMessageByAssistant.querySelector('a');
+    if (this.link) {
+      this.setCtaButton();
+    }
   },
   appendUnsentMessage() {
     const data = { content: localStorage.getItem(UNSENT_MESSAGES_KEY), time: new Date().toISOString(), role: roles.user }
@@ -186,76 +157,23 @@ const ChatUi = {
    */
   setSocket() {
     this.socket = io.connect(this.url, this.socketConfig);
-    this.socket.on(this.events.connect, this.onConnect.bind(this));
-    this.socket.on(this.events.disconnect, this.onDisconnect.bind(this));
-    this.socket.on(this.events.chatHistory, this.onChatHistory.bind(this));
-    this.socket.on(this.events.streamStart, this.onStreamStart.bind(this));
-    this.socket.on(this.events.streamData, this.onStreamData.bind(this));
-    this.socket.on(this.events.streamEnd, this.onStreamEnd.bind(this));
-    this.socket.on(this.events.streamError, this.onStreamError.bind(this));
+    this.socket.on(this.events.connect, onConnect.bind(this));
+    this.socket.on(this.events.disconnect, onDisconnect.bind(this));
+    this.socket.on(this.events.chatHistory, onChatHistory.bind(this));
+    this.socket.on(this.events.streamStart, onStreamStart.bind(this));
+    this.socket.on(this.events.streamData, onStreamData.bind(this));
+    this.socket.on(this.events.streamEnd, onStreamEnd.bind(this));
+    this.socket.on(this.events.streamError, onStreamError.bind(this));
     // TODO do something on server error
     // this.socket.on("error", (reason) => {});
   },
-  onStreamStart() {
-    window.debugMode && console.log('stream-start');
-    loadingDots.hide();
-    this.elements.messageIncrementor.appendChild(timeMarkup(new Date().toISOString()));
-    this.elements.messageIncrementor.appendChild(rolesHTML['assistant'](''));
-  },
-  onStreamData(data) {
-    window.debugMode && console.log('Received stream data:', data);
-
-    const { messages, errors } = data;
-    this.refreshLocalStorageHistory(messages);
-
-    if (errors && errors.length) {
-      this.lastQuestionData.message = this.getLastUserMessage();
-      this.onError();
-      return;
-    }
-
-    const lastMessageElement = this.getLastMessageElement('.assistant .js-assistant-message');
-    this.chunk = data.chunk;
-
-    this.processTextInCaseOfSquareBrackets(this.chunk);
-
-    !this.answersFromStream && (lastMessageElement.innerHTML += this.chunk);
-    lastMessageElement.addClass('cursor');
-  },
-  onStreamEnd() {
-    window.debugMode && console.log('Stream ended');
-    const lastMessageElement = this.getLastMessageElement('.assistant');
-    const lastMessageTextContainer = lastMessageElement.querySelector('.js-assistant-message');
-
-    lastMessageTextContainer.classList.remove('cursor');
-    this.hasAnswers = lastMessageElement.querySelector('.answers-container');
-    this.link = constructLink(lastMessageTextContainer.textContent);
-    if (this.link) {
-      this.setCtaButton();
-      lastMessageTextContainer.innerHTML = replaceLinksWithAnchors(lastMessageTextContainer.textContent);
-      return;
-    }
-
-    if (this.hasAnswers) {
-      input.hide(this);
-      return;
-    };
-
-    input.show(this);
-    input.focus(this);
-  },
-  onStreamError(error) {
-    window.debugMode && console.log('Stream error:', error);
-    this.lastQuestionData.message = this.getLastUserMessage();
-    this.onError();
-  },
-  processTextInCaseOfSquareBrackets(string) {
-    if (string.includes('[')) {
-      this.answersFromStream = string;
+  processTextInCaseOfSquareBrackets() {
+    if (this.chunk.includes('[')) {
+      this.answersFromStream = this.chunk;
     };
 
     if (this.answersFromStream) {
-      this.answersFromStream += string;
+      this.answersFromStream += this.chunk;
     };
 
     if (this.answersFromStream.includes(']')) {
@@ -263,26 +181,29 @@ const ChatUi = {
       this.chunk = '';
     };
   },
-  /**
-   * Handles the connect event.
-   * It emits the 'chatHistory' event to request chat history for the user.
-   *
-   * @returns {void}
-   */
-  onConnect() {
-    window.debugMode && console.log(`Connected to ${this.url}, socket id: ${this.socket.id}`);
+  processTextInCaseOfCurlyBrackets() {
+    if (this.chunk.includes('{')) {
+      this.boldedText = this.chunk;
+      this.chunk = '';
+    };
 
-    this.socket.emit(this.events.chatHistory, {
-      user_id: this.lastQuestionData.user_id,
-    });
-  },
-  /**
-   * Handles the disconnect event.
-   *
-   * @returns {void}
-   */
-  onDisconnect() {
-    window.debugMode && console.log(`Disconnected from ${this.url}`);
+    if (this.boldedText || this.boldedText && this.chunk.includes('}')) {
+      this.boldedText += this.chunk;
+      this.chunk = '';
+    };
+
+    if (this.boldedText.includes('}')) {
+      this.link = constructLink(this.boldedText);
+      if (this.link) {
+        this.setCtaButton();
+      }
+
+      let strongTaggedText = this.boldedText.replace('{', '').replace('}', '');
+      strongTaggedText = `<strong>${strongTaggedText}</strong>`;
+      const lastMessageTextContainer = this.getLastMessageElement('.assistant .js-assistant-message');
+      lastMessageTextContainer.innerHTML += strongTaggedText;
+      this.boldedText = '';
+    };
   },
   refreshLocalStorageHistory(history) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
@@ -294,8 +215,7 @@ const ChatUi = {
       content: e.target.textContent,
       time: new Date().toISOString(),
     };
-    this.socket.emit(events.chat, this.lastQuestionData);
-    this.lastQuestionData.message = '';
+    socketEmitChat(this);
     this.appendHtml(data);
     e.target.parentElement.remove();
   },
@@ -332,7 +252,6 @@ const ChatUi = {
     this.elements.ctaButton.classList.remove('hidden');
     this.elements.ctaButton.setAttribute('href', this.link);
     input.hide(this);
-
   },
   /**
    * Sets custom variables and applies them to the main container element and font family.
@@ -383,7 +302,6 @@ const ChatUi = {
    */
   appendHtml(data) {
     const { time, role, content } = data;
-    this.elements.messageIncrementor.appendChild(timeMarkup(time));
     this.elements.messageIncrementor.appendChild(rolesHTML[role](content));
   },
   /**
@@ -404,6 +322,7 @@ const ChatUi = {
       );
 
       const data = { content: updatedMessage, ...this.assistant.initialMessage };
+      this.elements.messageIncrementor.appendChild(timeMarkup(data.time));
       this.appendHtml(data);
 
       if (extractedString) {
@@ -436,34 +355,6 @@ const ChatUi = {
 
     this.appendHtml(data);
     this.elements.messageInput.value = '';
-  },
-  /**
-   * Emits a chat event to the socket server with the last question data.
-   * If the socket is connected, it sends the data and adds loading dots to the message incrementor.
-   * If the socket is disconnected, it hides the resend icon, triggers an error after a delay, and performs necessary UI updates.
-   *
-   * @returns {void}
-   */
-  socketEmitChat() {
-    resendButton.hideAll();
-    errorMessage.hide();
-    if (this.lastQuestionData.message) {
-      if (this.socket.connected) {
-        this.socket.emit(this.events.chat, this.lastQuestionData);
-        window.debugMode && console.log('Emit chat: ', this.lastQuestionData);
-        this.lastQuestionData.message = '';
-        localStorage.removeItem(UNSENT_MESSAGES_KEY);
-        loadingDots.show();
-      } else {
-        localStorage.setItem(
-          UNSENT_MESSAGES_KEY,
-          this.lastQuestionData.message,
-        );
-        setTimeout(() => {
-          this.onError();
-        }, 2000);
-      }
-    }
   },
   /**
    * Handles the error event by updating the last user message element to allow resending the message.
@@ -552,7 +443,7 @@ const ChatUi = {
   },
   typingHandler() {
     const timerId = setTimeout(() => {
-      this.socketEmitChat();
+      socketEmitChat(this);
     }, 3000);
 
     this.typingTimerIds.forEach(t => clearTimeout(t));

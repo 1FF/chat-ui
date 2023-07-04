@@ -42,6 +42,7 @@ textarea {
   white-space: normal;
   background: 0 0;
   color: rgb(var(--zephyr));
+  font-weight: var(--font-weight-normal);
 }
 
 :focus-visible {
@@ -239,6 +240,11 @@ img {
 .chat-widget__messages-container {
   margin-top: 0;
   margin-bottom: auto;
+  font-weight: var(--font-weight-normal);
+}
+
+.chat-widget__messages-container strong {
+  font-weight: var(--font-weight-bold);
 }
 
 .chat-widget__initiator-profile {
