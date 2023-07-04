@@ -1,4 +1,4 @@
-const REGEX_URL = /\b((?:https?:\/\/|www\.)[^\s/$.?#][^\s]*)\b/gi;
+const REGEX_URL = /\b((?:https?:\/\/|www\.)[^\s/$.?#][^\s{}\[\]()<>]*)\b/gi;
 
 /**
  * Generates a random integer between the specified range (inclusive).
