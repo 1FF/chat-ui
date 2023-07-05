@@ -19,7 +19,7 @@ import {
   getTerm,
   getUserId,
   initializeAddClassMethod,
-  is24HoursExpired,
+  isExpired,
 } from './helpers';
 import {
   errorMessage,
@@ -134,24 +134,21 @@ const ChatUi = {
   },
   shouldHideChat() {
     const { time } = this.getLastUserMessage();
-    let isExpired;
+    let hasExpired;
 
     if (time) {
-      isExpired = is24HoursExpired(time);
+      hasExpired = isExpired(time);
     };
 
     // when time has expired chatSeen must be removed from localStorage
-    if (isExpired) {
+    if (hasExpired) {
       localStorage.removeItem(CHAT_SEEN_KEY);
     };
 
     // when user has clicked on ctaButton chatSeen is being set to true
     const chatSeen = localStorage.getItem(CHAT_SEEN_KEY);
-    if (chatSeen === 'true') {
-      return true;
-    };
-
-    return false;
+    
+    return chatSeen === 'true' ? true : false;
   },
   getLastUserMessage() {
     const messages = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
