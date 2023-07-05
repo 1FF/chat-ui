@@ -31,8 +31,8 @@ import {
 import { onChatHistory, onConnect, onDisconnect, onStreamData, onStreamEnd, onStreamError, onStreamStart, socketEmitChat } from './socket-services';
 import { constructLink } from "./helpers";
 
-const STORAGE_KEY = 'history';
-const CHAT_SEEN_KEY = 'chatSeen';
+export const STORAGE_KEY = 'history';
+export const CHAT_SEEN_KEY = 'chatSeen';
 const SOCKET_IO_URL = 'http://localhost:5000';
 export const UNSENT_MESSAGES_KEY = 'unsent';
 
