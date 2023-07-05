@@ -107,6 +107,7 @@ img {
   color: rgb(var(--zephyr));
   background-color: var(--whisper);
   margin: 0 auto;
+  padding-bottom: 11px;
   max-width: 800px;
   height: ${height}px;
 }
@@ -202,7 +203,7 @@ img {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 11px 20px;
+  padding: 11px 20px 0px;
   height: fit-content;
 }
 
