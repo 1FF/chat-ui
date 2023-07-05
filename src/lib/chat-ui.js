@@ -19,6 +19,7 @@ import {
   getTerm,
   getUserId,
   initializeAddClassMethod,
+  is24HoursExpired,
 } from './helpers';
 import {
   errorMessage,
@@ -87,7 +88,7 @@ const ChatUi = {
    * init(config);
    */
   init(config = {}) {
-    if (localStorage.getItem(CHAT_SEEN_KEY)) {
+    if (this.shouldHideChat()) {
       this.closeSocket();
       return;
     }
@@ -131,12 +132,33 @@ const ChatUi = {
     this.appendHtml(data);
     this.onError();
   },
+  shouldHideChat() {
+    const { time } = this.getLastUserMessage();
+    let isExpired;
+
+    if (time) {
+      isExpired = is24HoursExpired(time);
+    };
+
+    // when time has expired chatSeen must be removed from localStorage
+    if (isExpired) {
+      localStorage.removeItem(CHAT_SEEN_KEY);
+    };
+
+    // when user has clicked on ctaButton chatSeen is being set to true
+    const chatSeen = localStorage.getItem(CHAT_SEEN_KEY);
+    if (chatSeen === 'true') {
+      return true;
+    };
+
+    return false;
+  },
   getLastUserMessage() {
-    const messages = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const messages = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
     const messageFound = messages
       .reverse()
       .find(message => message.role === roles.user);
-    const lastMessage = messageFound ? messageFound.content : '';
+    const lastMessage = messageFound ? messageFound : {};
 
     return lastMessage;
   },
@@ -367,8 +389,9 @@ const ChatUi = {
     loadingDots.hide();
     errorMessage.show();
     resendButton.hideAll();
+    const { content } = this.getLastUserMessage()
     this.lastQuestionData.message =
-      localStorage.getItem(UNSENT_MESSAGES_KEY) || this.getLastUserMessage();
+      localStorage.getItem(UNSENT_MESSAGES_KEY) || content;
     resendButton.show(this);
   },
   /**

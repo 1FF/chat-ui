@@ -159,3 +159,19 @@ export const getTerm = () => {
 export function replaceStringInCurlyBracketsWithStrong(input) {
   return input.replace(/\{([^}]+)\}/g, '<strong>$1</strong>');
 }
+
+/**
+ * Checks if 24 hours have passed since the given date.
+ *
+ * @function is24HoursExpired
+ * @param {string} date - The date to compare in ISO 8601 format (e.g., "2023-07-04T14:11:00.097Z").
+ * @returns {boolean} Returns true if 24 hours have passed since the given date, or false otherwise.
+ */
+export function is24HoursExpired(date) {
+  const currentDate = new Date();
+  const givenDate = new Date(date);
+  const elapsedMilliseconds = currentDate - givenDate;
+  const elapsedHours = elapsedMilliseconds / (1000 * 60 * 60); // Convert milliseconds to hours
+
+  return elapsedHours >= 24;
+}
