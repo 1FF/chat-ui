@@ -1,7 +1,8 @@
 import {
   constructLink, replaceLinksWithAnchors, extractStringWithBrackets,
   getAnswerConfig,
-  getTerm
+  getTerm,
+  isExpired
 } from '../../src/lib/helpers';
 
 describe('extractLink', () => {
@@ -274,5 +275,47 @@ describe('getTerm', () => {
 
     const result = getTerm();
     expect(result).toBeNull();
+  });
+});
+
+
+describe('isExpired', () => {
+  test('returns true if 24 hours have passed since the given date', () => {
+    // Arrange
+    // Set the given date 24 hours in the past
+    const givenDate = new Date();
+    givenDate.setDate(givenDate.getDate() - 1);
+
+    // Act
+    const expected = isExpired(givenDate.toISOString());
+
+    // Assert
+    expect(expected).toBe(true);
+  });
+
+  test('returns false if less than 24 hours have passed since the given date', () => {
+
+    // Arrange
+    // Set the given date to the current date
+    const givenDate = new Date();
+
+    // Act
+    const expected = isExpired(givenDate.toISOString());
+
+    // Assert
+    expect(expected).toBe(false);
+  });
+
+  test('returns false if the given date is in the future', () => {
+    // Arrange
+    // Set the given date to 24 hours in the future
+    const givenDate = new Date();
+    givenDate.setDate(givenDate.getDate() + 1);
+    
+    // Act
+    const expected = isExpired(givenDate.toISOString());
+
+    // Assert
+    expect(expected).toBe(false);
   });
 });

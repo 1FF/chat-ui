@@ -1,4 +1,4 @@
-import ChatUi from '../../src/lib/chat-ui';
+import ChatUi, { CHAT_SEEN_KEY, STORAGE_KEY } from '../../src/lib/chat-ui';
 
 jest.mock('socket.io-client');
 
@@ -188,6 +188,59 @@ describe('ChatUi', () => {
     expect(sut.elements.promptContainer.classList.contains('hidden')).toBe(
       true,
     );
+  });
+
+  test('shouldHideChat returns true when user has seen the chat and the history has not expired (24hrs)', () => {
+    // Arrange
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([
+      {
+        "role": "user",
+        "content": "Get started",
+        "time": new Date()
+      }
+    ]));
+    localStorage.setItem(CHAT_SEEN_KEY, true);
+
+    // Act
+    const expected = sut.shouldHideChat();
+
+    // Assert
+    expect(expected).toBe(true);
+  });
+
+  test('shouldHideChat returns false when user has seen the chat and the history has expired (24hrs)', () => {
+    // Arrange
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([
+      {
+        "role": "user",
+        "content": "Get started",
+        "time": new Date().getDate() - 2
+      }
+    ]));
+    localStorage.setItem(CHAT_SEEN_KEY, true);
+
+    // Act
+    const expected = sut.shouldHideChat();
+
+    // Assert
+    expect(expected).toBe(false);
+  });
+
+  test('shouldHideChat returns false when we have history but the user did not see cta button', () => {
+    // Arrange
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([
+      {
+        "role": "user",
+        "content": "Get started",
+        "time": new Date().getDate() - 2
+      }
+    ]));
+
+    // Act
+    const expected = sut.shouldHideChat();
+
+    // Assert
+    expect(expected).toBe(false);
   });
 });
 
