@@ -143,11 +143,11 @@ img {
   position: absolute;
   width: 10px;
   height: 10px;
-  background-color: var(--seraph);
   bottom: 0;
   left: 37px;
   z-index: 1;
   border-radius: 100%;
+  background-color: var(--status);
 }
 
 .chat-widget__info img {
@@ -169,6 +169,7 @@ img {
 .chat-widget__role {
   display: flex;
   flex-direction: column;
+  text-align: left;
 }
 
 .widget-name {
