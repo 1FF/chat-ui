@@ -61,6 +61,7 @@ const ChatUi = {
     term: '',
     user_id: '',
     message: '',
+    role: roles.user,
   },
   /**
    * Initializes the chat module.
@@ -147,7 +148,7 @@ const ChatUi = {
 
     // when user has clicked on ctaButton chatSeen is being set to true
     const chatSeen = localStorage.getItem(CHAT_SEEN_KEY);
-    
+
     return chatSeen === 'true' ? true : false;
   },
   getLastUserMessage() {
@@ -324,6 +325,21 @@ const ChatUi = {
     this.elements.messageIncrementor.appendChild(rolesHTML[role](content));
   },
   /**
+   * Sends the initial message to the socket server.
+   * If the socket is connected, it emits the chat event with the last question data.
+   * If the socket is disconnected, it appends the last question data to the local storage history.
+   *
+   * @returns {void}
+  */
+  sendAssistantInitialMessage() {
+    const data = {
+      ...this.lastQuestionData,
+      role: roles.assistant,
+      message: this.assistant.initialMessage.content
+    };
+    this.socket.emit(this.events.chat, data);
+  },
+  /**
    * Loads initial message from the assistant object and checks if the message contains any brackets.
    * If it does, it extracts the string between the brackets and sets the initial message to the extracted string.
    * It also adds the options to the chat widget.
@@ -334,6 +350,7 @@ const ChatUi = {
    */
   loadAssistantInitialMessage() {
     loadingDots.show();
+    this.sendAssistantInitialMessage();
     setTimeout(() => {
       loadingDots.hide();
       const { extractedString, updatedMessage } = extractStringWithBrackets(
