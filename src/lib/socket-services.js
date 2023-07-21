@@ -1,7 +1,7 @@
-import { UNSENT_MESSAGES_KEY } from "./chat-ui";
-import { rolesHTML } from "./chat-widgets";
-import { constructLink, replaceLinksWithAnchors } from "./helpers";
-import { errorMessage, input, loadingDots, messages, resendButton } from "./utils";
+import { UNSENT_MESSAGES_KEY } from './chat-ui';
+import { rolesHTML } from './chat-widgets';
+import { constructLink, replaceLinksWithAnchors } from './helpers';
+import { errorMessage, input, loadingDots, messages, resendButton } from './utils';
 /**
  * Handles the start of the stream.
  * Hides loading dots, appends the current timestamp, and adds the assistant role element.
@@ -14,21 +14,21 @@ export function onStreamStart() {
   window.debugMode && console.log('stream-start');
   loadingDots.hide();
   this.elements.messageIncrementor.appendChild(rolesHTML['assistant'](''));
-};
+}
 
 /**
-* Handles the connect event.
-* It emits the 'chatHistory' event to request chat history for the user.
-*
-* @returns {void}
-*/
+ * Handles the connect event.
+ * It emits the 'chatHistory' event to request chat history for the user.
+ *
+ * @returns {void}
+ */
 export function onConnect() {
   window.debugMode && console.log(`Connected to ${this.url}, socket id: ${this.socket.id}`);
 
   this.socket.emit(this.events.chatHistory, {
     user_id: this.lastQuestionData.user_id,
   });
-};
+}
 
 /**
  * Handles the disconnect event.
@@ -37,8 +37,7 @@ export function onConnect() {
  */
 export function onDisconnect() {
   window.debugMode && console.log(`Disconnected from ${this.url}`);
-};
-
+}
 
 /**
  * Handles the response from the server containing the chat history.
@@ -73,7 +72,7 @@ export function onChatHistory(res) {
   if (res.errors.length) {
     this.onError();
   }
-};
+}
 
 /**
  * Handles the data received in the stream.
@@ -88,7 +87,7 @@ export function onChatHistory(res) {
  * @returns {void}
  */
 export function onStreamData(data) {
-  window.debugMode && console.log('Received stream data:', data);
+  window.debugMode && console.log('stream-data', data);
 
   const { messages, errors } = data;
   this.refreshLocalStorageHistory(messages);
@@ -106,7 +105,7 @@ export function onStreamData(data) {
 
   !this.answersFromStream && (lastMessageElement.innerHTML += this.chunk);
   lastMessageElement.addClass('cursor');
-};
+}
 
 /**
  * Handles the end of the stream.
@@ -119,7 +118,7 @@ export function onStreamData(data) {
  * @returns {void}
  */
 export function onStreamEnd() {
-  window.debugMode && console.log('Stream ended');
+  window.debugMode && console.log('stream-end');
   const lastMessageElement = this.getLastMessageElement('.assistant');
   const lastMessageTextContainer = lastMessageElement.querySelector('.js-assistant-message');
 
@@ -139,16 +138,16 @@ export function onStreamEnd() {
   if (this.hasAnswers) {
     input.hide(this);
     return;
-  };
+  }
 
   input.show(this);
   input.focus(this);
-};
+}
 
 export function onStreamError(error) {
   window.debugMode && console.log('Stream error:', error);
   this.onError();
-};
+}
 
 /**
  * Emits a chat event to the socket server with the last question data.
@@ -168,13 +167,10 @@ export function socketEmitChat(state) {
       localStorage.removeItem(UNSENT_MESSAGES_KEY);
       loadingDots.show();
     } else {
-      localStorage.setItem(
-        UNSENT_MESSAGES_KEY,
-        state.lastQuestionData.message,
-      );
+      localStorage.setItem(UNSENT_MESSAGES_KEY, state.lastQuestionData.message);
       setTimeout(() => {
         state.onError();
       }, 2000);
     }
   }
-};
+}

@@ -117,7 +117,6 @@ const ChatUi = {
   },
   loadUserHistory(history) {
     input.show(this);
-    history.unshift(this.assistant.initialMessage);
     this.elements.messageIncrementor.appendChild(timeMarkup(history[0].time));
     history.forEach((data) => this.appendHtml(data));
     const lastMessageByAssistant = this.getLastMessageElement('.assistant');
