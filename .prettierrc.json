@@ -1,8 +1,8 @@
 {
-  "proseWrap": "preserve",
+  "proseWrap": "always",
   "trailingComma": "all",
   "semi": true,
   "bracketSpacing": true,
   "singleQuote": true,
-  "arrowParens": "avoid"
+  "arrowParens": "always"
 }

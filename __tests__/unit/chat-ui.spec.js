@@ -1,9 +1,12 @@
 import ChatUi, { CHAT_SEEN_KEY, STORAGE_KEY } from '../../src/lib/chat-ui';
+import { assistant } from '../../src/lib/config/assistant';
+import { roles } from '../../src/lib/config/roles';
 
 jest.mock('socket.io-client');
 
 describe('ChatUi', () => {
   let sut;
+  const term = "test";
   const userID = 'userID';
   beforeEach(() => {
     setContainer();
@@ -12,7 +15,7 @@ describe('ChatUi', () => {
     sut = ChatUi;
     Object.defineProperty(window, 'location', {
       value: {
-        search: '?utm_chat=test',
+        search: `?utm_chat=${term}`,
       },
       writable: true,
     });
@@ -155,8 +158,9 @@ describe('ChatUi', () => {
     // Assert
     expect(sut.lastQuestionData).toEqual({
       message: '',
-      term: 'test',
+      term,
       user_id: 'userID',
+      role: roles.user
     });
   });
 
@@ -241,6 +245,20 @@ describe('ChatUi', () => {
 
     // Assert
     expect(expected).toBe(false);
+  });
+
+  test('should load assistant initial message and send it', () => {
+    // Arrange
+    sut.init();
+    jest.spyOn(sut, 'sendAssistantInitialMessage');
+    jest.spyOn(sut.socket, 'emit');
+
+    // Act
+    sut.loadAssistantInitialMessage();
+
+    // Assert
+    expect(sut.sendAssistantInitialMessage).toHaveBeenCalled();
+    expect(sut.socket.emit).toHaveBeenCalledWith("chat", { "message": assistant.initialMessage.content, "role": roles.assistant, term, "user_id": "userID" });
   });
 });
 
