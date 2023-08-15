@@ -147,6 +147,10 @@ describe('socket-services', () => {
       <span class="assistant">
         <span class="js-assistant-message">Hi there! How can I assist you today?</span>
       </span>
+      <button id="chat-pay" class="js-payment-button payment-button hidden">
+        <span class="payment-button__text">Proceed with payment</span>
+      </button>
+      <a class="chat-widget__cta hidden" id="cta-button">Create Your Menu!</a>
       <div class="chat-widget__prompt" id="prompt-container">
         <span class="widget__input">
           <input id="chat-prompt" minlength="1" name="chat" autofocus="chat" type="text" placeholder="Write your message here..." disabled="">
@@ -156,7 +160,7 @@ describe('socket-services', () => {
     const state = {
       setCtaButton: jest.fn(),
       getLastMessageElement: ChatUi.getLastMessageElement,
-      elements: { messageIncrementor: document.querySelector('#message-incrementor'), promptContainer: document.querySelector('#prompt-container'), messageInput: document.querySelector('#chat-prompt') },
+      elements: { messageIncrementor: document.querySelector('#message-incrementor'), promptContainer: document.querySelector('#prompt-container'), messageInput: document.querySelector('#chat-prompt'), paymentButton: document.querySelector('#chat-pay'), ctaButton: document.querySelector('#cta-button') },
     };
     jest.spyOn(input, 'show');
     jest.spyOn(input, 'hide');

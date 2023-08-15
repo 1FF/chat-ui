@@ -59,7 +59,7 @@ export const input = {
     // it scrolls to top 0 because we have flex-direction: column-reverse;
     // so we can always see the last message;
     state.elements.messageIncrementor.scrollTop = 0;
-    const inputField = state.elements.promptContainer.querySelector('input');
+    const inputField = state.elements.promptContainer.querySelector('input#chat-prompt');
     inputField.focus();
   }
 };
@@ -74,3 +74,12 @@ export const messages = {
     messages.forEach(m => m.remove());
   },
 };
+
+export const emailLoader = {
+  hide: () => {
+    document.querySelector('.js-email-processing').addClass('hidden');
+  },
+  show: () => {
+    document.querySelector('.js-email-processing').classList.remove('hidden');
+  }
+}

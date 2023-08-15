@@ -10,8 +10,33 @@ export const styles = height => `html {
 }
 
 button:focus,
-input:focus {
+input#chat-prompt:focus,input#chat-email:focus {
   outline: 0;
+}
+
+input#chat-prompt:focus,input#chat-email:focus  {
+  background-color: transparent;
+  border-radius: inherit;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus{
+  -webkit-text-fill-color: rgb(var(--zephyr));
+  -webkit-box-shadow: 0 0 0px 1000px var(--lumina) inset;
+  border: 1px solid var(--lumina);
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: rgb(var(--zephyr));
+}
+
+#primer-form-container input:-webkit-autofill,
+#primer-form-container input:-webkit-autofill:hover,
+#primer-form-container input:-webkit-autofill:focus {
+  -webkit-text-fill-color:  var(--pay-color, #0f0e1e);
+  -webkit-box-shadow: 0 0 0px 1000px var(--pay-bg, #fff) inset;
+  border: 1px solid var(--lumina);
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: rgb(var(--zephyr));
 }
 
 html, body {
@@ -27,12 +52,12 @@ a {
   text-decoration: none;
 }
 
-input {
+input#chat-prompt, input#chat-email {
   -webkit-appearance: none;
 }
 
 button,
-input,
+input#chat-prompt,input#chat-email,
 textarea {
   margin: 0;
   border: 0;
@@ -43,24 +68,17 @@ textarea {
   background: 0 0;
   color: rgb(var(--zephyr));
   font-weight: var(--font-weight-normal);
+  border: none !important;
 }
 
 :focus-visible {
   outline: 0;
 }
 
-input:focus {
-  outline: 0;
-}
-
-input,
-textarea {
+input#chat-prompt ,input#chat-email{
   -webkit-box-sizing: content-box;
   -moz-box-sizing: content-box;
   box-sizing: content-box;
-}
-
-input {
   resize: none;
   width: 93%;
   height: auto;
@@ -193,6 +211,8 @@ img {
   width: 100%;
   height: auto;
   margin-right: 11px;
+  overflow: hidden;
+  position:relative;
 }
 
 .widget__button {
@@ -217,7 +237,7 @@ img {
   transform: translateZ(0);
 }
 
-.answers-container div{
+.answers-container div,.answers-container a{
   cursor: pointer;
   text-align: center;
   border-radius: 20px;
@@ -225,6 +245,7 @@ img {
   margin-top: 10px;
   background-color: var(--glaze-bg);
   border: 1px solid var(--glaze);
+  display: block;
 }
 
 .chat-widget__messages {
@@ -332,7 +353,7 @@ img {
   max-width: 400px;
 }
 
-.chat-widget__cta {
+.chat-widget__cta, .payment-button {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -433,6 +454,214 @@ div.js-wave .dot:nth-child(3) {
   }
 }
 
+.close-payment-form {
+  z-index: 99999999;
+  width: 24px;
+  height: 24px;
+  position: absolute;
+  top: -30px;
+  padding: 3px;
+  right: -7px;
+  cursor: pointer;
+}
+
+.payment-loader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 8px;
+  z-index: 11;
+  opacity: 1;
+  transition-duration: 1s;
+  transition-property: opacity;
+  transition-delay: 1s;
+}
+
+.payment-loader.payment-loader--hidden {
+  opacity: 0;
+  z-index: -2;
+}
+
+.payment-loader .animate-spin-pay {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+.payment-loader .animate-spin-pay .spin-icon {
+  display: block;
+  margin: auto;
+  width: 50px;
+  height: 50px;
+  border: solid 5px rgba(0,0,0,0.1);
+  border-top-color:  rgba(0,0,0,0.6);
+  border-left-color: rgba(0,0,0,0.6);
+  border-radius: 24px;
+  -webkit-animation: loading-spinner 500ms linear infinite;
+  -moz-animation: loading-spinner 500ms linear infinite;
+  -ms-animation: loading-spinner 500ms linear infinite;
+  -o-animation: loading-spinner 500ms linear infinite;
+  animation: loading-spinner 500ms linear infinite;
+}
+
+.payment-view__main-container {
+  max-width: 500px;
+  width: 100%;
+  min-height: 400px;
+  position: relative;
+}
+
+.payment-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  z-index: 999999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-inline: 20px;
+}
+
+#chat-payment-view #primer-checkout-card-form>div:first-of-type {
+  margin-top: 17px;
+}
+
+#chat-payment-view #primer-checkout-card-form>div:nth-of-type(2) {
+  margin-top: 17px;
+}
+
+.animate-spin {
+  display: inline-flex;
+  position: absolute;
+  right: 20px;
+  height: 100%;
+  z-index: 5;
+}
+
+.payment-head {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+.payment-head__left-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.payment-head__left {
+  display: flex;
+  flex-direction: row;
+}
+
+.payment-head__icon {
+  padding-right: 5px;
+  margin-right: 5px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid #cacadb;
+}
+
+.payment-head__text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+  font-size: 10px;
+  line-height: 1;
+  color: rgba(15, 14, 30, 0.6);
+}
+.payment-head__right{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.payment-head__right-price {
+  font-size: 20px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--theta);
+}
+
+.payment-head__right-info {
+  line-height: 2;
+  font-size: 10px;
+  color: rgba(15, 14, 30, 0.6);
+}
+
+.payment-head__bottom {
+  color: rgba(15, 14, 30, 0.6);
+  opacity: 0.6;
+  line-height: 2;
+  font-size: 10px;
+}
+
+.payment-form__footer {
+  margin-top: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.8px;
+  font-weight: 700;
+  line-height: 1.56;
+  color: var(--theta);
+}
+
+.payment-form__footer svg {
+  margin-right: 5px;
+}
+
+.animate-spin .spin-icon {
+  display: block;
+  margin: auto;
+  width: 24px;
+  height: 24px;
+  border: solid 5px rgba(var(--zephyr),0.1);
+  border-top-color:  rgba(var(--zephyr),0.6);
+  border-left-color: rgba(var(--zephyr),0.6);
+  border-radius: 24px;
+  -webkit-animation: loading-spinner 500ms linear infinite;
+  -moz-animation:    loading-spinner 500ms linear infinite;
+  -ms-animation:     loading-spinner 500ms linear infinite;
+  -o-animation:      loading-spinner 500ms linear infinite;
+  animation:         loading-spinner 500ms linear infinite;
+}
+
+@-webkit-keyframes loading-spinner {
+  0%   { -webkit-transform: rotate(0deg);   transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+@-moz-keyframes loading-spinner {
+  0%   { -moz-transform: rotate(0deg);   transform: rotate(0deg); }
+  100% { -moz-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+@-o-keyframes loading-spinner {
+  0%   { -o-transform: rotate(0deg);   transform: rotate(0deg); }
+  100% { -o-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+@-ms-keyframes loading-spinner {
+  0%   { -ms-transform: rotate(0deg);   transform: rotate(0deg); }
+  100% { -ms-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+@keyframes loading-spinner {
+  0%   { transform: rotate(0deg);   transform: rotate(0deg); }
+  100% { transform: rotate(360deg); transform: rotate(360deg); }
+}
+
 .hidden {
-  display: none;
+  display: none !important;
 }`;

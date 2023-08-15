@@ -1,8 +1,5 @@
 import { extractStringWithBrackets, formatDateByLocale, replaceLinksWithAnchors, replaceStringInCurlyBracketsWithStrong } from './helpers';
 import { translations } from './config/translations';
-import ChatUi from './chat-ui';
-import { roles } from './config/roles';
-import { events } from './config/events';
 
 export const chatMarkup = config => `<div class="chat-widget">
   <div class="chat-widget__head">
@@ -20,17 +17,21 @@ export const chatMarkup = config => `<div class="chat-widget">
     <div class="chat-widget__messages-container" id="message-incrementor"></div>
   </div>
   <a class="chat-widget__cta hidden" id="cta-button">${config.assistant.ctaTextContent}</a>
+  ${paymentButton}
   ${loadingDots}
+  ${chatPaymentFormContainer}
   <div>
     <div class="js-error error-message hidden">${config.translations.error}</div>
+    <div class="js-error-email error-message hidden"></div>
+    <div id="error-label" class="error-message hidden"></div>
     <div class="chat-widget__prompt" id="prompt-container">
       <span class="widget__input">
-        <input id="chat-prompt" minlength="1" name="chat" autofocus="chat" name="chat-prompt" type="text" placeholder="${translations.textareaPlaceholder}">
-        </span>
+        <input id="chat-prompt" minlength="1" autofocus="chat" name="chat-prompt" type="text" placeholder="${translations.textareaPlaceholder}">
+        <input id="chat-email" class="hidden" autofocus="chat" name="email" type="email" placeholder="${translations.emailPlaceholder}">
+        ${loaderEmail}
+      </span>
       <div class="widget__button" id="send-button">
-        <svg fill="currentColor" height="20px" viewBox="0 0 24 24" width="20px">
-          <path d="M16.6915026,12.4744748 L3.50612381,13.2599618 C3.19218622,13.2599618 3.03521743,13.4170592 3.03521743,13.5741566 L1.15159189,20.0151496 C0.8376543,20.8006365 0.99,21.89 1.77946707,22.52 C2.41,22.99 3.50612381,23.1 4.13399899,22.8429026 L21.714504,14.0454487 C22.6563168,13.5741566 23.1272231,12.6315722 22.9702544,11.6889879 C22.8132856,11.0605983 22.3423792,10.4322088 21.714504,10.118014 L4.13399899,1.16346272 C3.34915502,0.9 2.40734225,1.00636533 1.77946707,1.4776575 C0.994623095,2.10604706 0.8376543,3.0486314 1.15159189,3.99121575 L3.03521743,10.4322088 C3.03521743,10.5893061 3.34915502,10.7464035 3.50612381,10.7464035 L16.6915026,11.5318905 C16.6915026,11.5318905 17.1624089,11.5318905 17.1624089,12.0031827 C17.1624089,12.4744748 16.6915026,12.4744748 16.6915026,12.4744748 Z"></path>
-        </svg>
+        ${sendIcon}
       </div>
     </div>
   </div>
@@ -80,7 +81,7 @@ export const rolesHTML = {
     const { extractedString, updatedMessage } = extractStringWithBrackets(content);
 
     elementContent.innerHTML = replaceLinksWithAnchors(replaceStringInCurlyBracketsWithStrong(updatedMessage));
-    return {extractedString, element};
+    return { extractedString, element };
   },
 };
 
@@ -96,3 +97,74 @@ export const loadingDots = `<div class="js-wave hidden">
   <span class="dot"></span>
   <span class="dot"></span>
 </div>`;
+
+export const paymentButton = `<button id="chat-pay" class="js-payment-button payment-button hidden">
+  <span class="payment-button__text">${translations.paymentButton}</span>
+</button>`;
+
+export const closePaymentFormButton = `<span id="payment-form-close-button" class="close-payment-form">
+  <svg
+    fill="none"
+    viewBox="0 0 18 18">
+    <path d="M13.725 4.282a.747.747 0 0 0-1.058 0L9 7.942 5.332 4.276a.748.748 0 1 0-1.057 1.057L7.942 9l-3.667 3.668a.748.748 0 1 0 1.057 1.057L9 10.057l3.667 3.668a.748.748 0 1 0 1.058-1.057L10.057 9l3.668-3.668a.752.752 0 0 0 0-1.05z"
+        fill="currentColor" />
+  </svg>
+</span>`;
+
+export const chatPaymentFormContainer = `<div id="chat-payment-view" class="payment-view hidden">
+  <span class="payment-view__main-container primer-form-container light-pink-blue">
+    ${closePaymentFormButton}   
+    <section id="primer-form-container"></section>
+    <span class="js-payment-form-loader payment-loader">
+      <span class="animate-spin-pay">
+        <span class="spin-icon"></span>
+      </span>
+    </span>
+    <span class="payment-form__footer">
+      <svg fill="none"
+          height="12"
+          viewBox="0 0 12 12"
+          width="12"
+          xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 4h-.5V3a2.5 2.5 0 0 0-5 0v1H3c-.55 0-1 .45-1 1v5c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V5c0-.55-.45-1-1-1zM6 8.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zM7.55 4h-3.1V3c0-.855.695-1.55 1.55-1.55.855 0 1.55.695 1.55 1.55v1z"
+              fill="currentColor" />
+      </svg>
+      <span>SSL Secure Conection</span>
+    </span>
+  </span>
+</div>`;
+
+const sendIcon = `<svg fill="currentColor" height="20px" viewBox="0 0 24 24" width="20px">
+  <path d="M16.6915026,12.4744748 L3.50612381,13.2599618 C3.19218622,13.2599618 3.03521743,13.4170592 3.03521743,13.5741566 L1.15159189,20.0151496 C0.8376543,20.8006365 0.99,21.89 1.77946707,22.52 C2.41,22.99 3.50612381,23.1 4.13399899,22.8429026 L21.714504,14.0454487 C22.6563168,13.5741566 23.1272231,12.6315722 22.9702544,11.6889879 C22.8132856,11.0605983 22.3423792,10.4322088 21.714504,10.118014 L4.13399899,1.16346272 C3.34915502,0.9 2.40734225,1.00636533 1.77946707,1.4776575 C0.994623095,2.10604706 0.8376543,3.0486314 1.15159189,3.99121575 L3.03521743,10.4322088 C3.03521743,10.5893061 3.34915502,10.7464035 3.50612381,10.7464035 L16.6915026,11.5318905 C16.6915026,11.5318905 17.1624089,11.5318905 17.1624089,12.0031827 C17.1624089,12.4744748 16.6915026,12.4744748 16.6915026,12.4744748 Z"></path>
+</svg>`
+
+
+const loaderEmail = `<span class="animate-spin hidden js-email-processing">
+  <span class="spin-icon"></span>
+</span>`;
+
+export const paymentHeader = (
+  config = { price: '$10.99', paymentInformation: 'Billed every month' },
+) => `<div class="payment-head">
+        <span class="payment-head__left-wrap">
+          <div class="payment-head__left">
+            <span class="payment-head__icon">
+              <svg width="26" height="26">
+                <use xlink:href="/img/sprite.svg#secured-check"></use>
+              </svg>
+            </span>
+            <span class="payment-head__text">
+              ${backEndVars.tm1215}
+            </span>
+          </div>
+          <div class="payment-head__bottom">
+            ${backEndVars.tm240}
+          </div>
+        </span>
+        <div class="payment-head__right">
+          <div class="payment-head__right-price">${config.price}</div>
+          <div class="payment-head__right-info">
+            ${config.paymentInformation}
+          </div>
+        </div>
+      </div>`;

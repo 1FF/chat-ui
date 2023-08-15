@@ -1,5 +1,11 @@
 import { io } from 'socket.io-client';
-import { chatMarkup, initiatorProfile, rolesHTML, timeMarkup } from './chat-widgets';
+import {
+  chatMarkup,
+  initiatorProfile,
+  paymentHeader,
+  rolesHTML,
+  timeMarkup,
+} from './chat-widgets';
 import { styles } from './styles';
 import { assistant } from './config/assistant';
 import { events } from './config/events';
@@ -16,23 +22,34 @@ import {
   initializeAddClassMethod,
   isExpired,
 } from './helpers';
-import { errorMessage, input, loadingDots, resendButton, scroll } from './utils';
 import {
-  onChatHistory,
-  onConnect,
-  onDisconnect,
-  onStreamData,
-  onStreamEnd,
-  onStreamError,
-  onStreamStart,
-  socketEmitChat,
-} from './socket-services';
-import { constructLink } from './helpers';
+  emailLoader,
+  errorMessage,
+  input,
+  loadingDots,
+  resendButton,
+  scroll,
+} from './utils';
+import { onChatHistory, onConnect, onDisconnect, onStreamData, onStreamEnd, onStreamError, onStreamStart, socketEmitChat } from './socket-services';
+import { constructLink } from "./helpers";
 
+const nodeEvents = require('events');
+
+export const intentions = new nodeEvents.EventEmitter();
 export const STORAGE_KEY = 'history';
 export const CHAT_SEEN_KEY = 'chatSeen';
-const SOCKET_IO_URL = 'http://localhost:5000';
+export const ALREADY_REGISTERED_KEY = 'showAlreadyRegisteredUser';
+export const SHOW_PAYMENT_BUTTON_KEY = 'showPaymentButton';
+export const SOCKET_IO_URL = 'http://localhost:5000';
 export const UNSENT_MESSAGES_KEY = 'unsent';
+export const GO_THROUGH_QUIZ_KEY = 'hasToGoThroughQuiz';
+
+export const intentionType = {
+  email: 'email_intent',
+  payment: 'payment_intent',
+  emailError: 'email_validation_error',
+  emailSuccess: 'email_validation_success',
+};
 
 const ChatUi = {
   theme,
@@ -55,6 +72,8 @@ const ChatUi = {
   typingTimerIds: [],
   answersFromStream: '',
   boldedText: '',
+  showModalForRegisteredUser: '',
+  showPaymentButton: '',
   lastQuestionData: {
     term: '',
     user_id: '',
@@ -96,6 +115,39 @@ const ChatUi = {
     this.setCustomVars();
     this.setDomContent();
     this.setSocket();
+    this.setIntentionEvents();
+  },
+  setIntentionEvents() {
+    intentions.on(intentionType.emailError, (response) => {
+      emailLoader.hide();
+      this.elements.emailInput.disabled = false;
+      this.elements.sendButton.style.pointerEvents = 'auto';
+      this.lastQuestionData.message = '';
+
+      if (response.status === 409) {
+        localStorage.setItem(ALREADY_REGISTERED_KEY, 'true');
+        this.showOptionsForRegisteredUser();
+        return;
+      }
+
+      if (response.status === 422) {
+        this.elements.errorEmail.textContent = response.errors.email[0];
+        this.elements.errorEmail.classList.remove('hidden');
+      }
+    })
+
+    intentions.on(intentionType.emailSuccess, () => {
+      this.lastQuestionData.message = this.elements.emailInput.value;
+      this.appendHtml({ role: roles.user, content: this.elements.emailInput.value });
+      socketEmitChat(this);
+      emailLoader.hide();
+
+      this.elements.emailInput.disabled = false;
+      this.elements.sendButton.style.pointerEvents = 'auto';
+
+      this.elements.emailInput.value = '';
+      this.elements.emailInput.addClass('hidden');
+    })
   },
   setConfig(config) {
     this.url = config.url || SOCKET_IO_URL;
@@ -110,6 +162,9 @@ const ChatUi = {
     this.assistant = { ...this.assistant, ...config.assistantConfig };
     this.mainContainer = document.getElementById(this.containerId);
     this.translations = { ...this.translations, ...config.translations };
+    this.showModalForRegisteredUser = localStorage.getItem(ALREADY_REGISTERED_KEY);
+    this.showPaymentButton = localStorage.getItem(SHOW_PAYMENT_BUTTON_KEY);
+    this.hasToGoThroughQuiz = localStorage.getItem(GO_THROUGH_QUIZ_KEY);
   },
   setMessageObject() {
     this.lastQuestionData.term = getTerm();
@@ -121,10 +176,29 @@ const ChatUi = {
 
     this.historyTraverse(history);
 
+    const { content } = history.pop();
     const lastMessageByAssistant = this.getLastMessageElement('.assistant');
     this.link = lastMessageByAssistant.querySelector('a');
+
+    if (this.hasToGoThroughQuiz) {
+      this.showSuccessfulPaymentMessage();
+      return;
+    }
+
     if (this.link) {
       this.setCtaButton();
+    }
+
+    if (content.includes(intentionType.email)) {
+      this.setEmailVisibility();
+    }
+
+    if (this.showModalForRegisteredUser) {
+      this.showOptionsForRegisteredUser();
+    }
+
+    if (content.includes(intentionType.payment) || this.showPaymentButton) {
+      this.setPaymentIntent();
     }
   },
   historyTraverse(history) {
@@ -209,6 +283,16 @@ const ChatUi = {
     }
 
     if (this.answersFromStream.includes(']')) {
+      if (this.answersFromStream.includes(intentionType.payment)) {
+        this.setPaymentIntent();
+        return;
+      }
+
+      if (this.answersFromStream.includes(intentionType.email)) {
+        this.setEmailVisibility();
+        return;
+      }
+
       this.addOptions();
       this.chunk = '';
     }
@@ -321,6 +405,13 @@ const ChatUi = {
       ctaButton: document.getElementById('cta-button'),
       promptContainer: document.getElementById('prompt-container'),
       loadingDots: document.querySelector('.js-wave'),
+      paymentButton: document.getElementById('chat-pay'),
+      paymentContainer: document.getElementById('primer-form-container'),
+      closePaymentButton: document.querySelector('.close-payment-form'),
+      paymentViewForm: document.getElementById('chat-payment-view'),
+      emailInput: document.getElementById('chat-email'),
+      errorEmail: document.querySelector('.js-error-email'),
+      paymentFormLoader: document.querySelector('.js-payment-form-loader'),
     };
   },
   /**
@@ -396,6 +487,11 @@ const ChatUi = {
    * @returns {void}
    */
   addNewMessage() {
+    if (!this.elements.emailInput.classList.contains('hidden')) {
+      this.emailSendHandler();
+      return;
+    }
+
     const content = this.elements.messageInput.value.trim();
     this.typingHandler();
     input.focus(this);
@@ -461,10 +557,31 @@ const ChatUi = {
    * @returns {void}
    */
   attachListeners() {
-    this.elements.closeButton?.addEventListener('click', this.closeWidget.bind(this));
-    this.elements.sendButton.addEventListener('click', this.addNewMessage.bind(this));
-    this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
-    this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
+    this.elements.closeButton?.addEventListener(
+      'click',
+      this.closeWidget.bind(this),
+    );
+    this.elements.sendButton.addEventListener(
+      'click',
+      this.addNewMessage.bind(this),
+    );
+    this.elements.ctaButton.addEventListener(
+      'click',
+      this.closeWidget.bind(this),
+    );
+    this.elements.messageInput.addEventListener(
+      'keydown',
+      this.onKeyDown.bind(this),
+    );
+    this.elements.messageInput.addEventListener(
+      'keydown',
+      this.onKeyDown.bind(this),
+    );
+    this.elements.emailInput.addEventListener(
+      'keydown',
+      this.onKeyDownEmail.bind(this),
+    );
+    this.elements.paymentButton.addEventListener('click', this.emitPaymentIntentions.bind(this));
     window.onresize = this.onResize;
   },
   onResize() {
@@ -492,6 +609,105 @@ const ChatUi = {
 
     this.typingTimerIds.forEach((t) => clearTimeout(t));
     this.typingTimerIds.push(timerId);
+  },
+  emailSendHandler() {
+    const data = this.getCurrentCustomerData();
+
+    emailLoader.show();
+    this.elements.emailInput.disabled = true;
+    this.elements.sendButton.style.pointerEvents = 'none';
+    intentions.emit(intentionType.email, data);
+  },
+  getCurrentCustomerData() {
+    const storedCustomerUuid = localStorage.getItem('__pd') ? JSON.parse(localStorage.getItem('__pd')).customerUuid : null;
+    const data = {
+      email: this.elements.emailInput.value,
+      customerUuid: storedCustomerUuid || this.lastQuestionData.user_id,
+    }
+
+    return data;
+  },
+  showSuccessfulPaymentMessage() {
+    localStorage.setItem(GO_THROUGH_QUIZ_KEY, true);
+    this.elements.messageIncrementor.appendChild(rolesHTML[roles.assistant](this.translations.tm1226));
+    const last = this.getLastMessageElement('.assistant');
+    const answersContainer = document.createElement('div');
+    answersContainer.classList.add('answers-container');
+    this.link = '/';
+    this.elements.ctaButton.textContent = this.translations.tm530;
+    this.setCtaButton();
+
+    this.elements.ctaButton.addEventListener('click', () => {
+      localStorage.removeItem(GO_THROUGH_QUIZ_KEY);
+    });
+
+    // in case the user does not click on take the quiz button
+    setTimeout(() => {
+      window.location.href = this.link;
+    }, 7000);
+
+    last.appendChild(answersContainer);
+
+    this.elements.paymentViewForm.addClass('hidden');
+    this.elements.paymentButton.addClass('hidden');
+    this.elements.sendButton.addClass('hidden');
+    input.hide(this);
+  },
+  showOptionsForRegisteredUser() {
+    const buttonLink = localStorage.getItem('existingProductLink');
+    this.elements.messageIncrementor.appendChild(rolesHTML[roles.assistant](this.translations.tm716));
+    const last = this.getLastMessageElement('.assistant');
+    const answersContainer = document.createElement('div');
+    answersContainer.classList.add('answers-container');
+    const continueToMyPlanButton = document.createElement('a');
+    continueToMyPlanButton.href = buttonLink;
+    const enterNewEmail = document.createElement('div');
+    continueToMyPlanButton.textContent = this.translations.tm526;
+    enterNewEmail.textContent = this.translations.tm715;
+
+    this.elements.emailInput.disabled = true;
+    this.elements.sendButton.style.pointerEvents = 'none';
+
+    enterNewEmail.addEventListener('click', () => {
+      this.elements.emailInput.value = '';
+      this.elements.emailInput.disabled = false;
+      this.elements.sendButton.style.pointerEvents = 'auto';
+      localStorage.removeItem(ALREADY_REGISTERED_KEY);
+    });
+
+    continueToMyPlanButton.addEventListener('click', () => {
+      localStorage.removeItem(ALREADY_REGISTERED_KEY);
+    });
+
+    last.appendChild(answersContainer);
+    answersContainer.appendChild(continueToMyPlanButton);
+    answersContainer.appendChild(enterNewEmail);
+  },
+  emitPaymentIntentions() {
+    localStorage.setItem(SHOW_PAYMENT_BUTTON_KEY, true);
+    intentions.emit(intentionType.payment, { ...this.elements, paymentHeader, onSuccess: this.showSuccessfulPaymentMessage.bind(this) });
+  },
+  setPaymentIntent() {
+    //show payment button
+    this.elements.paymentButton.classList.remove('hidden');
+    this.elements.paymentButton.disabled = false;
+
+    input.hide(this);
+    this.answersFromStream = '';
+    this.chunk = '';
+  },
+  setEmailVisibility() {
+    this.elements.messageInput.addClass('hidden');
+    this.elements.emailInput.classList.remove('hidden');
+    this.answersFromStream = '';
+    this.chunk = '';
+  },
+  onKeyDownEmail(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.addNewMessage();
+    }
+    this.elements.errorEmail.addClass('hidden');
   },
 };
 

@@ -24,4 +24,6 @@ export const theme = {
   '--glaze-bg': '#ffff',
   '--font-weight-normal': '500',
   '--font-weight-bold': '600',
+  '--pay-bg': '#ffff',
+  '--pay-color': '#0f0e1e',
 };

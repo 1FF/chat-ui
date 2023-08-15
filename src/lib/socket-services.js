@@ -142,6 +142,10 @@ export function onStreamEnd() {
     return;
   }
 
+  if (!this.elements.ctaButton.classList.contains('hidden') || !this.elements.paymentButton.classList.contains('hidden')) {
+    return;
+  }
+
   input.show(this);
   input.focus(this);
 }
