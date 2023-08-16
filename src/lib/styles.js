@@ -543,6 +543,7 @@ div.js-wave .dot:nth-child(3) {
   position: absolute;
   right: 20px;
   height: 100%;
+  top: 0;
   z-index: 5;
 }
 

@@ -113,7 +113,7 @@ export const closePaymentFormButton = `<span id="payment-form-close-button" clas
 
 export const chatPaymentFormContainer = `<div id="chat-payment-view" class="payment-view hidden">
   <span class="payment-view__main-container primer-form-container light-pink-blue">
-    ${closePaymentFormButton}   
+    ${closePaymentFormButton}
     <section id="primer-form-container"></section>
     <span class="js-payment-form-loader payment-loader">
       <span class="animate-spin-pay">
@@ -143,9 +143,9 @@ const loaderEmail = `<span class="animate-spin hidden js-email-processing">
   <span class="spin-icon"></span>
 </span>`;
 
-export const paymentHeader = (
-  config = { price: '$10.99', paymentInformation: 'Billed every month' },
-) => `<div class="payment-head">
+export const paymentHeader = () => {
+  const config = getDisplayInfo();
+  return `<div class="payment-head">
         <span class="payment-head__left-wrap">
           <div class="payment-head__left">
             <span class="payment-head__icon">
@@ -164,7 +164,25 @@ export const paymentHeader = (
         <div class="payment-head__right">
           <div class="payment-head__right-price">${config.price}</div>
           <div class="payment-head__right-info">
-            ${config.paymentInformation}
+            ${config.period}
           </div>
         </div>
       </div>`;
+}
+
+export function getDisplayInfo() {
+  const paymentData = JSON.parse(localStorage.getItem('__pd'));
+  const config = {
+    price: paymentData.displayPlanPrice || '$10.99',
+    period: paymentData.billingOptionType === 'one-time' ? backEndVars.tm241 : getSubscriptionMessage(paymentData.frequencyInMonths)
+  };
+
+  return config
+}
+
+function getSubscriptionMessage(frequencyInMonths) {
+  const doc = new DOMParser().parseFromString(backEndVars.tm566, 'text/xml');
+  const currentDurationContainer = doc.querySelector('.js-duration');
+  currentDurationContainer.textContent = frequencyInMonths;
+  return doc.children[0].innerHTML;
+}

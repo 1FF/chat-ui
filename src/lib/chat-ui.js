@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
 import {
   chatMarkup,
+  getDisplayInfo,
   initiatorProfile,
   paymentHeader,
   rolesHTML,
@@ -672,10 +673,18 @@ const ChatUi = {
       this.elements.emailInput.value = '';
       this.elements.emailInput.disabled = false;
       this.elements.sendButton.style.pointerEvents = 'auto';
+
+      // NOTE: this message is not being send to socket until valid;
+      this.lastQuestionData.message = this.elements.emailInput.value;
+      answersContainer.remove();
+      this.appendHtml({ role: roles.user, content: this.translations.tm715 });
+
       localStorage.removeItem(ALREADY_REGISTERED_KEY);
     });
 
     continueToMyPlanButton.addEventListener('click', () => {
+      this.lastQuestionData.message = this.translations.tm526;
+      socketEmitChat(this);
       localStorage.removeItem(ALREADY_REGISTERED_KEY);
     });
 
@@ -688,13 +697,17 @@ const ChatUi = {
     intentions.emit(intentionType.payment, { ...this.elements, paymentHeader, onSuccess: this.showSuccessfulPaymentMessage.bind(this) });
   },
   setPaymentIntent() {
+    // set chosen box
+    const lastMessageTextContainer = this.getLastMessageElement('.assistant .js-assistant-message');
+    const configuredOption = getDisplayInfo();
+    lastMessageTextContainer.innerHTML += configuredOption.price + ' ' + configuredOption.period;
+
     //show payment button
     this.elements.paymentButton.classList.remove('hidden');
     this.elements.paymentButton.disabled = false;
-
-    input.hide(this);
     this.answersFromStream = '';
     this.chunk = '';
+    input.hide(this);
   },
   setEmailVisibility() {
     this.elements.messageInput.addClass('hidden');
