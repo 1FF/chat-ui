@@ -44,6 +44,7 @@ export const SHOW_PAYMENT_BUTTON_KEY = 'showPaymentButton';
 export const SOCKET_IO_URL = 'http://localhost:5000';
 export const UNSENT_MESSAGES_KEY = 'unsent';
 export const GO_THROUGH_QUIZ_KEY = 'hasToGoThroughQuiz';
+export const EXISTING_PRODUCT_LINK_KEY = 'existingProductLink';
 
 export const intentionType = {
   email: 'email_intent',
@@ -146,6 +147,7 @@ const ChatUi = {
       this.elements.emailInput.disabled = false;
       this.elements.sendButton.style.pointerEvents = 'auto';
 
+      store.set('answers', { 'saved-email': this.elements.emailInput.value });
       this.elements.emailInput.value = '';
       this.elements.emailInput.addClass('hidden');
     })
@@ -655,7 +657,7 @@ const ChatUi = {
     input.hide(this);
   },
   showOptionsForRegisteredUser() {
-    const buttonLink = localStorage.getItem('existingProductLink');
+    const buttonLink = localStorage.getItem(EXISTING_PRODUCT_LINK_KEY);
     this.elements.messageIncrementor.appendChild(rolesHTML[roles.assistant](this.translations.tm716));
     const last = this.getLastMessageElement('.assistant');
     const answersContainer = document.createElement('div');
@@ -680,12 +682,14 @@ const ChatUi = {
       this.appendHtml({ role: roles.user, content: this.translations.tm715 });
 
       localStorage.removeItem(ALREADY_REGISTERED_KEY);
+      localStorage.removeItem(EXISTING_PRODUCT_LINK_KEY);
     });
 
     continueToMyPlanButton.addEventListener('click', () => {
       this.lastQuestionData.message = this.translations.tm526;
       socketEmitChat(this);
       localStorage.removeItem(ALREADY_REGISTERED_KEY);
+      localStorage.removeItem(EXISTING_PRODUCT_LINK_KEY);
     });
 
     last.appendChild(answersContainer);
@@ -708,12 +712,29 @@ const ChatUi = {
     this.answersFromStream = '';
     this.chunk = '';
     input.hide(this);
+    this.track('AddToCart');
   },
   setEmailVisibility() {
     this.elements.messageInput.addClass('hidden');
     this.elements.emailInput.classList.remove('hidden');
     this.answersFromStream = '';
     this.chunk = '';
+    this.track('Contact');
+  },
+  track(eventType) {
+    const event = tracking.event({
+      eventType: eventType,
+      systemType: backEndVars.systemType,
+      uri: window.location.pathname,
+      domain: window.location.hostname,
+      email: store.getAnswers()['saved-email'] || null,
+      phone: store.get('__ph') || null,
+      customerUuid: store.getCustomerUuid(),
+      additionalData: {},
+      utmParams: store.getMarketingInfo('lastUtmParams'),
+    });
+    tracking.trackClient(event);
+    trackEventInGTM(event);
   },
   onKeyDownEmail(event) {
     if (event.key === 'Enter') {

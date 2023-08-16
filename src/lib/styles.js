@@ -246,6 +246,9 @@ img {
   background-color: var(--glaze-bg);
   border: 1px solid var(--glaze);
   display: block;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .chat-widget__messages {
