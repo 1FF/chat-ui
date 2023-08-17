@@ -118,7 +118,6 @@ const ChatUi = {
   loadUserHistory(history) {
     input.show(this);
     this.elements.messageIncrementor.appendChild(timeMarkup(history[0].time));
-    history.forEach((data) => this.appendHtml(data));
 
     this.historyTraverse(history);
 
@@ -145,7 +144,7 @@ const ChatUi = {
       time: new Date().toISOString(),
       role: roles.user,
     };
-    this.appendHtml(data, false);
+    this.appendHtml(data);
     this.onError();
   },
   shouldHideChat() {
@@ -249,7 +248,7 @@ const ChatUi = {
       time: new Date().toISOString(),
     };
     socketEmitChat(this);
-    this.appendHtml(data, false);
+    this.appendHtml(data);
     e.target.parentElement.remove();
   },
   addOptions() {
@@ -330,7 +329,7 @@ const ChatUi = {
    * @param {Object} data - The chat message data object.
    * @returns {void}
    */
-  appendHtml(data, isLastMessage) {
+  appendHtml(data, isLastMessage = false) {
     const { role, content } = data;
     const result = rolesHTML[role](content);
 
@@ -382,7 +381,7 @@ const ChatUi = {
         ...this.assistant.initialMessage,
       };
       this.elements.messageIncrementor.appendChild(timeMarkup(data.time));
-      this.appendHtml(data, false);
+      this.appendHtml(data);
 
       if (extractedString) {
         input.hide(this);
@@ -410,7 +409,7 @@ const ChatUi = {
     lastMessages.push(content);
     this.lastQuestionData.message = lastMessages.join('\n');
 
-    this.appendHtml(data, false);
+    this.appendHtml(data);
     this.elements.messageInput.value = '';
   },
   /**
