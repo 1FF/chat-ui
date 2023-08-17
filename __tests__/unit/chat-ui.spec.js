@@ -37,7 +37,7 @@ describe('ChatUi', () => {
     jest.spyOn(sut, 'setSocket');
 
     // Act
-    sut.init();
+    sut.init({ translations: { paymentLoaderTexts: [] } });
 
     // Assert
     expect(sut.mainContainer).toBeDefined();
@@ -70,7 +70,7 @@ describe('ChatUi', () => {
     };
     const containerId = 'custom-container';
     const url = 'http://localhost:3000';
-    const customConfig = { url, customTheme, containerId };
+    const customConfig = { url, customTheme, containerId, translations: { paymentLoaderTexts: [] } };
     document.body.innerHTML = `<div id="${containerId}"></div>`;
 
     // Act
@@ -200,7 +200,7 @@ describe('ChatUi', () => {
     const link = 'https://example.com';
 
     // Act
-    sut.init({ containerId: 'chatbot-container' });
+    sut.init({ containerId: 'chatbot-container', translations: { paymentLoaderTexts: [] } });
     sut.link = link;
     sut.setCtaButton();
 
@@ -267,7 +267,7 @@ describe('ChatUi', () => {
 
   test('should load assistant initial message and send it', () => {
     // Arrange
-    sut.init();
+    sut.init({ translations: { paymentLoaderTexts: [] } });
     jest.spyOn(sut, 'sendAssistantInitialMessage');
     jest.spyOn(sut.socket, 'emit');
 

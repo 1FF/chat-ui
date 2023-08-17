@@ -666,6 +666,198 @@ div.js-wave .dot:nth-child(3) {
   100% { transform: rotate(360deg); transform: rotate(360deg); }
 }
 
+.chat-payment-loader {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  background: var(--sigma-2);
+  z-index: 9999999;
+}
+
+.chat-payment-loader__inner {
+  padding: 1.25rem;
+  background-color: var(--loader-bg);
+  border-radius: 0.75rem;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  max-width: 335px;
+  width: 100%;
+  display: flex;
+  position: relative;
+  z-index: 9999;
+  /* TODO fit container into payment form */
+}
+
+.chat-payment-loader__dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 2rem;
+  top: 2rem;
+  left: 0;
+  position: absolute;
+}
+
+.chat-payment-loader__dots-in {
+  padding: 0.75rem;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  position: relative;
+}
+
+.chat-payment-loader__dots_dots {
+  --tw-shadow: var(--loading-dots);
+  --tw-shadow-colored: var(--loading-dots);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+  background-color: var(--pale-dots);
+  border-radius: 9999px;
+  animation: shadowDots 2s linear infinite;
+  width: 1rem;
+  height: 1rem;
+  display: block;
+  box-sizing: content-box;
+  margin-bottom: 1rem;
+  margin-top: 1rem;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+}
+
+.chat-payment-loader__progress-text {
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  display: flex;
+  box-sizing: border-box;
+  margin-top: 6rem;
+  margin-bottom: 1.5rem;
+}
+
+.chat-payment-loader__progress_checkmark {
+  background-color: var(--iota-dots);
+  border-radius: 9999px;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 1.25rem;
+}
+
+.chat-payment-loader__title {
+  line-height: 1.25rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--text-color);
+}
+
+.chat-payment-loader__progress_checkmark svg {
+  width: 24px;
+  height: 24px;
+}
+
+.chat-payment-loader__spinning-texts {
+  text-align: center;
+  overflow: hidden;
+  justify-content: center;
+  display: flex;
+}
+
+.chat-payment-loader__spinning-texts_film {
+  animation: textSpin 30s linear infinite;
+  transform: translateX(288px);
+  max-width: 20rem;
+  width: 100%;
+  display: flex;
+}
+
+.chat-payment-loader__text {
+  margin-left: 2.5rem;
+  margin-right: 2.5rem;
+  flex-shrink: 0;
+  width: 16rem;
+  line-height: 1.63;
+  font-size: 16px;
+  color: var(--zeta);
+}
+
+@keyframes shadowDots {
+  0%,
+  33% {
+    background: var(--pale-dots);
+    box-shadow:
+      -24px 0 var(--dots),
+      24px 0 var(--pale-dots);
+  }
+
+  66% {
+    background: var(--dots);
+    box-shadow:
+      -24px 0 var(--pale-dots),
+      24px 0 var(--pale-dots);
+  }
+
+  0%,
+  to {
+    background: var(--pale-dots);
+    box-shadow:
+      -24px 0 var(--pale-dots),
+      24px 0 var(--dots);
+  }
+}
+
+@keyframes textSpin {
+  0% {
+    transform: translateX(18rem);
+  }
+
+  12.5%,
+  6.25% {
+    transform: translateX(-0.5rem);
+  }
+
+  18.75%,
+  25% {
+    transform: translateX(-21.5rem);
+  }
+
+  31.25%,
+  37.5% {
+    transform: translateX(-42.5rem);
+  }
+
+  43.75%,
+  50% {
+    transform: translateX(-63.5rem);
+  }
+
+  56.25%,
+  62.5% {
+    transform: translateX(-84.5rem);
+  }
+
+  68.75%,
+  75% {
+    transform: translateX(-105.5rem);
+  }
+
+  81.25%,
+  87.5% {
+    transform: translateX(-126.5rem);
+  }
+
+  93.75%,
+  to {
+    transform: translateX(-147.5em);
+  }
+}
+
 .hidden {
   display: none !important;
 }`;

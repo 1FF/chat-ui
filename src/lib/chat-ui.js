@@ -687,7 +687,6 @@ const ChatUi = {
 
     continueToMyPlanButton.addEventListener('click', () => {
       this.lastQuestionData.message = this.translations.tm526;
-      socketEmitChat(this);
       localStorage.removeItem(ALREADY_REGISTERED_KEY);
       localStorage.removeItem(EXISTING_PRODUCT_LINK_KEY);
     });
@@ -697,6 +696,7 @@ const ChatUi = {
     answersContainer.appendChild(enterNewEmail);
   },
   emitPaymentIntentions() {
+    this.elements.paymentButton.disabled = true;
     localStorage.setItem(SHOW_PAYMENT_BUTTON_KEY, true);
     intentions.emit(intentionType.payment, { ...this.elements, paymentHeader, onSuccess: this.showSuccessfulPaymentMessage.bind(this) });
   },
