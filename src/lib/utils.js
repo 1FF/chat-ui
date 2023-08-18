@@ -50,10 +50,12 @@ export const input = {
   hide: (state) => {
     state.elements.promptContainer.addClass('hidden');
     state.elements.messageInput.disabled = true;
+    state.elements.messageInput.addClass('hidden');
   },
   show: (state) => {
     state.elements.promptContainer.classList.remove('hidden');
     state.elements.messageInput.disabled = false;
+    state.elements.messageInput.classList.remove('hidden');
   },
   focus: (state) => {
     // it scrolls to top 0 because we have flex-direction: column-reverse;

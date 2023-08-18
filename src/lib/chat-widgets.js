@@ -26,8 +26,8 @@ export const chatMarkup = config => `<div class="chat-widget">
     <div id="error-label" class="error-message hidden"></div>
     <div class="chat-widget__prompt" id="prompt-container">
       <span class="widget__input">
-        <input id="chat-prompt" minlength="1" autofocus="chat" name="chat-prompt" type="text" placeholder="${translations.textareaPlaceholder}">
-        <input id="chat-email" class="hidden" autofocus="chat" name="email" type="email" placeholder="${translations.emailPlaceholder}">
+      <input id="chat-email" class="hidden" autofocus="chat" name="email" type="email" placeholder="${translations.emailPlaceholder}">
+      <input id="chat-prompt" minlength="1" autofocus="chat" name="chat-prompt" type="text" placeholder="${translations.textareaPlaceholder}">
         ${loaderEmail}
       </span>
       <div class="widget__button" id="send-button">
@@ -102,7 +102,7 @@ export const paymentButton = `<button id="chat-pay" class="js-payment-button pay
   <span class="payment-button__text">${translations.paymentButton}</span>
 </button>`;
 
-export const closePaymentFormButton = `<span id="payment-form-close-button" class="close-payment-form">
+export const closePaymentFormButton = `<span id="payment-form-close-button" class="close-payment-form hidden">
   <svg
     fill="none"
     viewBox="0 0 18 18">

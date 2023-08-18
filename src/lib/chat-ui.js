@@ -144,9 +144,7 @@ const ChatUi = {
       socketEmitChat(this);
       emailLoader.hide();
 
-      this.elements.emailInput.disabled = false;
-      this.elements.sendButton.style.pointerEvents = 'auto';
-
+      input.hide(this);
       store.set('answers', { 'saved-email': this.elements.emailInput.value });
       this.elements.emailInput.value = '';
       this.elements.emailInput.addClass('hidden');
@@ -433,6 +431,10 @@ const ChatUi = {
   },
   // logic with last message buttons should be refactored
   setLastMessageButtons(extractedString, isLastMessage) {
+    if ([intentionType.payment, intentionType.email].includes(extractedString)) {
+      return;
+    }
+
     if (extractedString && extractedString !== '' && isLastMessage) {
       input.hide(this);
       this.answersFromStream = '[' + extractedString + ']';
@@ -632,7 +634,8 @@ const ChatUi = {
   },
   showSuccessfulPaymentMessage() {
     localStorage.setItem(GO_THROUGH_QUIZ_KEY, true);
-    this.elements.messageIncrementor.appendChild(rolesHTML[roles.assistant](this.translations.tm1226));
+    const { element } = rolesHTML[roles.assistant](this.translations.tm1226)
+    this.elements.messageIncrementor.appendChild(element);
     const last = this.getLastMessageElement('.assistant');
     const answersContainer = document.createElement('div');
     answersContainer.classList.add('answers-container');
@@ -646,7 +649,7 @@ const ChatUi = {
 
     // in case the user does not click on take the quiz button
     setTimeout(() => {
-      window.location.href = this.link;
+      this.elements.ctaButton.click();
     }, 7000);
 
     last.appendChild(answersContainer);
@@ -658,7 +661,8 @@ const ChatUi = {
   },
   showOptionsForRegisteredUser() {
     const buttonLink = localStorage.getItem(EXISTING_PRODUCT_LINK_KEY);
-    this.elements.messageIncrementor.appendChild(rolesHTML[roles.assistant](this.translations.tm716));
+    const { element } = rolesHTML[roles.assistant](this.translations.tm716);
+    this.elements.messageIncrementor.appendChild(element);
     const last = this.getLastMessageElement('.assistant');
     const answersContainer = document.createElement('div');
     answersContainer.classList.add('answers-container');
@@ -698,7 +702,7 @@ const ChatUi = {
   emitPaymentIntentions() {
     this.elements.paymentButton.disabled = true;
     localStorage.setItem(SHOW_PAYMENT_BUTTON_KEY, true);
-    intentions.emit(intentionType.payment, { ...this.elements, paymentHeader, onSuccess: this.showSuccessfulPaymentMessage.bind(this) });
+    intentions.emit(intentionType.payment, { ...this.elements, paymentHeader, onPaymentSuccess: this.showSuccessfulPaymentMessage.bind(this) });
   },
   setPaymentIntent() {
     // set chosen box
@@ -706,12 +710,13 @@ const ChatUi = {
     const configuredOption = getDisplayInfo();
     lastMessageTextContainer.innerHTML += configuredOption.price + ' ' + configuredOption.period;
 
+    input.hide(this);
+
     //show payment button
     this.elements.paymentButton.classList.remove('hidden');
     this.elements.paymentButton.disabled = false;
     this.answersFromStream = '';
     this.chunk = '';
-    input.hide(this);
     this.track('AddToCart');
   },
   setEmailVisibility() {

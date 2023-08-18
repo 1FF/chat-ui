@@ -762,6 +762,10 @@ div.js-wave .dot:nth-child(3) {
   height: 24px;
 }
 
+#chat-email:not(.hidden)+#chat-prompt{
+  display: none;
+}
+
 .chat-payment-loader__spinning-texts {
   text-align: center;
   overflow: hidden;
