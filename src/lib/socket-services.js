@@ -13,8 +13,10 @@ import { errorMessage, input, loadingDots, messages, resendButton } from './util
 export function onStreamStart() {
   window.debugMode && console.log('stream-start');
   loadingDots.hide();
-  this.elements.messageIncrementor.appendChild(rolesHTML['assistant'](''));
-}
+
+  const {element} = rolesHTML['assistant']('');
+  this.elements.messageIncrementor.appendChild(element);
+};
 
 /**
  * Handles the connect event.

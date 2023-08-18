@@ -12,7 +12,7 @@ describe('ChatUi', () => {
     setContainer();
     jest.useFakeTimers(); // Enable fake timers
     localStorage.setItem('__cid', userID);
-    sut = ChatUi;
+    sut = {...ChatUi};
     Object.defineProperty(window, 'location', {
       value: {
         search: `?utm_chat=${term}`,
@@ -22,7 +22,6 @@ describe('ChatUi', () => {
   });
 
   afterEach(() => {
-    sut = null;
     localStorage.clear();
     jest.useRealTimers();
     jest.clearAllTimers();
@@ -103,11 +102,11 @@ describe('ChatUi', () => {
     document.body.innerHTML = `<div id="${containerId}"></div>`;
 
     sut.init({ containerId });
+    sut.setLastMessageButtons = jest.fn();
 
     // Arrange
     const messageInput = document.getElementById('chat-prompt');
     const sendButton = document.getElementById('send-button');
-
     // Simulate user input and button click
     messageInput.value = 'Hello, chatbot!';
     sendButton.click();
@@ -129,6 +128,23 @@ describe('ChatUi', () => {
     );
 
     expect(messageInput.value).toBe('');
+    expect(sut.setLastMessageButtons).toBeCalledTimes(1);
+    expect(sut.setLastMessageButtons).toBeCalledWith(undefined, false);
+  });
+
+  test('test last message buttons set for not last message', () => {
+    sut.setLastMessageButtons('extracted sting', false);
+    sut.addOptions = jest.fn();
+    expect(sut.addOptions).not.toBeCalled();
+  });
+
+  test('test last message buttons set for last message', () => {
+    sut.init();
+    sut.addOptions = jest.fn();
+
+    sut.setLastMessageButtons('extracted sting', true);
+
+    expect(sut.addOptions).toBeCalledTimes(1);
   });
 
   test('does not send an empty user message', () => {
@@ -148,6 +164,8 @@ describe('ChatUi', () => {
 
   test('does close the socket', () => {
     // Act
+    sut.init();
+
     sut.closeSocket();
 
     // Assert
@@ -259,6 +277,16 @@ describe('ChatUi', () => {
     // Assert
     expect(sut.sendAssistantInitialMessage).toHaveBeenCalled();
     expect(sut.socket.emit).toHaveBeenCalledWith("chat", { "message": assistant.initialMessage.content, "role": roles.assistant, term, "user_id": "userID" });
+  });
+    test('historyTraverse iterates over the history', () => {
+    // Arrange
+    sut.appendHtml = jest.fn();
+
+    sut.historyTraverse(['element1', 'element2']);
+
+    expect(sut.appendHtml).toBeCalledTimes(2);
+    expect(sut.appendHtml).toBeCalledWith('element1', false);
+    expect(sut.appendHtml).toBeCalledWith('element2', true);
   });
 });
 

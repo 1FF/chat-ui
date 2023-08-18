@@ -77,9 +77,10 @@ export const rolesHTML = {
     elementContent.className = 'js-assistant-message';
     element.classList.add('assistant');
     element.appendChild(elementContent);
-    const { updatedMessage } = extractStringWithBrackets(content);
+    const { extractedString, updatedMessage } = extractStringWithBrackets(content);
+
     elementContent.innerHTML = replaceLinksWithAnchors(replaceStringInCurlyBracketsWithStrong(updatedMessage));
-    return element;
+    return {extractedString, element};
   },
 };
 

@@ -118,12 +118,25 @@ const ChatUi = {
   loadUserHistory(history) {
     input.show(this);
     this.elements.messageIncrementor.appendChild(timeMarkup(history[0].time));
-    history.forEach((data) => this.appendHtml(data));
+
+    this.historyTraverse(history);
+
     const lastMessageByAssistant = this.getLastMessageElement('.assistant');
     this.link = lastMessageByAssistant.querySelector('a');
     if (this.link) {
       this.setCtaButton();
     }
+  },
+  historyTraverse(history) {
+    let counter = 1;
+    let isLastMessage = false;
+    history.forEach((data) => {
+      if (counter === history.length) {
+        isLastMessage = true;
+      }
+      this.appendHtml(data, isLastMessage);
+      counter++;
+    });
   },
   appendUnsentMessage() {
     const data = {
@@ -316,9 +329,21 @@ const ChatUi = {
    * @param {Object} data - The chat message data object.
    * @returns {void}
    */
-  appendHtml(data) {
-    const { time, role, content } = data;
-    this.elements.messageIncrementor.appendChild(rolesHTML[role](content));
+  appendHtml(data, isLastMessage = false) {
+    const { role, content } = data;
+    const result = rolesHTML[role](content);
+
+    this.elements.messageIncrementor.appendChild(result.element || result);
+
+    this.setLastMessageButtons(result.extractedString, isLastMessage);
+  },
+  // logic with last message buttons should be refactored
+  setLastMessageButtons(extractedString, isLastMessage) {
+    if (extractedString && extractedString !== '' && isLastMessage) {
+      input.hide(this);
+      this.answersFromStream = '[' + extractedString + ']';
+      this.addOptions();
+    }
   },
   /**
    * Sends the initial message to the socket server.
