@@ -56,7 +56,7 @@ export function constructLink(string) {
   if (window.location.search) {
     search = new URLSearchParams(window.location.search);
 
-    search.delete('utm_chat');
+    search.append('chatSeen', 'true');
     search.append('cid', userId);
     search = '/?' + search;
   }

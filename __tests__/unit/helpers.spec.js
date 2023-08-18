@@ -137,7 +137,7 @@ describe('extractLink', () => {
     const result = constructLink(
       'global wwww healthy link you can visit www.test.diet this website for further assistance',
     );
-    const expected = 'www.test.diet/?foo=bar&cid=randomUseId';
+    const expected = 'www.test.diet/?foo=bar&utm_chat=vegan&chatSeen=true&cid=randomUseId';
 
     // Assert
     expect(result).toEqual(expected);
