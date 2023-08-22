@@ -8,11 +8,12 @@ describe('ChatUi', () => {
   let sut;
   const term = "test";
   const userID = 'userID';
+  const translations = { paymentLoaderTexts: ['Loading...'] };
   beforeEach(() => {
     setContainer();
     jest.useFakeTimers(); // Enable fake timers
     localStorage.setItem('__cid', userID);
-    sut = {...ChatUi};
+    sut = { ...ChatUi };
     Object.defineProperty(window, 'location', {
       value: {
         search: `?utm_chat=${term}`,
@@ -37,7 +38,7 @@ describe('ChatUi', () => {
     jest.spyOn(sut, 'setSocket');
 
     // Act
-    sut.init();
+    sut.init({ translations });
 
     // Assert
     expect(sut.mainContainer).toBeDefined();
@@ -70,7 +71,7 @@ describe('ChatUi', () => {
     };
     const containerId = 'custom-container';
     const url = 'http://localhost:3000';
-    const customConfig = { url, customTheme, containerId };
+    const customConfig = { url, customTheme, containerId, translations };
     document.body.innerHTML = `<div id="${containerId}"></div>`;
 
     // Act
@@ -101,7 +102,7 @@ describe('ChatUi', () => {
     const containerId = 'custom-container';
     document.body.innerHTML = `<div id="${containerId}"></div>`;
 
-    sut.init({ containerId });
+    sut.init({ containerId, translations });
     sut.setLastMessageButtons = jest.fn();
 
     // Arrange
@@ -139,7 +140,7 @@ describe('ChatUi', () => {
   });
 
   test('test last message buttons set for last message', () => {
-    sut.init();
+    sut.init({ translations });
     sut.addOptions = jest.fn();
 
     sut.setLastMessageButtons('extracted sting', true);
@@ -149,7 +150,7 @@ describe('ChatUi', () => {
 
   test('does not send an empty user message', () => {
     // Act
-    sut.init({ containerId: 'chatbot-container' });
+    sut.init({ containerId: 'chatbot-container', translations });
 
     // Arrange
     const sendButton = document.getElementById('send-button');
@@ -164,7 +165,7 @@ describe('ChatUi', () => {
 
   test('does close the socket', () => {
     // Act
-    sut.init();
+    sut.init({ translations });
 
     sut.closeSocket();
 
@@ -185,7 +186,7 @@ describe('ChatUi', () => {
   test('setCtaButton sets link to an element and disables the field', () => {
     // Arrange
     // Act
-    sut.init({ containerId: 'chatbot-container' });
+    sut.init({ containerId: 'chatbot-container', translations });
     sut.link = 'https://www.test.com';
     sut.setCtaButton();
     // Assert
@@ -200,7 +201,7 @@ describe('ChatUi', () => {
     const link = 'https://example.com';
 
     // Act
-    sut.init({ containerId: 'chatbot-container' });
+    sut.init({ containerId: 'chatbot-container', translations });
     sut.link = link;
     sut.setCtaButton();
 
@@ -267,7 +268,7 @@ describe('ChatUi', () => {
 
   test('should load assistant initial message and send it', () => {
     // Arrange
-    sut.init();
+    sut.init({ translations: { paymentLoaderTexts: [] } });
     jest.spyOn(sut, 'sendAssistantInitialMessage');
     jest.spyOn(sut.socket, 'emit');
 
@@ -278,7 +279,7 @@ describe('ChatUi', () => {
     expect(sut.sendAssistantInitialMessage).toHaveBeenCalled();
     expect(sut.socket.emit).toHaveBeenCalledWith("chat", { "message": assistant.initialMessage.content, "role": roles.assistant, term, "user_id": "userID" });
   });
-    test('historyTraverse iterates over the history', () => {
+  test('historyTraverse iterates over the history', () => {
     // Arrange
     sut.appendHtml = jest.fn();
 
