@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from "react";
 
-const ChatWrapper = ({ children }) => {
-  const [height, setHeight] = useState(window.innerHeight);
+export default function ChatWrapper({ children }) {
+  const [height, setHeight] = useState(0);
 
   useEffect(() => {
-    const handleResize = () => {
+    const setInitialHeight = () => {
       setHeight(window.innerHeight);
     };
 
-    window.addEventListener("resize", handleResize);
-
-    setHeight(window.innerHeight);
-
+    setInitialHeight();
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", setInitialHeight);
     };
   }, []);
 
@@ -22,6 +19,4 @@ const ChatWrapper = ({ children }) => {
       {children}
     </div>
   );
-};
-
-export default ChatWrapper;
+}
