@@ -677,7 +677,7 @@ div.js-wave .dot:nth-child(3) {
   width: 100vw;
   height: 100vh;
   background: var(--sigma-2);
-  z-index: 9999999;
+  z-index: 99;
 }
 
 .chat-payment-loader__inner {
