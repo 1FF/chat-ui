@@ -1,12 +1,5 @@
 import { io } from 'socket.io-client';
-import {
-  chatMarkup,
-  getDisplayInfo,
-  initiatorProfile,
-  paymentHeader,
-  rolesHTML,
-  timeMarkup,
-} from './chat-widgets';
+import { chatMarkup, getDisplayInfo, initiatorProfile, paymentHeader, rolesHTML, timeMarkup } from './chat-widgets';
 import { styles } from './styles';
 import { assistant } from './config/assistant';
 import { events } from './config/events';
@@ -23,16 +16,19 @@ import {
   initializeAddClassMethod,
   isExpired,
 } from './helpers';
+import { emailLoader, errorMessage, input, loadingDots, resendButton, scroll } from './utils';
 import {
-  emailLoader,
-  errorMessage,
-  input,
-  loadingDots,
-  resendButton,
-  scroll,
-} from './utils';
-import { onChatHistory, onConnect, onDisconnect, onStreamData, onStreamEnd, onStreamError, onStreamStart, socketEmitChat } from './socket-services';
-import { constructLink } from "./helpers";
+  onChatHistory,
+  onConnect,
+  onDisconnect,
+  onStreamData,
+  onStreamEnd,
+  onStreamError,
+  onStreamStart,
+  socketEmitChat,
+} from './socket-services';
+import { actionService } from './action-service';
+import { constructLink } from './helpers';
 
 const nodeEvents = require('events');
 
@@ -136,7 +132,7 @@ const ChatUi = {
         this.elements.errorEmail.textContent = response.errors.email[0];
         this.elements.errorEmail.classList.remove('hidden');
       }
-    })
+    });
 
     intentions.on(intentionType.emailSuccess, () => {
       this.lastQuestionData.message = this.elements.emailInput.value;
@@ -148,7 +144,7 @@ const ChatUi = {
       store.set('answers', { 'saved-email': this.elements.emailInput.value });
       this.elements.emailInput.value = '';
       this.elements.emailInput.addClass('hidden');
-    })
+    });
   },
   setConfig(config) {
     this.url = config.url || SOCKET_IO_URL;
@@ -206,6 +202,10 @@ const ChatUi = {
     let counter = 1;
     let isLastMessage = false;
     history.forEach((data) => {
+      if (counter > 1) {
+        const updatedContent = actionService.clearButtonCodes(data.content);
+        data.content = updatedContent;
+      }
       if (counter === history.length) {
         isLastMessage = true;
       }
@@ -294,6 +294,7 @@ const ChatUi = {
         return;
       }
 
+      this.answersFromStream = actionService.clearButtonCodes(this.answersFromStream);
       this.addOptions();
       this.chunk = '';
     }
@@ -345,6 +346,7 @@ const ChatUi = {
     [...answerConfig.list].forEach((answer) => {
       const optionElement = document.createElement('div');
       optionElement.textContent = answer.content;
+      actionService.handleAction(optionElement, answer.actions);
       optionElement.addEventListener('click', this[answerConfig.answersType].bind(this));
       answersContainer.appendChild(optionElement);
     });
@@ -562,30 +564,12 @@ const ChatUi = {
    * @returns {void}
    */
   attachListeners() {
-    this.elements.closeButton?.addEventListener(
-      'click',
-      this.closeWidget.bind(this),
-    );
-    this.elements.sendButton.addEventListener(
-      'click',
-      this.addNewMessage.bind(this),
-    );
-    this.elements.ctaButton.addEventListener(
-      'click',
-      this.closeWidget.bind(this),
-    );
-    this.elements.messageInput.addEventListener(
-      'keydown',
-      this.onKeyDown.bind(this),
-    );
-    this.elements.messageInput.addEventListener(
-      'keydown',
-      this.onKeyDown.bind(this),
-    );
-    this.elements.emailInput.addEventListener(
-      'keydown',
-      this.onKeyDownEmail.bind(this),
-    );
+    this.elements.closeButton?.addEventListener('click', this.closeWidget.bind(this));
+    this.elements.sendButton.addEventListener('click', this.addNewMessage.bind(this));
+    this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
+    this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
+    this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
+    this.elements.emailInput.addEventListener('keydown', this.onKeyDownEmail.bind(this));
     this.elements.paymentButton.addEventListener('click', this.emitPaymentIntentions.bind(this));
     window.onresize = this.onResize;
   },
@@ -624,17 +608,19 @@ const ChatUi = {
     intentions.emit(intentionType.email, data);
   },
   getCurrentCustomerData() {
-    const storedCustomerUuid = localStorage.getItem('__pd') ? JSON.parse(localStorage.getItem('__pd')).customerUuid : null;
+    const storedCustomerUuid = localStorage.getItem('__pd')
+      ? JSON.parse(localStorage.getItem('__pd')).customerUuid
+      : null;
     const data = {
       email: this.elements.emailInput.value,
       customerUuid: storedCustomerUuid || this.lastQuestionData.user_id,
-    }
+    };
 
     return data;
   },
   showSuccessfulPaymentMessage() {
     localStorage.setItem(GO_THROUGH_QUIZ_KEY, true);
-    const { element } = rolesHTML[roles.assistant](this.translations.tm1226)
+    const { element } = rolesHTML[roles.assistant](this.translations.tm1226);
     this.elements.messageIncrementor.appendChild(element);
     const last = this.getLastMessageElement('.assistant');
     const answersContainer = document.createElement('div');
@@ -702,7 +688,11 @@ const ChatUi = {
   emitPaymentIntentions() {
     this.elements.paymentButton.disabled = true;
     localStorage.setItem(SHOW_PAYMENT_BUTTON_KEY, true);
-    intentions.emit(intentionType.payment, { ...this.elements, paymentHeader, onPaymentSuccess: this.showSuccessfulPaymentMessage.bind(this) });
+    intentions.emit(intentionType.payment, {
+      ...this.elements,
+      paymentHeader,
+      onPaymentSuccess: this.showSuccessfulPaymentMessage.bind(this),
+    });
   },
   setPaymentIntent() {
     // set chosen box
