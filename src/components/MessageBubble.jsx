@@ -3,7 +3,7 @@ import { extractStringWithBrackets, replaceLinksWithAnchors, replaceStringInCurl
 
 
 // additional logic for:
-// - hidden resend icon
+// - handling hidden resend icon
 // - modifying the messages from the assistant
 // - returning the extracted string we must escape this behavior
 

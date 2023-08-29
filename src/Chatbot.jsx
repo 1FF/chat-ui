@@ -3,7 +3,7 @@ import ChatWrapper from './components/ChatWrapper';
 import Head from './components/Head';
 import MessagesWrapper from './components/MessagesWrapper';
 import InitiatorProfile from './components/InitiatorProfile';
-import SendButton from './components/SendButton';
+import PromptContainer from './components/PromptContainer';
 import MessageBubble from './components/MessageBubble';
 import { assistant } from './lib/config/assistant';
 import { translations } from './lib/config/translations';
@@ -31,16 +31,7 @@ const Chatbot = ({ }) => {
         <div class="js-error error-message hidden">{translations.error}</div>
         <div class="js-error-email error-message hidden"></div>
         <div id="error-label" class="error-message hidden"></div>
-        <div class="chat-widget__prompt" id="prompt-container">
-          <span class="widget__input">
-            <input id="chat-email" class="hidden" autofocus="chat" name="email" type="email" placeholder={translations.emailPlaceholder} />
-            <input id="chat-prompt" minlength="1" autofocus="chat" name="chat-prompt" type="text" placeholder={translations.textareaPlaceholder} />
-            <span class="animate-spin hidden js-email-processing">
-              <span class="spin-icon"></span>
-            </span>
-          </span>
-          <SendButton />
-        </div>
+        <PromptContainer translations={translations}/>
       </div>
     </ChatWrapper >
   );
