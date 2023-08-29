@@ -1,17 +1,11 @@
 import { io } from 'socket.io-client';
-import {
-  chatMarkup,
-  getDisplayInfo,
-  initiatorProfile,
-  paymentHeader,
-  rolesHTML,
-  timeMarkup,
-} from './chat-widgets';
+import { chatMarkup, getDisplayInfo, initiatorProfile, paymentHeader, rolesHTML, timeMarkup } from './chat-widgets';
 import { styles } from './styles';
 import { assistant } from './config/assistant';
 import { events } from './config/events';
 import { roles } from './config/roles';
 import { socketConfig } from './config/socket';
+import { parse } from 'cookie';
 import { theme } from './config/theme';
 import { translations } from './config/translations';
 import cssMinify from './css-minify';
@@ -23,16 +17,18 @@ import {
   initializeAddClassMethod,
   isExpired,
 } from './helpers';
+import { emailLoader, errorMessage, input, loadingDots, resendButton, scroll } from './utils';
 import {
-  emailLoader,
-  errorMessage,
-  input,
-  loadingDots,
-  resendButton,
-  scroll,
-} from './utils';
-import { onChatHistory, onConnect, onDisconnect, onStreamData, onStreamEnd, onStreamError, onStreamStart, socketEmitChat } from './socket-services';
-import { constructLink } from "./helpers";
+  onChatHistory,
+  onConnect,
+  onDisconnect,
+  onStreamData,
+  onStreamEnd,
+  onStreamError,
+  onStreamStart,
+  socketEmitChat,
+} from './socket-services';
+import { constructLink } from './helpers';
 
 const nodeEvents = require('events');
 
@@ -136,7 +132,7 @@ const ChatUi = {
         this.elements.errorEmail.textContent = response.errors.email[0];
         this.elements.errorEmail.classList.remove('hidden');
       }
-    })
+    });
 
     intentions.on(intentionType.emailSuccess, () => {
       this.lastQuestionData.message = this.elements.emailInput.value;
@@ -148,7 +144,7 @@ const ChatUi = {
       store.set('answers', { 'saved-email': this.elements.emailInput.value });
       this.elements.emailInput.value = '';
       this.elements.emailInput.addClass('hidden');
-    })
+    });
   },
   setConfig(config) {
     this.url = config.url || SOCKET_IO_URL;
@@ -271,6 +267,32 @@ const ChatUi = {
     this.socket.on(this.events.streamData, onStreamData.bind(this));
     this.socket.on(this.events.streamEnd, onStreamEnd.bind(this));
     this.socket.on(this.events.streamError, onStreamError.bind(this));
+
+    const COOKIE_NAME = 'chat-ws';
+
+    this.socket.io.on('open', () => {
+      console.log('Open complete!');
+      this.socket.io.engine.transport.on('pollComplete', () => {
+        console.log('PollComplete!');
+        const request = this.socket.io.engine.transport.pollXhr.xhr;
+        console.log(request);
+        const cookieHeader = request.getResponseHeader('set-cookie');
+        console.log(`Cookie header: ${cookieHeader}`);
+        if (!cookieHeader) {
+          console.log('No cookie found!');
+          return;
+        }
+        cookieHeader.forEach((cookieString) => {
+          if (cookieString.includes(`${COOKIE_NAME}=`)) {
+            const cookie = parse(cookieString);
+            console.log(`Cookie ${cookie[COOKIE_NAME]} found!`);
+            this.socket.io.opts.extraHeaders = {
+              cookie: `${COOKIE_NAME}=${cookie[COOKIE_NAME]}`,
+            };
+          }
+        });
+      });
+    });
     // TODO do something on server error
     // this.socket.on("error", (reason) => {});
   },
@@ -562,30 +584,12 @@ const ChatUi = {
    * @returns {void}
    */
   attachListeners() {
-    this.elements.closeButton?.addEventListener(
-      'click',
-      this.closeWidget.bind(this),
-    );
-    this.elements.sendButton.addEventListener(
-      'click',
-      this.addNewMessage.bind(this),
-    );
-    this.elements.ctaButton.addEventListener(
-      'click',
-      this.closeWidget.bind(this),
-    );
-    this.elements.messageInput.addEventListener(
-      'keydown',
-      this.onKeyDown.bind(this),
-    );
-    this.elements.messageInput.addEventListener(
-      'keydown',
-      this.onKeyDown.bind(this),
-    );
-    this.elements.emailInput.addEventListener(
-      'keydown',
-      this.onKeyDownEmail.bind(this),
-    );
+    this.elements.closeButton?.addEventListener('click', this.closeWidget.bind(this));
+    this.elements.sendButton.addEventListener('click', this.addNewMessage.bind(this));
+    this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
+    this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
+    this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
+    this.elements.emailInput.addEventListener('keydown', this.onKeyDownEmail.bind(this));
     this.elements.paymentButton.addEventListener('click', this.emitPaymentIntentions.bind(this));
     window.onresize = this.onResize;
   },
@@ -624,17 +628,19 @@ const ChatUi = {
     intentions.emit(intentionType.email, data);
   },
   getCurrentCustomerData() {
-    const storedCustomerUuid = localStorage.getItem('__pd') ? JSON.parse(localStorage.getItem('__pd')).customerUuid : null;
+    const storedCustomerUuid = localStorage.getItem('__pd')
+      ? JSON.parse(localStorage.getItem('__pd')).customerUuid
+      : null;
     const data = {
       email: this.elements.emailInput.value,
       customerUuid: storedCustomerUuid || this.lastQuestionData.user_id,
-    }
+    };
 
     return data;
   },
   showSuccessfulPaymentMessage() {
     localStorage.setItem(GO_THROUGH_QUIZ_KEY, true);
-    const { element } = rolesHTML[roles.assistant](this.translations.tm1226)
+    const { element } = rolesHTML[roles.assistant](this.translations.tm1226);
     this.elements.messageIncrementor.appendChild(element);
     const last = this.getLastMessageElement('.assistant');
     const answersContainer = document.createElement('div');
@@ -702,7 +708,11 @@ const ChatUi = {
   emitPaymentIntentions() {
     this.elements.paymentButton.disabled = true;
     localStorage.setItem(SHOW_PAYMENT_BUTTON_KEY, true);
-    intentions.emit(intentionType.payment, { ...this.elements, paymentHeader, onPaymentSuccess: this.showSuccessfulPaymentMessage.bind(this) });
+    intentions.emit(intentionType.payment, {
+      ...this.elements,
+      paymentHeader,
+      onPaymentSuccess: this.showSuccessfulPaymentMessage.bind(this),
+    });
   },
   setPaymentIntent() {
     // set chosen box
