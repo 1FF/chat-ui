@@ -1,8 +1,11 @@
 import {
-  constructLink, replaceLinksWithAnchors, extractStringWithBrackets,
+  constructLink,
+  replaceLinksWithAnchors,
+  extractStringWithBrackets,
   getAnswerConfig,
+  buildConfig,
   getTerm,
-  isExpired
+  isExpired,
 } from '../../src/lib/helpers';
 
 describe('extractLink', () => {
@@ -39,11 +42,7 @@ describe('extractLink', () => {
 
   test('should should extract link with https:// and additional words', () => {
     // Act
-    const result = constructLink(
-      'global https://' +
-      link +
-      ' you can visit this website for further assistance',
-    );
+    const result = constructLink('global https://' + link + ' you can visit this website for further assistance');
     const expected = 'https://' + link;
 
     // Assert
@@ -53,9 +52,7 @@ describe('extractLink', () => {
   test('should return the link when some other words are added', () => {
     // Act
     const result = constructLink(
-      'global https:// some https inserted before link ' +
-      link +
-      ' you can visit this website for further assistance',
+      'global https:// some https inserted before link ' + link + ' you can visit this website for further assistance',
     );
 
     // Assert
@@ -64,9 +61,7 @@ describe('extractLink', () => {
 
   test('should not return link when there is only https is included in string', () => {
     // Act
-    const result = constructLink(
-      'global https:// some broken link you can visit this website for further assistance',
-    );
+    const result = constructLink('global https:// some broken link you can visit this website for further assistance');
     const expected = false;
 
     // Assert
@@ -75,9 +70,7 @@ describe('extractLink', () => {
 
   test('should return empty string if no link is found', () => {
     // Act
-    const result = constructLink(
-      'global wwww some broken link you can visit this website for further assistance',
-    );
+    const result = constructLink('global wwww some broken link you can visit this website for further assistance');
     const expected = false;
 
     // Assert
@@ -148,8 +141,7 @@ describe('replaceLinksWithAnchors', () => {
   test('should replace links with anchors', () => {
     // Arrange
     const text = 'Visit www.example.com for more information';
-    const expected =
-      'Visit <a class="underline" href="www.example.com">www.example.com</a> for more information';
+    const expected = 'Visit <a class="underline" href="www.example.com">www.example.com</a> for more information';
     // Act
     const result = replaceLinksWithAnchors(text);
 
@@ -170,22 +162,15 @@ describe('replaceLinksWithAnchors', () => {
 
   test('should replace multiple links with anchors', () => {
     // Arrange
-    const text =
-      'Visit www.example.com  for more information www.example2.com www.example3.com';
+    const text = 'Visit www.example.com  for more information www.example2.com www.example3.com';
 
     // Act
     const result = replaceLinksWithAnchors(text);
 
     // Assert
-    expect(result).toContain(
-      '<a class="underline" href="www.example2.com">www.example2.com</a>',
-    );
-    expect(result).toContain(
-      '<a class="underline" href="www.example.com">www.example.com</a>',
-    );
-    expect(result).toContain(
-      '<a class="underline" href="www.example3.com">www.example3.com</a>',
-    );
+    expect(result).toContain('<a class="underline" href="www.example2.com">www.example2.com</a>');
+    expect(result).toContain('<a class="underline" href="www.example.com">www.example.com</a>');
+    expect(result).toContain('<a class="underline" href="www.example3.com">www.example3.com</a>');
   });
 });
 
@@ -194,7 +179,7 @@ describe('extractStringWithBrackets', () => {
     const message = 'Hello [World]!';
     const expected = {
       extractedString: 'World',
-      updatedMessage: 'Hello !'
+      updatedMessage: 'Hello !',
     };
     const result = extractStringWithBrackets(message);
     expect(result).toEqual(expected);
@@ -204,7 +189,7 @@ describe('extractStringWithBrackets', () => {
     const message = 'Hello [World]! [How] are [you]?';
     const expected = {
       extractedString: 'World',
-      updatedMessage: 'Hello ! [How] are [you]?'
+      updatedMessage: 'Hello ! [How] are [you]?',
     };
     const result = extractStringWithBrackets(message);
     expect(result).toEqual(expected);
@@ -214,7 +199,7 @@ describe('extractStringWithBrackets', () => {
     const message = 'Hello World!';
     const expected = {
       extractedString: '',
-      updatedMessage: 'Hello World!'
+      updatedMessage: 'Hello World!',
     };
     const result = extractStringWithBrackets(message);
     expect(result).toEqual(expected);
@@ -227,10 +212,10 @@ describe('getAnswerConfig', () => {
     const expected = {
       answersType: 'singleChoice',
       list: [
-        { content: 'Option 1' },
-        { content: 'Option 2' },
-        { content: 'Option 3' }
-      ]
+        { content: 'Option 1', actions: [] },
+        { content: 'Option 2', actions: [] },
+        { content: 'Option 3', actions: [] },
+      ],
     };
     const result = getAnswerConfig(output);
     expect(result).toEqual(expected);
@@ -241,13 +226,32 @@ describe('getAnswerConfig', () => {
     const expected = {
       answersType: 'singleChoice',
       list: [
-        { content: 'Option 1' },
-        { content: 'Option 2' },
-        { content: 'Option 3' }
-      ]
+        { content: 'Option 1', actions: [] },
+        { content: 'Option 2', actions: [] },
+        { content: 'Option 3', actions: [] },
+      ],
     };
     const result = getAnswerConfig(output);
     expect(result).toEqual(expected);
+  });
+
+  test('that buildConfig() builds the correct object', () => {
+    //Arrange
+    const data = ['#1# #9 Yes', 'No #3# ###4 ###2# ', ' ##456 4### 4 ###44 Yes #4 4# 343 # ##'];
+
+    //Act
+    const config = buildConfig(data);
+
+    //Assert
+    expect(config.list[0].content).toBe('Yes');
+    expect(config.list[0].actions).toHaveLength(1);
+    expect(config.list[0].actions[0]).toBe('1');
+    expect(config.list[1].content).toBe('No');
+    expect(config.list[1].actions).toHaveLength(2);
+    expect(config.list[1].actions[0]).toBe('3');
+    expect(config.list[1].actions[1]).toBe('2');
+    expect(config.list[2].content).toBe('4  Yes   343');
+    expect(config.list[2].actions).toHaveLength(0);
   });
 });
 
@@ -255,12 +259,12 @@ describe('getTerm', () => {
   test('should retrieve the value of the utm_chat parameter', () => {
     // Mocking the URLSearchParams
     global.URLSearchParams = jest.fn(() => ({
-      get: jest.fn(param => {
+      get: jest.fn((param) => {
         if (param === 'utm_chat') {
           return 'example-value';
         }
         return null;
-      })
+      }),
     }));
 
     const result = getTerm();
@@ -270,14 +274,13 @@ describe('getTerm', () => {
   test('should return null if utm_chat parameter is not present', () => {
     // Mocking the URLSearchParams
     global.URLSearchParams = jest.fn(() => ({
-      get: jest.fn(() => null)
+      get: jest.fn(() => null),
     }));
 
     const result = getTerm();
     expect(result).toBeNull();
   });
 });
-
 
 describe('isExpired', () => {
   test('returns true if 24 hours have passed since the given date', () => {
@@ -294,7 +297,6 @@ describe('isExpired', () => {
   });
 
   test('returns false if less than 24 hours have passed since the given date', () => {
-
     // Arrange
     // Set the given date to the current date
     const givenDate = new Date();
@@ -311,7 +313,7 @@ describe('isExpired', () => {
     // Set the given date to 24 hours in the future
     const givenDate = new Date();
     givenDate.setDate(givenDate.getDate() + 1);
-    
+
     // Act
     const expected = isExpired(givenDate.toISOString());
 

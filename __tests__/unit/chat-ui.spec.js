@@ -6,7 +6,7 @@ jest.mock('socket.io-client');
 
 describe('ChatUi', () => {
   let sut;
-  const term = "test";
+  const term = 'test';
   const userID = 'userID';
   const translations = { paymentLoaderTexts: ['Loading...'] };
   beforeEach(() => {
@@ -84,7 +84,14 @@ describe('ChatUi', () => {
 
   test('should setConfig correctly and override default set ones', () => {
     // Arrange
-    const config = { url: 'test.url', containerId: 'new-id', assistantConfig: {}, customTheme: { '--lumina': '0' }, translations: { error: 'some custom error message' }, socketConfig: { pingInterval: 0 } };
+    const config = {
+      url: 'test.url',
+      containerId: 'new-id',
+      assistantConfig: {},
+      customTheme: { '--lumina': '0' },
+      translations: { error: 'some custom error message' },
+      socketConfig: { pingInterval: 0 },
+    };
 
     // Act
     sut.setConfig(config);
@@ -113,20 +120,12 @@ describe('ChatUi', () => {
     sendButton.click();
 
     // Assert
-    expect(sut.socket.emit).not.toHaveBeenCalledWith(
-      sut.events.chat,
-      expect.any(Object),
-    );
-    expect(sut.elements.messageIncrementor.innerHTML).toContain(
-      'Hello, chatbot!',
-    );
+    expect(sut.socket.emit).not.toHaveBeenCalledWith(sut.events.chat, expect.any(Object));
+    expect(sut.elements.messageIncrementor.innerHTML).toContain('Hello, chatbot!');
 
     jest.advanceTimersByTime(3000);
 
-    expect(sut.socket.emit).toHaveBeenCalledWith(
-      sut.events.chat,
-      expect.any(Object),
-    );
+    expect(sut.socket.emit).toHaveBeenCalledWith(sut.events.chat, expect.any(Object));
 
     expect(messageInput.value).toBe('');
     expect(sut.setLastMessageButtons).toBeCalledTimes(1);
@@ -161,7 +160,7 @@ describe('ChatUi', () => {
     expect(sut.socket.emit).not.toBeCalledWith('chat');
     // this means that we only have the initiator profile as an element
     expect(sut.elements.messageIncrementor.children.length).toBe(1);
-  })
+  });
 
   test('does close the socket', () => {
     // Act
@@ -179,7 +178,7 @@ describe('ChatUi', () => {
       message: '',
       term,
       user_id: 'userID',
-      role: roles.user
+      role: roles.user,
     });
   });
 
@@ -208,20 +207,21 @@ describe('ChatUi', () => {
     // Assert
     expect(sut.elements.ctaButton.getAttribute('href')).toBe(link);
     expect(sut.elements.ctaButton.classList.contains('hidden')).toBe(false);
-    expect(sut.elements.promptContainer.classList.contains('hidden')).toBe(
-      true,
-    );
+    expect(sut.elements.promptContainer.classList.contains('hidden')).toBe(true);
   });
 
   test('shouldHideChat returns true when user has seen the chat and the history has not expired (24hrs)', () => {
     // Arrange
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([
-      {
-        "role": "user",
-        "content": "Get started",
-        "time": new Date()
-      }
-    ]));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify([
+        {
+          role: 'user',
+          content: 'Get started',
+          time: new Date(),
+        },
+      ]),
+    );
     localStorage.setItem(CHAT_SEEN_KEY, true);
 
     // Act
@@ -233,13 +233,16 @@ describe('ChatUi', () => {
 
   test('shouldHideChat returns false when user has seen the chat and the history has expired (24hrs)', () => {
     // Arrange
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([
-      {
-        "role": "user",
-        "content": "Get started",
-        "time": new Date().getDate() - 2
-      }
-    ]));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify([
+        {
+          role: 'user',
+          content: 'Get started',
+          time: new Date().getDate() - 2,
+        },
+      ]),
+    );
     localStorage.setItem(CHAT_SEEN_KEY, true);
 
     // Act
@@ -251,13 +254,16 @@ describe('ChatUi', () => {
 
   test('shouldHideChat returns false when we have history but the user did not see cta button', () => {
     // Arrange
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([
-      {
-        "role": "user",
-        "content": "Get started",
-        "time": new Date().getDate() - 2
-      }
-    ]));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify([
+        {
+          role: 'user',
+          content: 'Get started',
+          time: new Date().getDate() - 2,
+        },
+      ]),
+    );
 
     // Act
     const expected = sut.shouldHideChat();
@@ -277,17 +283,22 @@ describe('ChatUi', () => {
 
     // Assert
     expect(sut.sendAssistantInitialMessage).toHaveBeenCalled();
-    expect(sut.socket.emit).toHaveBeenCalledWith("chat", { "message": assistant.initialMessage.content, "role": roles.assistant, term, "user_id": "userID" });
+    expect(sut.socket.emit).toHaveBeenCalledWith('chat', {
+      message: assistant.initialMessage.content,
+      role: roles.assistant,
+      term,
+      user_id: 'userID',
+    });
   });
   test('historyTraverse iterates over the history', () => {
     // Arrange
     sut.appendHtml = jest.fn();
 
-    sut.historyTraverse(['element1', 'element2']);
+    sut.historyTraverse([{ content: 'element1' }, { content: 'element2' }]);
 
     expect(sut.appendHtml).toBeCalledTimes(2);
-    expect(sut.appendHtml).toBeCalledWith('element1', false);
-    expect(sut.appendHtml).toBeCalledWith('element2', true);
+    expect(sut.appendHtml).toBeCalledWith({ content: 'element1' }, false);
+    expect(sut.appendHtml).toBeCalledWith({ content: 'element2' }, true);
   });
 });
 

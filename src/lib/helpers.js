@@ -1,3 +1,4 @@
+import { actionService } from './action-service';
 const REGEX_URL = /\b((?:https?:\/\/|www\.)[^\s/$.?#][^\s{}\[\]()<>]*)\b/gi;
 
 /**
@@ -82,7 +83,7 @@ export function replaceLinksWithAnchors(text) {
   // this pattern will exclude {https://test.test.test} any of those symbols {}[]()<> at the end of the link
   const pattern = /((?:https?:\/\/|www\.)[^\s/$.?#].[^\s{}\[\]()<>]*)/gi;
 
-  const link = text.replace(pattern, match => {
+  const link = text.replace(pattern, (match) => {
     const urlWithParams = constructLink(match);
     return `<a class="underline" href="${urlWithParams}">${match}</a>`;
   });
@@ -114,28 +115,23 @@ export const extractStringWithBrackets = (message) => {
 
     return {
       extractedString,
-      updatedMessage
+      updatedMessage,
     };
   }
 
   // No brackets found, return original message
   return {
     extractedString: '',
-    updatedMessage: message
+    updatedMessage: message,
   };
-}
+};
 
 export const getAnswerConfig = (output) => {
-  const optionsString = output.replace(/\[|\]/g, '')
+  const optionsString = output.replace(/\[|\]/g, '');
   const choicesArray = optionsString.split('|');
-  const config = { answersType: 'singleChoice', list: [] };
-  choicesArray.forEach(option => {
-    const optionConfig = { content: '' };
-    optionConfig.content = option.trim();
-    config.list.push(optionConfig)
-  });
+  const config = buildConfig(choicesArray);
   return config;
-}
+};
 
 /**
  * Retrieves the value of the 'utm_chat' parameter from the current URL.
@@ -174,4 +170,27 @@ export function isExpired(date, maxHours = 24) {
   const elapsedHours = elapsedMilliseconds / (1000 * 60 * 60); // Convert milliseconds to hours
 
   return elapsedHours >= maxHours;
+}
+
+/**
+ * builds the config object that holds each button.
+ *
+ * @function buildConfig
+ * @param {Array} arr - array of buttons
+ * @returns {Object} returns an object with all the data for each button.
+ */
+export function buildConfig(arr) {
+  const config = { answersType: 'singleChoice', list: [] };
+
+  arr.forEach((option) => {
+    const optionConfig = { content: '', actions: [] };
+    const actionMatches = actionService.getActionCodes(option, actionService.ACTION_CODE_REGEX);
+    optionConfig.actions = [...actionMatches];
+    option = option.replace(actionService.ACTION_CODE_REGEX, '');
+    option = actionService.clearButtonCodes(option);
+    optionConfig.content = option.trim();
+    config.list.push(optionConfig);
+  });
+
+  return config;
 }
