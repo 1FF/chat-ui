@@ -4,6 +4,7 @@ import Head from './components/Head';
 import MessagesWrapper from './components/MessagesWrapper';
 import InitiatorProfile from './components/InitiatorProfile';
 import SendButton from './components/SendButton';
+import MessageBubble from './components/MessageBubble';
 import { assistant } from './lib/config/assistant';
 import { translations } from './lib/config/translations';
 
@@ -17,13 +18,9 @@ const Chatbot = ({ }) => {
         <InitiatorProfile assistant={assistant} />
 
         <div class="date-formatted">AUGUST 28, 2023 AT 1:58 PM</div>
-        <span class="assistant">
-          <span class="js-assistant-message">Do you want to lose weight? </span>
-          <div class="answers-container">
-            <div>Yes</div>
-            <div>No</div>
-          </div>
-        </span>
+
+        <MessageBubble content="hello" />
+        <MessageBubble content="hello, i need help" isAssistant={false} />
       </MessagesWrapper>
 
       {/* <a class="chat-widget__cta hidden" id="cta-button">${config.assistant.ctaTextContent}</a>
