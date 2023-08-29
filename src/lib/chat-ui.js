@@ -33,7 +33,7 @@ import {
 import {actionService} from './action-service';
 import {customEventTypes, standardEventTypes} from "./custom/tracking-events";
 
-const nodeEvents = require('events');
+import * as nodeEvents from 'events';
 
 export const intentions = new nodeEvents.EventEmitter();
 export const STORAGE_KEY = 'history';

@@ -17,7 +17,7 @@ const Chatbot = ({ }) => {
       <MessagesWrapper>
         <InitiatorProfile assistant={assistant} />
 
-        <div class="date-formatted">AUGUST 28, 2023 AT 1:58 PM</div>
+        <div className="date-formatted">AUGUST 28, 2023 AT 1:58 PM</div>
 
         <MessageBubble content="hello" />
         <MessageBubble content="hello, i need help" isAssistant={false} />
@@ -28,9 +28,9 @@ const Chatbot = ({ }) => {
       ${loadingDots}
       ${chatPaymentFormContainer(config.translations)} */}
       <div>
-        <div class="js-error error-message hidden">{translations.error}</div>
-        <div class="js-error-email error-message hidden"></div>
-        <div id="error-label" class="error-message hidden"></div>
+        <div className="js-error error-message hidden">{translations.error}</div>
+        <div className="js-error-email error-message hidden"></div>
+        <div id="error-label" className="error-message hidden"></div>
         <PromptContainer translations={translations}/>
       </div>
     </ChatWrapper >

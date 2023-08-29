@@ -13,8 +13,8 @@ function uuidv4() {
 document.addEventListener('DOMContentLoaded', () => {
   !localStorage.getItem('__cid') && localStorage.setItem('__cid', uuidv4());
   ChatUi.init({
-    url: 'http://localhost:5000',
+    url: 'https://chat-ws.test',
     assistantConfig: { ctaTextContent: 'goodbuy' },
-    translations: { error: 'custom error tmsg' },
+    translations: { error: 'custom error tmsg', paymentLoaderTexts: [] },
   });
 });

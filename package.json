@@ -4,8 +4,8 @@
   "description": "chatbot to communicate with taught ai",
   "main": "src/lib/chat-ui.js",
   "scripts": {
-    "dev": "webpack --mode=development",
-    "prod": "webpack-dev-server --mode=production --open",
+    "dev": "vite",
+    "build": "vite build",
     "tests": "NODE_ENV=test jest --testPathPattern=/__tests__/unit"
   },
   "keywords": [
@@ -22,9 +22,9 @@
   "devDependencies": {
     "@babel/preset-env": "^7.16.11",
     "@babel/preset-typescript": "^7.16.7",
+    "@testing-library/react": "^14.0.0",
     "@faker-js/faker": "^7.6.0",
     "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^12.0.0",
     "@types/jest": "^27.0.3",
     "babel-core": "^6.26.3",
     "babel-loader": "^9.1.2",
@@ -34,12 +34,13 @@
     "jest-location-mock": "^1.0.9",
     "node-libs-browser": "^2.2.1",
     "prettier": "^2.8.8",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0",
     "ts-jest": "^27.0.5",
+    "vite": "^4.4.9",
     "webpack": "^5.82.0",
     "webpack-cli": "^5.1.1",
-    "webpack-dev-server": "^4.15.0",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "webpack-dev-server": "^4.15.0"
   },
   "dependencies": {
     "socket.io-client": "^4.6.1"
