@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-export default function ChatWrapper({ children }) {
+export default function ChatWrapper({ children, shouldShowChat }) {
   const [height, setHeight] = useState(0);
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export default function ChatWrapper({ children }) {
   }, []);
 
   return (
-    <div className="chat-widget" style={{ height }}>
+    <div className={`chat-widget ${shouldShowChat ? '' : 'hidden'}`} style={{ height }}>
       {children}
     </div>
   );

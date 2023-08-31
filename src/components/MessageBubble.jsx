@@ -7,12 +7,12 @@ import { extractStringWithBrackets, replaceLinksWithAnchors, replaceStringInCurl
 // - modifying the messages from the assistant
 // - returning the extracted string we must escape this behavior
 
-export default function MessageBubble({ content, isAssistant = true }) {
+export default function MessageBubble({ content, isAssistant = true, isReceiving }) {
   const { extractedString, updatedMessage } = extractStringWithBrackets(content);
 
   return (
     isAssistant
-      ? <span className="assistant js-assistant">
+      ? <span className={`assistant js-assistant ${isReceiving ? 'cursor' : ''}`}>
         <span className="js-assistant-message">
           {replaceLinksWithAnchors(replaceStringInCurlyBracketsWithStrong(updatedMessage))}
         </span>
