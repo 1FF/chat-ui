@@ -275,7 +275,6 @@ img {
 
 .chat-widget__initiator-profile {
   margin-inline: auto;
-  visibility: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
