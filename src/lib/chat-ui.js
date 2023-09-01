@@ -1,14 +1,15 @@
-import { io } from 'socket.io-client';
-import { chatMarkup, getDisplayInfo, initiatorProfile, paymentHeader, rolesHTML, timeMarkup } from './chat-widgets';
-import { styles } from './styles';
-import { assistant } from './config/assistant';
-import { events } from './config/events';
-import { roles } from './config/roles';
-import { socketConfig } from './config/socket';
-import { theme } from './config/theme';
-import { translations } from './config/translations';
+import {io} from 'socket.io-client';
+import {chatMarkup, getDisplayInfo, initiatorProfile, paymentHeader, rolesHTML, timeMarkup} from './chat-widgets';
+import {styles} from './styles';
+import {assistant} from './config/assistant';
+import {events} from './config/events';
+import {roles} from './config/roles';
+import {socketConfig} from './config/socket';
+import {theme} from './config/theme';
+import {translations} from './config/translations';
 import cssMinify from './css-minify';
 import {
+  constructLink,
   extractStringWithBrackets,
   getAnswerConfig,
   getTerm,
@@ -16,7 +17,7 @@ import {
   initializeAddClassMethod,
   isExpired,
 } from './helpers';
-import { emailLoader, errorMessage, input, loadingDots, resendButton, scroll } from './utils';
+import {emailLoader, errorMessage, input, loadingDots, resendButton, scroll} from './utils';
 import {
   onChatHistory,
   onConnect,
@@ -27,8 +28,8 @@ import {
   onStreamStart,
   socketEmitChat,
 } from './socket-services';
-import { actionService } from './action-service';
-import { constructLink } from './helpers';
+import {actionService} from './action-service';
+import {customEventTypes, standardEventTypes} from "./custom/tracking-events";
 
 const nodeEvents = require('events');
 
@@ -123,6 +124,7 @@ const ChatUi = {
       this.lastQuestionData.message = '';
 
       if (response.status === 409) {
+        this.track(customEventTypes.emailExist);
         localStorage.setItem(ALREADY_REGISTERED_KEY, 'true');
         this.showOptionsForRegisteredUser();
         return;
@@ -131,6 +133,7 @@ const ChatUi = {
       if (response.status === 422) {
         this.elements.errorEmail.textContent = response.errors.email[0];
         this.elements.errorEmail.classList.remove('hidden');
+        this.track(customEventTypes.emailWrong);
       }
     });
 
@@ -144,6 +147,7 @@ const ChatUi = {
       store.set('answers', { 'saved-email': this.elements.emailInput.value });
       this.elements.emailInput.value = '';
       this.elements.emailInput.addClass('hidden');
+      this.track(customEventTypes.emailEntered);
     });
   },
   setConfig(config) {
@@ -333,6 +337,9 @@ const ChatUi = {
       content: e.target.textContent,
       time: new Date().toISOString(),
     };
+    if (this.isFirstUserMessage()) {
+      this.track(customEventTypes.firstMessage);
+    }
     socketEmitChat(this);
     this.appendHtml(data);
     e.target.parentElement.remove();
@@ -358,6 +365,13 @@ const ChatUi = {
       this.elements.messageIncrementor.querySelectorAll(role).length - 1
     ];
   },
+  isFirstUserMessage() {
+    let history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+    return !history.find(obj => {
+      return obj.role === roles.user;
+    });
+  },
   /**
    * It shows the CTA button, sets the href attribute to the link, and hides the prompt container.
    *
@@ -368,6 +382,10 @@ const ChatUi = {
     this.elements.ctaButton.classList.remove('hidden');
     this.elements.ctaButton.setAttribute('href', this.link);
     input.hide(this);
+    this.track(customEventTypes.linkProvided);
+    this.elements.ctaButton.addEventListener('click', () => {
+      this.track(customEventTypes.linkClicked);
+    });
   },
   /**
    * Sets custom variables and applies them to the main container element and font family.
@@ -499,6 +517,10 @@ const ChatUi = {
       return;
     }
 
+    if (this.isFirstUserMessage()) {
+      this.track(customEventTypes.firstMessage);
+    }
+
     const content = this.elements.messageInput.value.trim();
     this.typingHandler();
     input.focus(this);
@@ -567,7 +589,6 @@ const ChatUi = {
     this.elements.closeButton?.addEventListener('click', this.closeWidget.bind(this));
     this.elements.sendButton.addEventListener('click', this.addNewMessage.bind(this));
     this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
-    this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
     this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
     this.elements.emailInput.addEventListener('keydown', this.onKeyDownEmail.bind(this));
     this.elements.paymentButton.addEventListener('click', this.emitPaymentIntentions.bind(this));
@@ -707,14 +728,16 @@ const ChatUi = {
     this.elements.paymentButton.disabled = false;
     this.answersFromStream = '';
     this.chunk = '';
-    this.track('AddToCart');
+    this.track(standardEventTypes.addToCart);
+    this.track(customEventTypes.priceSeen);
   },
   setEmailVisibility() {
     this.elements.messageInput.addClass('hidden');
     this.elements.emailInput.classList.remove('hidden');
     this.answersFromStream = '';
     this.chunk = '';
-    this.track('Contact');
+    this.track(standardEventTypes.contact);
+    this.track(customEventTypes.emailField);
   },
   track(eventType) {
     const event = tracking.event({
