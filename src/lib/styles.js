@@ -413,12 +413,23 @@ img {
   padding: 11px 20px;
   border-radius: 20px;
   margin-inline: auto;
-  max-width: 320px;
+  max-width: 280px;
   width: 100%;
   font-weight: bolder;
-  font-size: 20px;
-  background: var(--enigma);
+  font-size: 16px;
+  background: var(--theta);
   box-shadow: 0px 12px 24px -4px rgba(255, 174, 25, 0.2);
+}
+
+@media(min-width: 350px){
+  .chat-widget__cta, .payment-button {
+    max-width: 320px;
+    font-size: 20px;
+  }
+}
+
+.payment-button span {
+  margin-left: 10px
 }
 
 .payment-button svg {

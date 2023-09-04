@@ -5,6 +5,7 @@ import {
   replaceStringInCurlyBracketsWithStrong,
 } from './helpers';
 import { translations } from './config/translations';
+import { config } from 'webpack';
 
 export const chatMarkup = (config) => `<div class="chat-widget">
   <div class="chat-widget__head">
@@ -21,8 +22,8 @@ export const chatMarkup = (config) => `<div class="chat-widget">
   <div class="chat-widget__messages" id="scroll-incrementor">
     <div class="chat-widget__messages-container" id="message-incrementor"></div>
   </div>
-    <a class="chat-widget__cta hidden" id="cta-button">${config.assistant.ctaTextContent}</a>
-  ${paymentButton}
+    <a class="chat-widget__cta hidden" id="cta-button">${config.translations.mealButton}</a>
+  ${paymentButton(config.translations)}
   ${loadingDots}
   ${chatPaymentFormContainer(config.translations)}
   <div id="container">
@@ -107,11 +108,11 @@ export const loadingDots = `<div class="js-wave hidden">
   <span class="dot"></span>
 </div>`;
 
-export const paymentButton = `<button id="chat-pay" class="js-payment-button payment-button hidden">
+export const paymentButton = (translations) => `<button id="chat-pay" class="js-payment-button payment-button hidden">
   <svg class="h-6 w-6">
       <use xlink:href="./img/sprite.svg#cart-toned-pay"></use>
     </svg>
-  <span class="payment-button__text">${translations.paymentButton}</span>
+  <span class="payment-button__text">${translations.payButton}</span>
 </button>`;
 
 export const closePaymentFormButton = `<span id="payment-form-close-button" class="close-payment-form hidden">
