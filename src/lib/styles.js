@@ -421,6 +421,11 @@ img {
   box-shadow: 0px 12px 24px -4px rgba(255, 174, 25, 0.2);
 }
 
+.payment-button svg {
+  width: 24px;
+  height: 24px;
+}
+
 div.js-wave {
   position: relative;
   text-align: center;
