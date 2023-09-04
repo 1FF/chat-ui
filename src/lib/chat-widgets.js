@@ -5,7 +5,6 @@ import {
   replaceStringInCurlyBracketsWithStrong,
 } from './helpers';
 import { translations } from './config/translations';
-import { config } from 'webpack';
 
 export const chatMarkup = (config) => `<div class="chat-widget">
   <div class="chat-widget__head">
