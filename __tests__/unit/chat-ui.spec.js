@@ -1,6 +1,7 @@
-import ChatUi, { CHAT_SEEN_KEY, STORAGE_KEY } from '../../src/lib/chat-ui';
-import { assistant } from '../../src/lib/config/assistant';
-import { roles } from '../../src/lib/config/roles';
+import ChatUi, {CHAT_SEEN_KEY, STORAGE_KEY} from '../../src/lib/chat-ui';
+import {assistant} from '../../src/lib/config/assistant';
+import {roles} from '../../src/lib/config/roles';
+import {customEventTypes} from "../../src/lib/custom/tracking-events";
 
 jest.mock('socket.io-client');
 
@@ -111,6 +112,7 @@ describe('ChatUi', () => {
 
     sut.init({ containerId, translations });
     sut.setLastMessageButtons = jest.fn();
+    sut.track = jest.fn();
 
     // Arrange
     const messageInput = document.getElementById('chat-prompt');
@@ -130,6 +132,9 @@ describe('ChatUi', () => {
     expect(messageInput.value).toBe('');
     expect(sut.setLastMessageButtons).toBeCalledTimes(1);
     expect(sut.setLastMessageButtons).toBeCalledWith(undefined, false);
+
+    expect(sut.track).toBeCalledTimes(1);
+    expect(sut.track).toBeCalledWith(customEventTypes.firstMessage);
   });
 
   test('test last message buttons set for not last message', () => {
@@ -150,6 +155,7 @@ describe('ChatUi', () => {
   test('does not send an empty user message', () => {
     // Act
     sut.init({ containerId: 'chatbot-container', translations });
+    sut.track = jest.fn();
 
     // Arrange
     const sendButton = document.getElementById('send-button');
@@ -160,6 +166,9 @@ describe('ChatUi', () => {
     expect(sut.socket.emit).not.toBeCalledWith('chat');
     // this means that we only have the initiator profile as an element
     expect(sut.elements.messageIncrementor.children.length).toBe(1);
+
+    expect(sut.track).toBeCalledTimes(1);
+    expect(sut.track).toBeCalledWith(customEventTypes.firstMessage);
   });
 
   test('does close the socket', () => {
@@ -183,16 +192,21 @@ describe('ChatUi', () => {
   });
 
   test('setCtaButton sets link to an element and disables the field', () => {
-    // Arrange
     // Act
     sut.init({ containerId: 'chatbot-container', translations });
+    sut.track = jest.fn();
+
     sut.link = 'https://www.test.com';
     sut.setCtaButton();
+
     // Assert
     expect(sut.elements.ctaButton.classList.contains('hidden')).toBe(false);
     expect(sut.elements.promptContainer.classList.contains('hidden')).toBe(true);
     expect(sut.elements.messageInput.disabled).toBe(true);
     expect(sut.elements.ctaButton.getAttribute('href')).toBe(sut.link);
+
+    expect(sut.track).toBeCalledTimes(1);
+    expect(sut.track).toBeCalledWith(customEventTypes.linkProvided);
   });
 
   test('should setLink', () => {
@@ -201,6 +215,8 @@ describe('ChatUi', () => {
 
     // Act
     sut.init({ containerId: 'chatbot-container', translations });
+    sut.track = jest.fn();
+
     sut.link = link;
     sut.setCtaButton();
 
@@ -208,6 +224,9 @@ describe('ChatUi', () => {
     expect(sut.elements.ctaButton.getAttribute('href')).toBe(link);
     expect(sut.elements.ctaButton.classList.contains('hidden')).toBe(false);
     expect(sut.elements.promptContainer.classList.contains('hidden')).toBe(true);
+
+    expect(sut.track).toBeCalledTimes(1);
+    expect(sut.track).toBeCalledWith(customEventTypes.linkProvided);
   });
 
   test('shouldHideChat returns true when user has seen the chat and the history has not expired (24hrs)', () => {
