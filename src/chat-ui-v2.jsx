@@ -1,4 +1,4 @@
-import React from "react";
+import React, { StrictMode } from "react";
 import Chatbot from "../src/Chatbot.jsx";
 import { createRoot } from 'react-dom/client';
 
@@ -10,4 +10,10 @@ const config = {
 
 const container = document.getElementById('chatbot-container');
 const root = createRoot(container);
-root.render(<Chatbot config={config} />);
+root.render(
+  <StrictMode>
+    <Chatbot config={config} />
+  </StrictMode>
+);
+
+

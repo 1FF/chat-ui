@@ -4,6 +4,7 @@
 # But not those files
 !*.ts
 !*.js
+!*.jsx
 !*.css
 !*.sass
 !*.scss

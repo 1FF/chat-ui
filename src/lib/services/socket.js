@@ -1,14 +1,12 @@
 import { io } from 'socket.io-client';
 import { events } from '../config/events';
 import { socketConfig } from '../config/socket';
-import { getTerm, getUserId } from '../helpers';
-import { roles } from '../config/roles';
+import { getUserId } from '../helpers';
 
 const connectSocket = (serverUrl, actions) => {
-  console.log(serverUrl, actions);
   const socket = io.connect(serverUrl, socketConfig);
   socket.on(events.connect, () => {
-    socket.emit(events.chatHistory, { user_id: getUserId()});
+    socket.emit(events.chatHistory, { user_id: getUserId() });
     actions.onConnect();
   });
   socket.on(events.chatHistory, actions.onHistory);
