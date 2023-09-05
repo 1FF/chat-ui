@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function PromptContainer({ translations, onChange, onKeyUp, value }) {
+const PromptContainer = ({ translations, onChange, onKeyUp, value }) => {
   return (
     <span className="widget__input">
       <input id="chat-email" className="hidden" autoFocus="chat" name="email" type="email" placeholder={translations.emailPlaceholder} />
@@ -11,3 +11,5 @@ export default function PromptContainer({ translations, onChange, onKeyUp, value
     </span>
   )
 }
+
+export default PromptContainer;

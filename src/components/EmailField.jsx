@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function EmailField({ translations, isEmailInputVisible }) {
+const EmailField = ({ translations, isEmailInputVisible, onChange, emailInputRef, onKeyUp, isLoaderVisible }) => {
   return (
     <>
       <input
@@ -9,11 +9,17 @@ export default function EmailField({ translations, isEmailInputVisible }) {
         autoFocus="chat"
         name="email"
         type="email"
+        disabled={isLoaderVisible}
+        ref={emailInputRef}
+        onChange={onChange}
+        onKeyUp={onKeyUp}
         placeholder={translations.emailPlaceholder}
       />
-      <span className="animate-spin hidden js-email-processing">
+      <span className={`${isLoaderVisible ? '' : 'hidden'} animate-spin js-email-processing`}>
         <span className="spin-icon"></span>
       </span>
     </>
   )
 }
+
+export default EmailField

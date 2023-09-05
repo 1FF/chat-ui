@@ -10,12 +10,20 @@ import EmailField from './components/EmailField';
 import PromptField from './components/PromptField';
 import MessageBubble from './components/MessageBubble';
 import { assistant } from './lib/config/assistant';
+import { translations as defaultTranslations } from './lib/config/translations';
 import { roles } from './lib/config/roles';
+import * as nodeEvents from 'events';
 
+export const intentions = new nodeEvents.EventEmitter();
 import './styles/index.css';
 import { extractStringWithBrackets, getTerm, getUserId } from './lib/helpers';
 
+// for simulations purpose must be removed
+window.intentions = intentions;
+
 import { events } from './lib/config/events';
+import { intentionType } from './lib/config/intentionTypes';
+import { ALREADY_REGISTERED_KEY, EXISTING_PRODUCT_LINK_KEY } from './lib/config/properties';
 
 function uuidv4() {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
@@ -35,11 +43,14 @@ const Chatbot = ({ config }) => {
   const [error, setError] = useState('');
   const [shouldShowChat, setShouldShowChat] = useState(false);
   const [isLoaderVisible, setIsLoaderVisible] = useState(true);
+  const [isEmailLoaderVisible, setIEmailLoaderVisible] = useState(false);
   const [shouldSendUnsent, setShouldSendUnsent] = useState(false);
   const [history, setHistory] = useState([]);
   const [typingTimerIds, setTypingTimerIds] = useState([]);
   const [unsentMessages, setUnsentMessages] = useState([]);
-  const [currentUserInput, setCurrentUserInput] = useState('');
+  const [loginLink, setLoginLink] = useState(localStorage.getItem(EXISTING_PRODUCT_LINK_KEY));
+  const [translations, setTranslations] = useState({ ...defaultTranslations, ...config.translations });
+  const [errors, setErrors] = useState([])
   const [socket, setSocket] = useState(() => {
     return connectSocket(config.url, {
       onConnect,
@@ -52,7 +63,36 @@ const Chatbot = ({ config }) => {
   const [isPromptInputVisible, setIsPromptInputVisible] = useState(true);
   const [isEmailInputVisible, setIsEmailInputVisible] = useState(false);
   const lastMessageRef = useRef(null);
+  const promptInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+
   let optionsFromStream = '';
+
+  intentions.on(intentionType.emailError, (response) => {
+    setIEmailLoaderVisible(false);
+
+    if (response.status === 409) {
+      localStorage.setItem(ALREADY_REGISTERED_KEY, 'true');
+      setLoginLink(localStorage.getItem(EXISTING_PRODUCT_LINK_KEY));
+      return;
+    }
+
+    if (response.status === 422) {
+      // TODO: visualize errors
+      setErrors((prev) => [...prev, response.errors.email[0]])
+    }
+  });
+
+  intentions.on(intentionType.emailSuccess, () => {
+    const currentEmail = emailInputRef.current.value
+    setIEmailLoaderVisible(false);
+    setLastMessageData(prev => { return { ...prev, message: emailInputRef.current.value } });
+    setHistory(prev => [...prev, { role: roles.assistant, content: emailInputRef.current.value }]);
+    setIsEmailInputVisible(false);
+    setIsPromptInputVisible(false);
+    store.set('answers', { 'saved-email': currentEmail });
+    emailInputRef.current.value = '';
+  });
 
   function onConnect() {
     setShouldShowChat(true);
@@ -84,23 +124,43 @@ const Chatbot = ({ config }) => {
 
     lastMessageRef.current.querySelector('.js-assistant-message').textContent += data.chunk;
 
-    // if (optionsFromStream.includes(intentionType.email)) {
-    //   optionsFromStream = '';
-    // }
 
     // }
   }
 
   function onStreamEnd(data) {
-    setHistory((prevHistory) => {
-      const updatedHistory = [...prevHistory];
+    if (optionsFromStream.includes(intentionType.payment)) {
+      console.log('show payment button');
+      return;
+    }
 
-      if (updatedHistory.length > 0) {
+    if (optionsFromStream.includes(intentionType.email)) {
+      setHistory((prevHistory) => {
+        if (prevHistory.length === 0) {
+          return prevHistory;
+        }
+
+        const updatedHistory = [...prevHistory];
         const lastMessage = updatedHistory[updatedHistory.length - 1];
-        const { content, options } = getOptions(optionsFromStream)
-        lastMessage.options = options;
         lastMessage.isReceiving = false;
+
+        return updatedHistory;
+      });
+      setIsEmailInputVisible(true);
+      return;
+    }
+
+    setHistory((prevHistory) => {
+      if (prevHistory.length === 0) {
+        return prevHistory;
       }
+
+      const updatedHistory = [...prevHistory];
+      const lastMessage = updatedHistory[updatedHistory.length - 1];
+      const { content, options } = getOptions(optionsFromStream);
+
+      lastMessage.options = options;
+      lastMessage.isReceiving = false;
 
       return updatedHistory;
     });
@@ -122,8 +182,7 @@ const Chatbot = ({ config }) => {
       const { content, options } = getOptions(assistant.initialMessage.content);
       const message = { role: roles.assistant, message: assistant.initialMessage.content, user_id: getUserId() };
       console.log('Save initial message in mongo', message)
-      setHistory((prev) => [
-        ...prev,
+      setHistory([
         { role: roles.assistant, content, options },
       ]);
       socket.emit(events.chat, message);
@@ -180,8 +239,9 @@ const Chatbot = ({ config }) => {
   // On update of the unsent messages we add new message to the visual state and clear the input
   useEffect(() => {
     if (unsentMessages.length) {
-      setHistory((prev) => [...prev, { ...lastMessageData, content: currentUserInput }]);
-      setCurrentUserInput('');
+      const content = promptInputRef.current.value;
+      setHistory((prev) => [...prev, { ...lastMessageData, content }]);
+      promptInputRef.current.value = '';
     }
   }, [unsentMessages]);
 
@@ -194,8 +254,8 @@ const Chatbot = ({ config }) => {
     setShouldSendUnsent(false);
   }, [shouldSendUnsent]);
 
-  function handleKeyUp({ key }) {
-    const inputText = currentUserInput.trim();
+  function promptKeyUpHandler({ key }) {
+    const inputText = promptInputRef.current.value.trim();
     if (inputText === '') {
       return;
     }
@@ -211,10 +271,6 @@ const Chatbot = ({ config }) => {
     }, 3000);
 
     setTypingTimerIds((prev) => [...prev, newTimer]);
-  }
-
-  function handleInputChange(e) {
-    setCurrentUserInput(e.target.value);
   }
 
   function onClickChoice(e) {
@@ -234,12 +290,51 @@ const Chatbot = ({ config }) => {
     setLastMessageData((prev) => ({ ...prev, message: currentUserChoice }));
   }
 
-  function onSubmitEmail() {
-    console.log('email');
+  function emailKeyUpHandler({ key }) {
+    if (emailInputRef.current.value === '') { return }
+
+    if (key === 'Enter') {
+      console.log(emailInputRef.current.value);
+
+      const storedCustomerUuid = localStorage.getItem('__pd')
+        ? JSON.parse(localStorage.getItem('__pd')).customerUuid
+        : null;
+
+      const data = {
+        email: emailInputRef.current.value,
+        customerUuid: storedCustomerUuid || lastMessageData.user_id,
+      };
+
+      setIEmailLoaderVisible(true);
+      intentions.emit(intentionType.email, data);
+    }
   }
 
-  function onSubmitPrompt() {
-    handleKeyUp({ key: 'Enter' });
+  function onSubmitHandler() {
+    if (isEmailInputVisible) {
+      emailKeyUpHandler({ key: 'Enter' })
+    }
+    if (isPromptInputVisible) {
+      promptKeyUpHandler({ key: 'Enter' });
+    }
+  }
+
+  function clearEmailHandler() {
+    emailInputRef.current.value = '';
+    setIEmailLoaderVisible(false);
+
+
+    // answersContainer.remove();
+    setHistory((prev) => [...prev, { role: roles.user, content: translations.tm715 }]);
+
+    localStorage.removeItem(ALREADY_REGISTERED_KEY);
+    localStorage.removeItem(EXISTING_PRODUCT_LINK_KEY);
+  }
+
+  function loginWithCurrentMailHandler() {
+    setLastMessageData({ ...lastMessageData, message: translations.tm526 })
+    localStorage.removeItem(ALREADY_REGISTERED_KEY);
+    localStorage.removeItem(EXISTING_PRODUCT_LINK_KEY);
   }
 
   return (
@@ -257,6 +352,15 @@ const Chatbot = ({ config }) => {
             innerRef={lastMessageRef}
           />
         ))}
+
+        <span className={`${loginLink ? '' : 'hidden'} assistant`}>
+          <span className="js-assistant-message">{translations.tm716}</span>
+          <div className="answers-container">
+            <a href={loginLink} onClick={loginWithCurrentMailHandler}>{translations.tm526}</a>
+            <div onClick={clearEmailHandler}>{translations.tm715}</div>
+          </div>
+        </span>
+
       </MessagesWrapper>
       <LoadingDots isVisible={isLoaderVisible} />
       {/* <a class="chat-widget__cta hidden" id="cta-button">${config.assistant.ctaTextContent}</a>
@@ -264,23 +368,26 @@ const Chatbot = ({ config }) => {
      
       ${chatPaymentFormContainer(config.translations)} */}
       <div>
-        <div className={`js-error error-message ${error ? '' : 'hidden'}`}>{config.translations.error}</div>
+        <div className={`js-error error-message ${error ? '' : 'hidden'}`}>{translations.error}</div>
         <span className="chat-widget__prompt" id="prompt-container">
           <span className="widget__input">
             <PromptField
-              translations={config.translations}
-              onKeyUp={handleKeyUp}
-              onChange={handleInputChange}
-              value={currentUserInput}
-              isPromptInputVisible={isPromptInputVisible}
+              translations={translations}
+              onKeyUp={promptKeyUpHandler}
+              promptInputRef={promptInputRef}
+              isPromptInputVisible={isPromptInputVisible && !isEmailInputVisible}
             />
             <EmailField
-              translations={config.translations}
+              translations={translations}
+              onKeyUp={emailKeyUpHandler}
+              emailInputRef={emailInputRef}
               isEmailInputVisible={isEmailInputVisible}
+              isLoaderVisible={isEmailLoaderVisible}
             />
           </span>
           <SendButton
-            onClick={true ? onSubmitPrompt : onSubmitEmail}
+            onClick={onSubmitHandler}
+            disabled={isEmailLoaderVisible}
             isButtonVisible={isPromptInputVisible || isEmailInputVisible}
           />
         </span>

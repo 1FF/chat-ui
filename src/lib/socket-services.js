@@ -1,6 +1,6 @@
-import { UNSENT_MESSAGES_KEY } from './chat-ui';
 import { rolesHTML } from './chat-widgets';
 import { constructLink, replaceLinksWithAnchors, clearCarets } from './helpers';
+import { UNSENT_MESSAGES_KEY } from './config/properties';
 import { errorMessage, input, loadingDots, messages, resendButton } from './utils';
 /**
  * Handles the start of the stream.

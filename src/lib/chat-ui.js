@@ -34,23 +34,10 @@ import {actionService} from './action-service';
 import {customEventTypes, standardEventTypes} from "./custom/tracking-events";
 
 import * as nodeEvents from 'events';
+import { ALREADY_REGISTERED_KEY, CHAT_SEEN_KEY, EXISTING_PRODUCT_LINK_KEY, GO_THROUGH_QUIZ_KEY, SHOW_PAYMENT_BUTTON_KEY, SOCKET_IO_URL, STORAGE_KEY, UNSENT_MESSAGES_KEY } from './config/properties';
+import { intentionType } from './config/intentionTypes';
 
 export const intentions = new nodeEvents.EventEmitter();
-export const STORAGE_KEY = 'history';
-export const CHAT_SEEN_KEY = 'chatSeen';
-export const ALREADY_REGISTERED_KEY = 'showAlreadyRegisteredUser';
-export const SHOW_PAYMENT_BUTTON_KEY = 'showPaymentButton';
-export const SOCKET_IO_URL = 'http://localhost:5000';
-export const UNSENT_MESSAGES_KEY = 'unsent';
-export const GO_THROUGH_QUIZ_KEY = 'hasToGoThroughQuiz';
-export const EXISTING_PRODUCT_LINK_KEY = 'existingProductLink';
-
-export const intentionType = {
-  email: 'email_intent',
-  payment: 'payment_intent',
-  emailError: 'email_validation_error',
-  emailSuccess: 'email_validation_success',
-};
 
 const ChatUi = {
   theme,

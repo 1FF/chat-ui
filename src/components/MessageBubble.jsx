@@ -5,7 +5,7 @@ import { roles } from '../lib/config/roles';
 // - modifying the messages from the assistant
 // - returning the extracted string we must escape this behavior
 
-export default function MessageBubble({ message, onClickChoice, innerRef }) {
+const MessageBubble = ({ message, onClickChoice, innerRef }) => {
   return message.role === roles.assistant ? (
     <span className={`assistant js-assistant ${message.isReceiving ? 'cursor' : ''}`} ref={innerRef}>
       <span className="js-assistant-message">{message.content}</span>
@@ -33,3 +33,5 @@ export default function MessageBubble({ message, onClickChoice, innerRef }) {
     </span>
   );
 }
+
+export default MessageBubble;

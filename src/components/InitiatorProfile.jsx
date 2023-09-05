@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function InitiatorProfile({ assistant }) {
+const InitiatorProfile = ({ assistant }) => {
   return (
     <div className="chat-widget__initiator-profile">
       <span className="assistant-welcome">
@@ -16,3 +16,5 @@ export default function InitiatorProfile({ assistant }) {
     </div>
   )
 }
+
+export default InitiatorProfile

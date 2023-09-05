@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function LoadingDots({ isVisible }) {
+const LoadingDots = ({ isVisible }) => {
   return (
     <div className={`js-wave ${isVisible ? '' : 'hidden'}`}>
       <span className="dot"></span>
@@ -9,3 +9,5 @@ export default function LoadingDots({ isVisible }) {
     </div>
   )
 }
+
+export default LoadingDots;
