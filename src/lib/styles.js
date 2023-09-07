@@ -417,7 +417,7 @@ img {
   width: 100%;
   font-weight: bolder;
   font-size: 16px;
-  background: var(--theta);
+  background: var(--payButtons);
   box-shadow: 0px 12px 24px -4px rgba(255, 174, 25, 0.2);
 }
 
