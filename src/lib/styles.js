@@ -39,6 +39,30 @@ input:-webkit-autofill:focus{
   caret-color: rgb(var(--zephyr));
 }
 
+
+  #primer-checkout-navigate-to-payment-methods::before,
+  #primer-checkout-navigate-to-payment-methods::after {
+    background-color: unset;
+  }
+
+  #primer-checkout-navigate-to-payment-methods .PrimerCheckout__label--primary {
+    color: var(--tau);
+    text-decoration: underline;
+  }
+
+  .PrimerCheckout__savedPaymentMethodContent :last-child {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  button.PrimerCheckout__textButton .PrimerCheckout__label--primary,
+  .PrimerCheckout__savedPaymentMethodContent {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
 html, body {
   height: 100% !important;
   margin: 0 !important;
