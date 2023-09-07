@@ -108,6 +108,56 @@ describe('Test the action service', () => {
     expect(applyTextColorSpy).toBeCalledTimes(3);
   });
 
+  test('that handleAction() calls moveButtons', () => {
+    //Arrange
+    document.body.innerHTML = '<div id="container"></div>';
+    const moveButtonsSpy = jest.spyOn(actionService, 'moveButtons');
+
+    //Act
+    const answersContainer = document.createElement('div');
+    const buttonsWrapper = document.createElement('div');
+    const answer = { content: 'Yes', actions: ['10'] };
+
+    actionService.handleAction(buttonsWrapper, answer.actions, answersContainer);
+
+    //Assert
+    expect(moveButtonsSpy).toBeCalledTimes(1);
+  });
+
+  test('that handleAction() calls moveButtons() for as many times as the buttons count is', () => {
+    const moveButtonsSpy = jest.spyOn(actionService, 'moveButtons');
+
+    //Act
+    const answersContainer = document.createElement('div');
+    const buttonsWrapper = document.createElement('div');
+    const answer = { content: 'Yes', actions: ['10', '10'] };
+
+    actionService.handleAction(buttonsWrapper, answer.actions, answersContainer);
+
+    //Assert
+    expect(moveButtonsSpy).toBeCalledTimes(2);
+  });
+
+  test('that handleAction() calls moveButtons() alongside with other actions', () => {
+    const moveButtonsSpy = jest.spyOn(actionService, 'moveButtons');
+    const applyBackGroundColorSpy = jest.spyOn(actionService, 'applyBackGroundColor');
+    const applyBorderColorSpy = jest.spyOn(actionService, 'applyBorderColor');
+    const applyTextColorSpy = jest.spyOn(actionService, 'applyTextColor');
+
+    //Act
+    const answersContainer = document.createElement('div');
+    const buttonsWrapper = document.createElement('div');
+    const answer = { content: 'Yes', actions: ['10', '4'] };
+
+    actionService.handleAction(buttonsWrapper, answer.actions, answersContainer);
+
+    //Assert
+    expect(moveButtonsSpy).toBeCalledTimes(1);
+    expect(applyBackGroundColorSpy).toBeCalledTimes(1);
+    expect(applyBorderColorSpy).toBeCalledTimes(1);
+    expect(applyTextColorSpy).toBeCalledTimes(1);
+  });
+
   test('that applyBackgroundColor() applies red background color for code = 1', () => {
     //Arange
     const div = document.createElement('div');

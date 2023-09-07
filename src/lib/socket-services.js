@@ -14,9 +14,9 @@ export function onStreamStart() {
   window.debugMode && console.log('stream-start');
   loadingDots.hide();
 
-  const {element} = rolesHTML['assistant']('');
+  const { element } = rolesHTML['assistant']('');
   this.elements.messageIncrementor.appendChild(element);
-};
+}
 
 /**
  * Handles the connect event.
@@ -142,7 +142,10 @@ export function onStreamEnd() {
     return;
   }
 
-  if (!this.elements.ctaButton.classList.contains('hidden') || !this.elements.paymentButton.classList.contains('hidden')) {
+  if (
+    !this.elements.ctaButton.classList.contains('hidden') ||
+    !this.elements.paymentButton.classList.contains('hidden')
+  ) {
     return;
   }
 

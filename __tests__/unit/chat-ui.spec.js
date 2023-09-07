@@ -1,8 +1,55 @@
-import ChatUi, {CHAT_SEEN_KEY, STORAGE_KEY} from '../../src/lib/chat-ui';
-import {assistant} from '../../src/lib/config/assistant';
-import {roles} from '../../src/lib/config/roles';
-import {customEventTypes} from "../../src/lib/custom/tracking-events";
+import ChatUi, { CHAT_SEEN_KEY, STORAGE_KEY } from '../../src/lib/chat-ui';
+import { assistant } from '../../src/lib/config/assistant';
+import { roles } from '../../src/lib/config/roles';
+import { customEventTypes } from '../../src/lib/custom/tracking-events';
+import { actionService } from '../../src/lib/action-service';
 
+jest.mock('../../src/lib/helpers', () => {
+  const originalModule = jest.requireActual('../../src/lib/helpers');
+  const mockHelpers = {
+    __esModule: true,
+    ...originalModule,
+  };
+
+  // Define the different return values for getAnswerConfig
+  let getAnswerConfigCounter = 0;
+
+  mockHelpers.getAnswerConfig = jest.fn(() => {
+    if (getAnswerConfigCounter === 0) {
+      getAnswerConfigCounter++;
+      return {
+        list: [
+          {
+            actions: ['1', '10'],
+          },
+        ],
+        answersType: 'word',
+      };
+    } else {
+      return {
+        list: [
+          {
+            actions: ['2', '3'],
+          },
+        ],
+        answersType: 'word',
+      };
+    }
+  });
+
+  return mockHelpers;
+});
+
+jest.mock('../../src/lib/action-service', () => {
+  const originalModule = jest.requireActual('../../src/lib/action-service');
+  return {
+    __esModule: true,
+    ...originalModule,
+    actionService: {
+      handleAction: jest.fn(),
+    },
+  };
+});
 jest.mock('socket.io-client');
 
 describe('ChatUi', () => {
@@ -138,8 +185,8 @@ describe('ChatUi', () => {
   });
 
   test('test last message buttons set for not last message', () => {
-    sut.setLastMessageButtons('extracted sting', false);
     sut.addOptions = jest.fn();
+    sut.setLastMessageButtons('extracted sting', false);
     expect(sut.addOptions).not.toBeCalled();
   });
 
@@ -150,6 +197,31 @@ describe('ChatUi', () => {
     sut.setLastMessageButtons('extracted sting', true);
 
     expect(sut.addOptions).toBeCalledTimes(1);
+  });
+
+  test('that initial buttons are not appended from assistant if actions number is 10', () => {
+    const element = document.createElement('span');
+    element.appendChild = jest.fn();
+    sut.getLastMessageElement = jest.fn().mockReturnValue(element);
+    sut.word = jest.fn();
+
+    sut.addOptions();
+
+    //Assert
+    expect(element.appendChild).not.toBeCalled();
+  });
+
+  test('that initial buttons are appended from assistant if actions number is 10', () => {
+    const element = document.createElement('span');
+    element.appendChild = jest.fn();
+    sut.getLastMessageElement = jest.fn().mockReturnValue(element);
+
+    sut.word = jest.fn();
+
+    sut.addOptions();
+
+    //Assert
+    expect(element.appendChild).toBeCalledTimes(1);
   });
 
   test('does not send an empty user message', () => {
@@ -200,6 +272,7 @@ describe('ChatUi', () => {
     sut.setCtaButton();
 
     // Assert
+
     expect(sut.elements.ctaButton.classList.contains('hidden')).toBe(false);
     expect(sut.elements.promptContainer.classList.contains('hidden')).toBe(true);
     expect(sut.elements.messageInput.disabled).toBe(true);
@@ -312,12 +385,14 @@ describe('ChatUi', () => {
   test('historyTraverse iterates over the history', () => {
     // Arrange
     sut.appendHtml = jest.fn();
+    actionService.clearButtonCodes = jest.fn().mockReturnValue('element2', true);
 
     sut.historyTraverse([{ content: 'element1' }, { content: 'element2' }]);
 
     expect(sut.appendHtml).toBeCalledTimes(2);
     expect(sut.appendHtml).toBeCalledWith({ content: 'element1' }, false);
     expect(sut.appendHtml).toBeCalledWith({ content: 'element2' }, true);
+    expect(actionService.clearButtonCodes).toBeCalled();
   });
 });
 
