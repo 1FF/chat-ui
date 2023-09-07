@@ -6,6 +6,7 @@ const config = {
   url: 'https://chat-ws.test',
   assistantConfig: { ctaTextContent: 'goodbuy' },
   translations: { error: 'custom error tmsg', paymentLoaderTexts: [] },
+  theme: 'dark'
 };
 
 const container = document.getElementById('chatbot-container');
@@ -15,5 +16,3 @@ root.render(
     <Chatbot config={config} />
   </StrictMode>
 );
-
-

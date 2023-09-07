@@ -1,5 +1,6 @@
 import React from 'react';
 import { roles } from '../lib/config/roles';
+import Option from './Option';
 // additional logic for:
 // - handling hidden resend icon
 // - modifying the messages from the assistant
@@ -12,9 +13,11 @@ const MessageBubble = ({ message, onClickChoice, innerRef }) => {
       {(message.options && message.options.length) ? (
         <div className="answers-container">
           {message.options.map((op, index) => (
-            <div onClick={onClickChoice} key={`answer-option-${index}`}>
-              {op}
-            </div>
+            op.content
+              ? <Option config={op} key={`answer-option-${index}`}/>
+              : <div onClick={onClickChoice} key={`answer-option-${index}`}>
+                {op}
+              </div>
           ))}
         </div>
       ) : (

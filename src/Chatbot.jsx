@@ -9,21 +9,16 @@ import InitiatorProfile from './components/InitiatorProfile';
 import EmailField from './components/EmailField';
 import PromptField from './components/PromptField';
 import MessageBubble from './components/MessageBubble';
+import { ALREADY_REGISTERED_KEY, EXISTING_PRODUCT_LINK_KEY } from './lib/config/properties';
 import { assistant } from './lib/config/assistant';
 import { translations as defaultTranslations } from './lib/config/translations';
-import { roles } from './lib/config/roles';
-import * as nodeEvents from 'events';
-
-export const intentions = new nodeEvents.EventEmitter();
-import './styles/index.css';
 import { extractStringWithBrackets, getTerm, getUserId } from './lib/helpers';
-
-// for simulations purpose must be removed
-window.intentions = intentions;
-
+import { roles } from './lib/config/roles';
+import { intentionType } from "./lib/config/intentionTypes";
 import { events } from './lib/config/events';
-import { intentionType } from './lib/config/intentionTypes';
-import { ALREADY_REGISTERED_KEY, EXISTING_PRODUCT_LINK_KEY } from './lib/config/properties';
+import * as nodeEvents from 'events';
+export const eventEmitter = new nodeEvents.EventEmitter();
+import './styles/index.css';
 
 function uuidv4() {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
@@ -34,6 +29,9 @@ function uuidv4() {
 !localStorage.getItem('__cid') && localStorage.setItem('__cid', uuidv4());
 
 const Chatbot = ({ config }) => {
+  const lastMessageRef = useRef(null);
+  const promptInputRef = useRef(null);
+  const emailInputRef = useRef(null);
   const [lastMessageData, setLastMessageData] = useState({
     term: getTerm(),
     user_id: getUserId(),
@@ -60,20 +58,32 @@ const Chatbot = ({ config }) => {
       onStreamStart,
     });
   });
+  const [intentions, setIntentions] = useState(eventEmitter);
   const [isPromptInputVisible, setIsPromptInputVisible] = useState(true);
   const [isEmailInputVisible, setIsEmailInputVisible] = useState(false);
-  const lastMessageRef = useRef(null);
-  const promptInputRef = useRef(null);
-  const emailInputRef = useRef(null);
-
   let optionsFromStream = '';
 
-  intentions.on(intentionType.emailError, (response) => {
+  useEffect(() => {
+    intentions.on(intentionType.emailError, onEmailError);
+    intentions.on(intentionType.emailSuccess, onEmailSuccess);
+    return () => {
+      intentions.off(intentionType.emailSuccess, onEmailSuccess);
+      intentions.off(intentionType.emailError, onEmailError);
+    }
+  }, [intentions])
+
+
+  function onEmailError(response) {
     setIEmailLoaderVisible(false);
 
     if (response.status === 409) {
       localStorage.setItem(ALREADY_REGISTERED_KEY, 'true');
       setLoginLink(localStorage.getItem(EXISTING_PRODUCT_LINK_KEY));
+      setHistory(prev => [...prev, {
+        role: roles.assistant, content: translations.tm716,
+        options: [{ handler: loginWithCurrentMailHandler, link: loginLink, content: translations.tm526 },
+        { handler: clearEmailHandler, content: translations.tm715 }]
+      }]);
       return;
     }
 
@@ -81,18 +91,17 @@ const Chatbot = ({ config }) => {
       // TODO: visualize errors
       setErrors((prev) => [...prev, response.errors.email[0]])
     }
-  });
+  }
 
-  intentions.on(intentionType.emailSuccess, () => {
+  function onEmailSuccess(response) {
     const currentEmail = emailInputRef.current.value
     setIEmailLoaderVisible(false);
-    setLastMessageData(prev => { return { ...prev, message: emailInputRef.current.value } });
-    setHistory(prev => [...prev, { role: roles.assistant, content: emailInputRef.current.value }]);
+    setLastMessageData(prev => { return { ...prev, message: currentEmail } });
+    setHistory(prev => [...prev, { role: roles.user, content: currentEmail }]);
     setIsEmailInputVisible(false);
     setIsPromptInputVisible(false);
-    store.set('answers', { 'saved-email': currentEmail });
     emailInputRef.current.value = '';
-  });
+  }
 
   function onConnect() {
     setShouldShowChat(true);
@@ -100,7 +109,7 @@ const Chatbot = ({ config }) => {
 
   function onStreamStart(data) {
     setIsLoaderVisible(false);
-    setHistory((prev) => [...prev, { role: 'assistant', content: '', time: '', isReceiving: true }]);
+    setHistory((prev) => [...prev, { role: roles.assistant, content: '', time: '', isReceiving: true }]);
   }
 
   function onStreamData(data) {
@@ -131,7 +140,6 @@ const Chatbot = ({ config }) => {
   function onStreamEnd(data) {
     if (optionsFromStream.includes(intentionType.payment)) {
       console.log('show payment button');
-      return;
     }
 
     if (optionsFromStream.includes(intentionType.email)) {
@@ -217,10 +225,6 @@ const Chatbot = ({ config }) => {
     } else {
       setIsPromptInputVisible(true);
     }
-
-    return () => {
-      console.log('destroy');
-    };
   }, [history]);
 
   // Having new message added means that we have to send it through the socket
@@ -294,8 +298,6 @@ const Chatbot = ({ config }) => {
     if (emailInputRef.current.value === '') { return }
 
     if (key === 'Enter') {
-      console.log(emailInputRef.current.value);
-
       const storedCustomerUuid = localStorage.getItem('__pd')
         ? JSON.parse(localStorage.getItem('__pd')).customerUuid
         : null;
@@ -323,8 +325,6 @@ const Chatbot = ({ config }) => {
     emailInputRef.current.value = '';
     setIEmailLoaderVisible(false);
 
-
-    // answersContainer.remove();
     setHistory((prev) => [...prev, { role: roles.user, content: translations.tm715 }]);
 
     localStorage.removeItem(ALREADY_REGISTERED_KEY);
@@ -338,7 +338,7 @@ const Chatbot = ({ config }) => {
   }
 
   return (
-    <ChatWrapper shouldShowChat={shouldShowChat}>
+    <ChatWrapper theme={config.theme} shouldShowChat={shouldShowChat}>
       <Head assistant={assistant} />
       <MessagesWrapper>
         <InitiatorProfile assistant={assistant} />
@@ -352,15 +352,6 @@ const Chatbot = ({ config }) => {
             innerRef={lastMessageRef}
           />
         ))}
-
-        <span className={`${loginLink ? '' : 'hidden'} assistant`}>
-          <span className="js-assistant-message">{translations.tm716}</span>
-          <div className="answers-container">
-            <a href={loginLink} onClick={loginWithCurrentMailHandler}>{translations.tm526}</a>
-            <div onClick={clearEmailHandler}>{translations.tm715}</div>
-          </div>
-        </span>
-
       </MessagesWrapper>
       <LoadingDots isVisible={isLoaderVisible} />
       {/* <a class="chat-widget__cta hidden" id="cta-button">${config.assistant.ctaTextContent}</a>
