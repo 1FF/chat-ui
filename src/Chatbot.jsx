@@ -1,14 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import connectSocket from './lib/services/socket';
+import ActionButton from './components/ActionButton';
 import ChatWrapper from './components/ChatWrapper';
-import Head from './components/Head';
-import SendButton from './components/SendButton';
-import LoadingDots from './components/LoadingDots';
-import MessagesWrapper from './components/MessagesWrapper';
-import InitiatorProfile from './components/InitiatorProfile';
 import EmailField from './components/EmailField';
-import PromptField from './components/PromptField';
+import Head from './components/Head';
+import InitiatorProfile from './components/InitiatorProfile';
+import LoadingDots from './components/LoadingDots';
 import MessageBubble from './components/MessageBubble';
+import MessagesWrapper from './components/MessagesWrapper';
+import PaymentFormWrapper from './components/PaymentFormWrapper';
+import PromptField from './components/PromptField';
+import SendButton from './components/SendButton';
 import { ALREADY_REGISTERED_KEY, EXISTING_PRODUCT_LINK_KEY } from './lib/config/properties';
 import { assistant } from './lib/config/assistant';
 import { translations as defaultTranslations } from './lib/config/translations';
@@ -38,7 +40,6 @@ const Chatbot = ({ config }) => {
     role: roles.user,
     message: '',
   });
-  const [error, setError] = useState('');
   const [shouldShowChat, setShouldShowChat] = useState(false);
   const [isLoaderVisible, setIsLoaderVisible] = useState(true);
   const [isEmailLoaderVisible, setIEmailLoaderVisible] = useState(false);
@@ -47,7 +48,7 @@ const Chatbot = ({ config }) => {
   const [typingTimerIds, setTypingTimerIds] = useState([]);
   const [unsentMessages, setUnsentMessages] = useState([]);
   const [loginLink, setLoginLink] = useState(localStorage.getItem(EXISTING_PRODUCT_LINK_KEY));
-  const [translations, setTranslations] = useState({ ...defaultTranslations, ...config.translations });
+  const [translations, setTranslations] = useState({ ...defaultTranslations, ...config.translations, ...config.assistantConfig });
   const [errors, setErrors] = useState([])
   const [socket, setSocket] = useState(() => {
     return connectSocket(config.url, {
@@ -61,6 +62,9 @@ const Chatbot = ({ config }) => {
   const [intentions, setIntentions] = useState(eventEmitter);
   const [isPromptInputVisible, setIsPromptInputVisible] = useState(true);
   const [isEmailInputVisible, setIsEmailInputVisible] = useState(false);
+  const [ctaText, setCtaText] = useState(translations.ctaTextContent);
+  const [isCtaVisible, setIsCtaVisible] = useState(false);
+
   let optionsFromStream = '';
 
   useEffect(() => {
@@ -72,6 +76,7 @@ const Chatbot = ({ config }) => {
     }
   }, [intentions])
 
+  window.intentions = intentions;
 
   function onEmailError(response) {
     setIEmailLoaderVisible(false);
@@ -108,6 +113,7 @@ const Chatbot = ({ config }) => {
   }
 
   function onStreamStart(data) {
+    optionsFromStream = '';
     setIsLoaderVisible(false);
     setHistory((prev) => [...prev, { role: roles.assistant, content: '', time: '', isReceiving: true }]);
   }
@@ -137,43 +143,39 @@ const Chatbot = ({ config }) => {
     // }
   }
 
+  function unsetIsReceiving(prevHistory, withOptions = false) {
+    if (prevHistory.length === 0) {
+      return prevHistory;
+    }
+    const updatedHistory = [...prevHistory];
+    const lastMessage = updatedHistory[updatedHistory.length - 1];
+    if (withOptions) {
+      const { content, options } = getOptions(optionsFromStream);
+      lastMessage.options = options;
+    }
+    lastMessage.isReceiving = false;
+
+    return updatedHistory;
+  }
+
   function onStreamEnd(data) {
     if (optionsFromStream.includes(intentionType.payment)) {
-      console.log('show payment button');
-    }
-
-    if (optionsFromStream.includes(intentionType.email)) {
-      setHistory((prevHistory) => {
-        if (prevHistory.length === 0) {
-          return prevHistory;
-        }
-
-        const updatedHistory = [...prevHistory];
-        const lastMessage = updatedHistory[updatedHistory.length - 1];
-        lastMessage.isReceiving = false;
-
-        return updatedHistory;
-      });
-      setIsEmailInputVisible(true);
+      setHistory(unsetIsReceiving);
+      setIsCtaVisible(true);
+      setIsPromptInputVisible(false);
+      setIsEmailInputVisible(false);
       return;
     }
 
-    setHistory((prevHistory) => {
-      if (prevHistory.length === 0) {
-        return prevHistory;
-      }
+    if (optionsFromStream.includes(intentionType.email)) {
+      setHistory(unsetIsReceiving);
+      setIsEmailInputVisible(true);
+      setIsPromptInputVisible(false);
+      return;
+    }
 
-      const updatedHistory = [...prevHistory];
-      const lastMessage = updatedHistory[updatedHistory.length - 1];
-      const { content, options } = getOptions(optionsFromStream);
-
-      lastMessage.options = options;
-      lastMessage.isReceiving = false;
-
-      return updatedHistory;
-    });
-
-    optionsFromStream = '';
+    setIsPromptInputVisible(true);
+    setHistory((prev) => unsetIsReceiving(prev, true));
   }
 
   function getOptions(string) {
@@ -183,12 +185,12 @@ const Chatbot = ({ config }) => {
 
   function onHistory({ user_id, history, errors }) {
     console.log('Received user history', { user_id, history, errors });
-    setError('');
+    setErrors([]);
     setIsLoaderVisible(false);
 
     if (!history.length) {
-      const { content, options } = getOptions(assistant.initialMessage.content);
-      const message = { role: roles.assistant, message: assistant.initialMessage.content, user_id: getUserId() };
+      const { content, options } = getOptions(translations.initialMessage.content);
+      const message = { role: roles.assistant, message: translations.initialMessage.content, user_id: getUserId() };
       console.log('Save initial message in mongo', message)
       setHistory([
         { role: roles.assistant, content, options },
@@ -197,34 +199,54 @@ const Chatbot = ({ config }) => {
       return
     }
 
-    setHistory(
-      history.map((item, index) => {
-        const { content, options } = getOptions(item.content);
-        item.content = content;
-        if (index === history.length - 1) {
-          item.options = options;
-        }
+    const freshHistory = history.map((item, index) => {
+      const originalContent = item.content;
+      const isLast = index === history.length - 1;
+      const { content, options } = getOptions(originalContent);
+
+      item.content = content;
+
+      if (isLast && originalContent.includes(intentionType.email)) {
+        setIsEmailInputVisible(true);
+        setIsPromptInputVisible(false);
         return item;
-      })
-    );
+      }
+
+      if (isLast && originalContent.includes(intentionType.payment)) {
+        setIsCtaVisible(true);
+        setIsPromptInputVisible(false);
+        setIsEmailInputVisible(false);
+        return item;
+      }
+
+      if (isLast) {
+        item.options = options;
+        return item;
+      }
+      return item;
+    });
+
+
+    setHistory(freshHistory);
 
     // if (localStorage.getItem(UNSENT_MESSAGES_KEY)) {
     //   this.appendUnsentMessage();
     // }
 
     if (errors.length) {
-      setError('History error');
+      setErrors(['History error']);
     }
   }
 
   useEffect(() => {
     const lastMessage = history[history.length - 1];
+    const hasOptions = lastMessage && lastMessage.options && lastMessage.options.length > 0;
 
-    if (lastMessage && lastMessage.options && lastMessage.options.length > 0) {
+    if (hasOptions) {
       setIsPromptInputVisible(false);
-    } else {
-      setIsPromptInputVisible(true);
+      setIsEmailInputVisible(false);
     }
+
   }, [history]);
 
   // Having new message added means that we have to send it through the socket
@@ -354,19 +376,17 @@ const Chatbot = ({ config }) => {
         ))}
       </MessagesWrapper>
       <LoadingDots isVisible={isLoaderVisible} />
-      {/* <a class="chat-widget__cta hidden" id="cta-button">${config.assistant.ctaTextContent}</a>
-      ${paymentButton}
-     
-      ${chatPaymentFormContainer(config.translations)} */}
+      <ActionButton text={ctaText} isCtaVisible={isCtaVisible} />
+      <PaymentFormWrapper translations={translations} />
       <div>
-        <div className={`js-error error-message ${error ? '' : 'hidden'}`}>{translations.error}</div>
+        <div className={`js-error error-message ${errors.length ? '' : 'hidden'}`}>{translations.error}</div>
         <span className="chat-widget__prompt" id="prompt-container">
           <span className="widget__input">
             <PromptField
               translations={translations}
               onKeyUp={promptKeyUpHandler}
               promptInputRef={promptInputRef}
-              isPromptInputVisible={isPromptInputVisible && !isEmailInputVisible}
+              isPromptInputVisible={isPromptInputVisible}
             />
             <EmailField
               translations={translations}
