@@ -29,16 +29,15 @@ const ProgressLoader = ({ translations }) => {
   )
 }
 
-const SpinningLoader = () => {
+const SpinningLoader = ({ loaderRef }) => {
   return (
-    <span className="js-payment-form-loader payment-loader">
+    <span ref={loaderRef} className="js-payment-form-loader payment-loader">
       <span className="animate-spin-pay">
         <span className="spin-icon"></span>
       </span>
     </span>
   )
 }
-
 
 const FormFooter = () => {
   return (
@@ -57,9 +56,9 @@ const FormFooter = () => {
 }
 
 
-const PaymentFormWrapper = ({ translations, isVisible = false }) => {
+const PaymentFormWrapper = ({ translations, isVisible, viewRef, dropInRef, loaderRef }) => {
   return (
-    <div id="chat-payment-view" className={`payment-view ${isVisible ? '' : 'hidden'}`}>
+    <div ref={viewRef} id="chat-payment-view" className={`payment-view ${isVisible ? '' : 'hidden'}`}>
       <ProgressLoader translations={translations} />
       <span className="payment-view__main-container primer-form-container light-pink-blue">
         <span id="payment-form-close-button" className="close-payment-form hidden">
@@ -70,8 +69,8 @@ const PaymentFormWrapper = ({ translations, isVisible = false }) => {
               fill="currentColor" />
           </svg>
         </span>
-        <section id="primer-form-container"></section>
-        <SpinningLoader />
+        <section id="primer-form-container" ref={dropInRef}></section>
+        <SpinningLoader loaderRef={loaderRef} />
         <FormFooter />
       </span>
     </div>

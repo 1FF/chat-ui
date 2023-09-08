@@ -11,6 +11,8 @@ const config = {
   },
   translations: {
     tm1224: 'Your payment is in progress',
+    tm1226: "Your payment was successful. To proceed, we kindly request that you complete our quiz. This step will enable us to personalize your meal plan to align it with your goals.",
+    tm530: "Take the quiz.",
     error: 'custom error tmsg',
     paymentLoaderTexts: ['processing', 'processing', 'processing', 'processing', 'processing', 'processing', 'processing 3'],
     ctaTextContent: 'Pay now'
@@ -19,7 +21,7 @@ const config = {
 };
 
 window.backEndVars = {};
-backEndVars.tm566 =  '<div>Billed every <span class="js-duration">1</span> month(s)</div>';
+backEndVars.tm566 = '<div>Billed every <span class="js-duration">1</span> month(s)</div>';
 
 localStorage.setItem('__pd', '{"amount":"19.90","amountInUSD":19.9,"upfrontAmount":null,"currency":"USD","trial_in_days":0,"period":"M","frequency":1,"frequencyInMonths":1,"billingOptionType":"subscription","planId":"9412109c-9639-4ab9-b406-419e46d58a1c","provider":"primer","isDisplayPricePlan":true,"displayPlanPrice":"$19.90","purchasable_uuid":"0e769afd-6a7a-4ddc-8455-dbdc18a11a1d","customer_uuid":"0161d4a4-dfee-4cec-9971-847593bda27f","purchasable_type":"meal-plan-and-vip-content"}')
 

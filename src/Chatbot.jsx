@@ -12,17 +12,17 @@ import MessagesWrapper from './components/MessagesWrapper';
 import PaymentFormWrapper from './components/PaymentFormWrapper';
 import PromptField from './components/PromptField';
 import SendButton from './components/SendButton';
-import { ALREADY_REGISTERED_KEY, EXISTING_PRODUCT_LINK_KEY } from './lib/config/properties';
+import { ALREADY_REGISTERED_KEY, CHAT_SEEN_KEY, EXISTING_PRODUCT_LINK_KEY, STORAGE_KEY } from './lib/config/properties';
 import { assistant } from './lib/config/assistant';
 import { translations as defaultTranslations } from './lib/config/translations';
-import { extractStringWithBrackets, getTerm, getUserId } from './lib/helpers';
+import { extractStringWithBrackets, getTerm, getUserId, isExpired, replaceLinksWithAnchors } from './lib/helpers';
 import { roles } from './lib/config/roles';
 import { intentionType } from "./lib/config/intentionTypes";
 import { events } from './lib/config/events';
 import * as nodeEvents from 'events';
 export const eventEmitter = new nodeEvents.EventEmitter();
 import './styles/index.css';
-import { getDisplayInfo } from './lib/chat-widgets';
+import { getDisplayInfo, paymentHeader } from './lib/chat-widgets';
 
 function uuidv4() {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
@@ -36,6 +36,13 @@ const Chatbot = ({ config }) => {
   const lastMessageRef = useRef(null);
   const promptInputRef = useRef(null);
   const emailInputRef = useRef(null);
+  // the refs below must be refactored 
+  // - they are being set like that due to the fact that they are passed to vanillaJs func in rz;
+  const paymentViewForm = useRef(null);
+  const paymentContainer = useRef(null);
+  const paymentFormLoader = useRef(null);
+  const paymentButton = useRef(null);
+
   const [lastMessageData, setLastMessageData] = useState({
     term: getTerm(),
     user_id: getUserId(),
@@ -67,7 +74,7 @@ const Chatbot = ({ config }) => {
   const [ctaText, setCtaText] = useState(translations.ctaTextContent);
   const [ctaLink, setCtaLink] = useState('');
   const [isPaymentButtonVisible, setIsPaymentButtonVisible] = useState(false);
-
+  const [isPaymentViewFormVisible, setIsPaymentViewFormVisible] = useState(false);
   let optionsFromStream = '';
 
   useEffect(() => {
@@ -77,9 +84,71 @@ const Chatbot = ({ config }) => {
       intentions.off(intentionType.emailSuccess, onEmailSuccess);
       intentions.off(intentionType.emailError, onEmailError);
     }
-  }, [intentions])
+  }, [intentions]);
 
-  window.intentions = intentions;
+  useEffect(() => {
+    const lastMessage = history[history.length - 1];
+    const hasOptions = lastMessage && lastMessage.options && lastMessage.options.length > 0;
+
+    if (hasOptions) {
+      setIsPromptInputVisible(false);
+      setIsEmailInputVisible(false);
+    }
+
+  }, [history]);
+
+  // Having new message added means that we have to send it through the socket
+  useEffect(() => {
+    if (lastMessageData.message) {
+      // TODO handle any errors in case emitting is unsuccessful
+      socket.emit(events.chat, lastMessageData);
+      setIsLoaderVisible(true);
+    }
+
+    return () => {
+      setLastMessageData((prev) => ({ ...prev, message: '' }));
+    };
+  }, [lastMessageData.message]);
+
+  // On update of the unsent messages we add new message to the visual state and clear the input
+  useEffect(() => {
+    if (unsentMessages.length) {
+      const content = promptInputRef.current.value;
+      setHistory((prev) => [...prev, { ...lastMessageData, content }]);
+      promptInputRef.current.value = '';
+    }
+  }, [unsentMessages]);
+
+  // When timer is expired we update lastMessageData
+  useEffect(() => {
+    if (unsentMessages.length && shouldSendUnsent) {
+      setLastMessageData((prev) => ({ ...prev, message: unsentMessages.join('\n') }));
+      setUnsentMessages([]);
+    }
+    setShouldSendUnsent(false);
+  }, [shouldSendUnsent]);
+
+  useEffect(() => {
+    const messages = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const messageFound = messages.reverse().find((message) => message.role === roles.user);
+    const lastMessage = messageFound ? messageFound : {};
+    const { time } = lastMessage;
+    let hasExpired;
+
+    if (time) {
+      hasExpired = isExpired(time);
+    }
+
+    // when time has expired chatSeen must be removed from localStorage
+    if (hasExpired) {
+      localStorage.removeItem(CHAT_SEEN_KEY);
+    }
+
+    // when user has clicked on ctaButton chatSeen is being set to true
+    const chatSeen = localStorage.getItem(CHAT_SEEN_KEY);
+
+    setShouldShowChat(chatSeen === 'true' ? false : true)
+  }, [])
 
   function onEmailError(response) {
     setIEmailLoaderVisible(false);
@@ -112,7 +181,7 @@ const Chatbot = ({ config }) => {
   }
 
   function onConnect() {
-    setShouldShowChat(true);
+    setIsLoaderVisible(false);
   }
 
   function onStreamStart(data) {
@@ -122,13 +191,12 @@ const Chatbot = ({ config }) => {
   }
 
   function onStreamData(data) {
+    const { messages, errors } = data;
 
-    // const { messages, errors } = data;
-
-    // if (errors && errors.length) {
-    //   this.onError();
-    //   return;
-    // }
+    if (errors && errors.length) {
+      setErrors(prev => [...prev, ...errors])
+      return;
+    }
 
     if (data.chunk.includes('[')) {
       optionsFromStream += data.chunk;
@@ -141,9 +209,6 @@ const Chatbot = ({ config }) => {
     }
 
     lastMessageRef.current.querySelector('.js-assistant-message').textContent += data.chunk;
-
-
-    // }
   }
 
   function unsetIsReceiving({ prevHistory, withOptions, withPrice }) {
@@ -153,8 +218,9 @@ const Chatbot = ({ config }) => {
 
     const updatedHistory = [...prevHistory];
     const lastMessage = updatedHistory[updatedHistory.length - 1];
-    const { content, options } = getOptions(optionsFromStream);
+
     if (withOptions) {
+      const { content, options } = getOptions(optionsFromStream);
       lastMessage.options = options;
     }
 
@@ -196,6 +262,7 @@ const Chatbot = ({ config }) => {
 
   function onHistory({ user_id, history, errors }) {
     console.log('Received user history', { user_id, history, errors });
+    localStorage.setItem('history', JSON.stringify(history));
     setErrors([]);
     setIsLoaderVisible(false);
 
@@ -251,48 +318,6 @@ const Chatbot = ({ config }) => {
       setErrors(['History error']);
     }
   }
-
-  useEffect(() => {
-    const lastMessage = history[history.length - 1];
-    const hasOptions = lastMessage && lastMessage.options && lastMessage.options.length > 0;
-
-    if (hasOptions) {
-      setIsPromptInputVisible(false);
-      setIsEmailInputVisible(false);
-    }
-
-  }, [history]);
-
-  // Having new message added means that we have to send it through the socket
-  useEffect(() => {
-    if (lastMessageData.message) {
-      // TODO handle any errors in case emitting is unsuccessful
-      socket.emit(events.chat, lastMessageData);
-      setIsLoaderVisible(true);
-    }
-
-    return () => {
-      setLastMessageData((prev) => ({ ...prev, message: '' }));
-    };
-  }, [lastMessageData.message]);
-
-  // On update of the unsent messages we add new message to the visual state and clear the input
-  useEffect(() => {
-    if (unsentMessages.length) {
-      const content = promptInputRef.current.value;
-      setHistory((prev) => [...prev, { ...lastMessageData, content }]);
-      promptInputRef.current.value = '';
-    }
-  }, [unsentMessages]);
-
-  // When timer is expired we update lastMessageData
-  useEffect(() => {
-    if (unsentMessages.length && shouldSendUnsent) {
-      setLastMessageData((prev) => ({ ...prev, message: unsentMessages.join('\n') }));
-      setUnsentMessages([]);
-    }
-    setShouldSendUnsent(false);
-  }, [shouldSendUnsent]);
 
   function promptKeyUpHandler({ key }) {
     const inputText = promptInputRef.current.value.trim();
@@ -373,6 +398,43 @@ const Chatbot = ({ config }) => {
     localStorage.removeItem(EXISTING_PRODUCT_LINK_KEY);
   }
 
+  function showSuccessfulPaymentMessage() {
+    localStorage.setItem(GO_THROUGH_QUIZ_KEY, true);
+    setHistory(prev => [...prev, { role: roles.assistant, content: translations.tm1226 }]);
+
+    setCtaLink('/');
+    setCtaText(translations.tm530);
+
+    // in case the user does not click on take the quiz button
+    setTimeout(() => {
+      this.elements.ctaButton.click();
+    }, 7000);
+
+    setIsPaymentViewFormVisible(false);
+    setIsPaymentButtonVisible(false);
+    setIsEmailInputVisible(false);
+    setIsPromptInputVisible(false);
+  }
+
+  function onClickLink() {
+    localStorage.removeItem(GO_THROUGH_QUIZ_KEY);
+    // this.mainContainer.innerHTML = '';
+    // scroll.add();
+    socket.close()
+    localStorage.setItem(CHAT_SEEN_KEY, true);
+  }
+
+  function emitPaymentIntent() {
+    intentions.emit(intentionType.payment, {
+      paymentViewForm: paymentViewForm.current,
+      paymentContainer: paymentContainer.current,
+      paymentFormLoader: paymentFormLoader.current,
+      paymentButton: paymentButton.current,
+      paymentHeader,
+      onPaymentSuccess: showSuccessfulPaymentMessage,
+    });
+  }
+
   return (
     <ChatWrapper theme={config.theme} shouldShowChat={shouldShowChat}>
       <Head assistant={assistant} />
@@ -390,9 +452,15 @@ const Chatbot = ({ config }) => {
         ))}
       </MessagesWrapper>
       <LoadingDots isVisible={isLoaderVisible} />
-      <Link text={ctaText} link={ctaLink} />
-      <Button text={'Proceed with payment'} isVisible={isPaymentButtonVisible} />
-      <PaymentFormWrapper translations={translations} />
+      <Link text={ctaText} link={ctaLink} onClick={onClickLink} />
+      <Button text={'Proceed with payment'} isVisible={isPaymentButtonVisible} onClick={emitPaymentIntent} innerRef={paymentButton} />
+      <PaymentFormWrapper
+        translations={translations}
+        isVisible={isPaymentViewFormVisible}
+        viewRef={paymentViewForm}
+        dropInRef={paymentContainer}
+        loaderRef={paymentFormLoader}
+      />
       <div>
         <div className={`js-error error-message ${errors.length ? '' : 'hidden'}`}>{translations.error}</div>
         <span className="chat-widget__prompt" id="prompt-container">
