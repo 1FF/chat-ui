@@ -226,6 +226,7 @@ export function getDisplayInfo() {
 }
 
 function getSubscriptionMessage(frequencyInMonths) {
+  // TODO set the message to be from translations backEndVars.tm566
   const doc = new DOMParser().parseFromString(backEndVars.tm566, 'text/xml');
   const currentDurationContainer = doc.querySelector('.js-duration');
   currentDurationContainer.textContent = frequencyInMonths;

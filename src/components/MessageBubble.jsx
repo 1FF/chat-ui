@@ -9,12 +9,12 @@ import Option from './Option';
 const MessageBubble = ({ message, onClickChoice, innerRef }) => {
   return message.role === roles.assistant ? (
     <span className={`assistant js-assistant ${message.isReceiving ? 'cursor' : ''}`} ref={innerRef}>
-      <span className="js-assistant-message">{message.content}</span>
+      <span className="js-assistant-message">{message.content} {message.price ? message.price : ''}</span>
       {(message.options && message.options.length) ? (
         <div className="answers-container">
           {message.options.map((op, index) => (
             op.content
-              ? <Option config={op} key={`answer-option-${index}`}/>
+              ? <Option config={op} key={`answer-option-${index}`} />
               : <div onClick={onClickChoice} key={`answer-option-${index}`}>
                 {op}
               </div>

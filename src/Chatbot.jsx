@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import connectSocket from './lib/services/socket';
-import ActionButton from './components/ActionButton';
+import Button from './components/Button';
 import ChatWrapper from './components/ChatWrapper';
 import EmailField from './components/EmailField';
 import Head from './components/Head';
 import InitiatorProfile from './components/InitiatorProfile';
 import LoadingDots from './components/LoadingDots';
+import Link from './components/Link';
 import MessageBubble from './components/MessageBubble';
 import MessagesWrapper from './components/MessagesWrapper';
 import PaymentFormWrapper from './components/PaymentFormWrapper';
@@ -21,6 +22,7 @@ import { events } from './lib/config/events';
 import * as nodeEvents from 'events';
 export const eventEmitter = new nodeEvents.EventEmitter();
 import './styles/index.css';
+import { getDisplayInfo } from './lib/chat-widgets';
 
 function uuidv4() {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
@@ -63,7 +65,8 @@ const Chatbot = ({ config }) => {
   const [isPromptInputVisible, setIsPromptInputVisible] = useState(true);
   const [isEmailInputVisible, setIsEmailInputVisible] = useState(false);
   const [ctaText, setCtaText] = useState(translations.ctaTextContent);
-  const [isCtaVisible, setIsCtaVisible] = useState(false);
+  const [ctaLink, setCtaLink] = useState('');
+  const [isPaymentButtonVisible, setIsPaymentButtonVisible] = useState(false);
 
   let optionsFromStream = '';
 
@@ -143,16 +146,24 @@ const Chatbot = ({ config }) => {
     // }
   }
 
-  function unsetIsReceiving(prevHistory, withOptions = false) {
+  function unsetIsReceiving({ prevHistory, withOptions, withPrice }) {
     if (prevHistory.length === 0) {
       return prevHistory;
     }
+
     const updatedHistory = [...prevHistory];
     const lastMessage = updatedHistory[updatedHistory.length - 1];
+    const { content, options } = getOptions(optionsFromStream);
     if (withOptions) {
-      const { content, options } = getOptions(optionsFromStream);
       lastMessage.options = options;
     }
+
+    if (withPrice) {
+      const { price, period } = getDisplayInfo();
+      // Regex replaces all html tags with empty string
+      lastMessage.price = price + ' ' + period.replace(/<[^>]*>/g, '');
+    }
+
     lastMessage.isReceiving = false;
 
     return updatedHistory;
@@ -160,22 +171,22 @@ const Chatbot = ({ config }) => {
 
   function onStreamEnd(data) {
     if (optionsFromStream.includes(intentionType.payment)) {
-      setHistory(unsetIsReceiving);
-      setIsCtaVisible(true);
+      setHistory((prevHistory) => unsetIsReceiving({ prevHistory, withOptions: false, withPrice: true }));
+      setIsPaymentButtonVisible(true);
       setIsPromptInputVisible(false);
       setIsEmailInputVisible(false);
       return;
     }
 
     if (optionsFromStream.includes(intentionType.email)) {
-      setHistory(unsetIsReceiving);
+      setHistory((prevHistory) => unsetIsReceiving({ prevHistory, withOptions: false, withPrice: false }));
       setIsEmailInputVisible(true);
       setIsPromptInputVisible(false);
       return;
     }
 
     setIsPromptInputVisible(true);
-    setHistory((prev) => unsetIsReceiving(prev, true));
+    setHistory((prevHistory) => unsetIsReceiving({ prevHistory, withOptions: true, withPrice: false }));
   }
 
   function getOptions(string) {
@@ -213,9 +224,12 @@ const Chatbot = ({ config }) => {
       }
 
       if (isLast && originalContent.includes(intentionType.payment)) {
-        setIsCtaVisible(true);
+        setIsPaymentButtonVisible(true);
         setIsPromptInputVisible(false);
         setIsEmailInputVisible(false);
+        const { price, period } = getDisplayInfo();
+        // Regex replaces all html tags with empty string
+        item.price = price + ' ' + period.replace(/<[^>]*>/g, '');
         return item;
       }
 
@@ -376,7 +390,8 @@ const Chatbot = ({ config }) => {
         ))}
       </MessagesWrapper>
       <LoadingDots isVisible={isLoaderVisible} />
-      <ActionButton text={ctaText} isCtaVisible={isCtaVisible} />
+      <Link text={ctaText} link={ctaLink} />
+      <Button text={'Proceed with payment'} isVisible={isPaymentButtonVisible} />
       <PaymentFormWrapper translations={translations} />
       <div>
         <div className={`js-error error-message ${errors.length ? '' : 'hidden'}`}>{translations.error}</div>
