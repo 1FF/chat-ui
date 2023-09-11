@@ -432,6 +432,11 @@ img {
   margin-left: 10px
 }
 
+[dir='rtl'] .payment-button span {
+  margin-left: unset;
+  margin-right: 10px;
+}
+
 .payment-button svg {
   width: 24px;
   height: 24px;
