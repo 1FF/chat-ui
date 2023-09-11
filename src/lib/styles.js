@@ -1,4 +1,4 @@
-export const styles = height => `html {
+export const styles = (height) => `html {
   box-sizing: border-box;
   font-size: 16px;
 }
@@ -255,6 +255,7 @@ img {
 .answers-container {
   margin-top: 30px;
   color: var(--glaze-text);
+  max-width: 375px;
 }
 
 #scroll-incrementor * {
@@ -273,6 +274,25 @@ img {
   -webkit-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  width: 100%;
+}
+
+.btn-group {
+  display: block;
+}
+
+@media(min-width: 385px){
+  .btn-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+  }
+}
+
+.initial-buttons-container {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 0 20px;
 }
 
 .chat-widget__messages {

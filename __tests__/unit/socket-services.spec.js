@@ -1,8 +1,8 @@
-import { input, loadingDots } from "../../src/lib/utils";
-import { onStreamData, onStreamEnd, onStreamStart } from "../../src/lib/socket-services";
-import { constructLink, initializeAddClassMethod } from "../../src/lib/helpers";
-import ChatUi from "../../src/lib/chat-ui";
-import { doc } from "prettier";
+import { input, loadingDots } from '../../src/lib/utils';
+import { onStreamData, onStreamEnd, onStreamStart } from '../../src/lib/socket-services';
+import { constructLink, initializeAddClassMethod } from '../../src/lib/helpers';
+import ChatUi from '../../src/lib/chat-ui';
+import { doc } from 'prettier';
 
 describe('socket-services', () => {
   const testMessage = {
@@ -14,8 +14,8 @@ describe('socket-services', () => {
     // Arrange
     const state = {
       onError: jest.fn(),
-      refreshLocalStorageHistory: jest.fn()
-    }
+      refreshLocalStorageHistory: jest.fn(),
+    };
 
     // Act
     onStreamData.bind(state)({ chunk: 'chunk', messages: [{}, {}], errors: ['server error'] });
@@ -27,7 +27,7 @@ describe('socket-services', () => {
 
   test('should not call onError when onStreamData we have no errors', () => {
     // Arrange
-    document.body.innerHTML = `<div class="js-wave"></div>`
+    document.body.innerHTML = `<div class="js-wave"></div>`;
     const state = {
       onError: jest.fn(),
       refreshLocalStorageHistory: jest.fn(),
@@ -35,8 +35,8 @@ describe('socket-services', () => {
       processTextInCaseOfSquareBrackets: jest.fn(),
       processTextInCaseOfCurlyBrackets: jest.fn(),
       elements: {
-        messageIncrementor: { appendChild: jest.fn() }
-      }
+        messageIncrementor: { appendChild: jest.fn() },
+      },
     };
 
     jest.spyOn(loadingDots, 'hide');
@@ -69,7 +69,7 @@ describe('socket-services', () => {
         <span class="js-assistant-message">Hi there! How can I assist you today https://test.test.com?</span>
         <div class="answers-container"><div>ok</div></div>
       </span>
-    </div>`
+    </div>`;
     const state = {
       setCtaButton: jest.fn(),
       getLastMessageElement: ChatUi.getLastMessageElement,
@@ -111,11 +111,15 @@ describe('socket-services', () => {
           <input id="chat-prompt" minlength="1" name="chat" autofocus="chat" type="text" placeholder="Write your message here..." disabled="">
         </span>
       </div>
-    </div>`
+    </div>`;
     const state = {
       setCtaButton: jest.fn(),
       getLastMessageElement: ChatUi.getLastMessageElement,
-      elements: { messageIncrementor: document.querySelector('#message-incrementor'), promptContainer: document.querySelector('#prompt-container'), messageInput: document.querySelector('#chat-prompt') },
+      elements: {
+        messageIncrementor: document.querySelector('#message-incrementor'),
+        promptContainer: document.querySelector('#prompt-container'),
+        messageInput: document.querySelector('#chat-prompt'),
+      },
     };
     jest.spyOn(input, 'show');
     jest.spyOn(input, 'hide');
@@ -156,11 +160,17 @@ describe('socket-services', () => {
           <input id="chat-prompt" minlength="1" name="chat" autofocus="chat" type="text" placeholder="Write your message here..." disabled="">
         </span>
       </div>
-    </div>`
+    </div>`;
     const state = {
       setCtaButton: jest.fn(),
       getLastMessageElement: ChatUi.getLastMessageElement,
-      elements: { messageIncrementor: document.querySelector('#message-incrementor'), promptContainer: document.querySelector('#prompt-container'), messageInput: document.querySelector('#chat-prompt'), paymentButton: document.querySelector('#chat-pay'), ctaButton: document.querySelector('#cta-button') },
+      elements: {
+        messageIncrementor: document.querySelector('#message-incrementor'),
+        promptContainer: document.querySelector('#prompt-container'),
+        messageInput: document.querySelector('#chat-prompt'),
+        paymentButton: document.querySelector('#chat-pay'),
+        ctaButton: document.querySelector('#cta-button'),
+      },
     };
     jest.spyOn(input, 'show');
     jest.spyOn(input, 'hide');

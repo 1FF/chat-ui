@@ -347,18 +347,23 @@ const ChatUi = {
   addOptions() {
     const element = this.getLastMessageElement('.assistant');
     const answerConfig = getAnswerConfig(this.answersFromStream);
-
     const answersContainer = document.createElement('div');
+    const moveBtnNumber = '10';
     answersContainer.classList.add('answers-container');
     [...answerConfig.list].forEach((answer) => {
       const optionElement = document.createElement('div');
       optionElement.textContent = answer.content;
-      actionService.handleAction(optionElement, answer.actions);
+      actionService.handleAction(optionElement, answer.actions, answersContainer);
       optionElement.addEventListener('click', this[answerConfig.answersType].bind(this));
       answersContainer.appendChild(optionElement);
     });
     this.answersFromStream = '';
-    element.appendChild(answersContainer);
+
+    [...answerConfig.list].forEach((btn) => {
+      if (!btn.actions.includes(moveBtnNumber)) {
+        element.appendChild(answersContainer);
+      }
+    });
   },
   getLastMessageElement(role) {
     return this.elements.messageIncrementor.querySelectorAll(role)[
