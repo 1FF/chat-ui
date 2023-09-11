@@ -16,6 +16,8 @@ import {
   getUserId,
   initializeAddClassMethod,
   isExpired,
+  splitText,
+  clearCarets,
 } from './helpers';
 import {emailLoader, errorMessage, input, loadingDots, resendButton, scroll} from './utils';
 import {
@@ -207,13 +209,27 @@ const ChatUi = {
     let isLastMessage = false;
     history.forEach((data) => {
       if (counter > 1) {
-        const updatedContent = actionService.clearButtonCodes(data.content);
+        let updatedContent = actionService.clearButtonCodes(data.content);
+        updatedContent = clearCarets(updatedContent);
         data.content = updatedContent;
       }
       if (counter === history.length) {
         isLastMessage = true;
       }
-      this.appendHtml(data, isLastMessage);
+      if (data.content.includes('^') && counter === 1) {
+        const splittedContent = splitText(data.content, '^');
+
+        for (let i = 0; i < splittedContent.length; i++) {
+          data.content = splittedContent[i];
+          const newData = {
+            ...data,
+            content: splittedContent[i],
+          };
+          this.appendHtml(newData, isLastMessage);
+        }
+      } else {
+        this.appendHtml(data, isLastMessage);
+      }
       counter++;
     });
   },
@@ -474,13 +490,17 @@ const ChatUi = {
    * @returns {void}
    */
   sendAssistantInitialMessage() {
+    this.assistant.initialMessage.content = this.formatInitialMessage(this.assistant.initialMessage.content);
+
     const data = {
       ...this.lastQuestionData,
       role: roles.assistant,
       message: this.assistant.initialMessage.content,
     };
+
     this.socket.emit(this.events.chat, data);
   },
+
   /**
    * Loads initial message from the assistant object and checks if the message contains any brackets.
    * If it does, it extracts the string between the brackets and sets the initial message to the extracted string.
@@ -490,27 +510,33 @@ const ChatUi = {
    *
    * @returns {void}
    */
-  loadAssistantInitialMessage() {
+  async loadAssistantInitialMessage() {
     loadingDots.show();
     this.sendAssistantInitialMessage();
-    setTimeout(() => {
-      loadingDots.hide();
-      const { extractedString, updatedMessage } = extractStringWithBrackets(this.assistant.initialMessage.content);
 
-      const data = {
-        content: updatedMessage,
-        ...this.assistant.initialMessage,
-      };
+    await this.delay(1500);
+
+    loadingDots.hide();
+    const { extractedString, updatedMessage } = extractStringWithBrackets(this.assistant.initialMessage.content);
+
+    const data = {
+      content: updatedMessage,
+      ...this.assistant.initialMessage,
+    };
+
+    if (data.content.includes('^')) {
+      const splitMessage = splitText(data.content, '^');
+      await this.appendHtmlInChunks(splitMessage, data);
+    } else {
       this.elements.messageIncrementor.appendChild(timeMarkup(data.time));
       this.appendHtml(data);
+    }
 
-      if (extractedString) {
-        input.hide(this);
-        this.answersFromStream = extractedString;
-        this.addOptions();
-      }
-    }, 1500);
+    if (extractedString) {
+      this.hideInput(extractedString);
+    }
   },
+
   /**
    * adds new message to lastQuestionData.message, clears the input field and visualizes it
    *
@@ -765,6 +791,60 @@ const ChatUi = {
       this.addNewMessage();
     }
     this.elements.errorEmail.addClass('hidden');
+  },
+  hideInput(extractedString) {
+    input.hide(this);
+    this.answersFromStream = extractedString;
+    this.addOptions();
+  },
+
+  //Returns a promise that is resolved after a given time parameter.
+  delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  },
+
+  //An async function, that appends the splitted message in chunks, with a total delay of 1000ms for each chunk.
+  async appendHtmlInChunks(splitMessage, data) {
+    let showTimeOnce = true;
+    for (let i = 0; i < splitMessage.length; i++) {
+      loadingDots.show();
+      await this.delay(500);
+      const newData = {
+        ...data,
+        content: splitMessage[i],
+      };
+      if (showTimeOnce) {
+        showTimeOnce = false;
+        this.elements.messageIncrementor.appendChild(timeMarkup(data.time));
+      }
+      this.appendHtml(newData);
+      loadingDots.hide();
+      await this.delay(500);
+    }
+  },
+
+  //If the message contains "^" symbol and looks something like this "^^ ^^ Do^^ you ^^^want^ ^^to ^^^ lose weight [Yes|No]^ ^ ^^^
+  //and returs it like this "Do^ you^ want^ to^ lose weight [Yes|No]"
+  formatInitialMessage(initialMessage) {
+    if (initialMessage.includes('^')) {
+      const splittedTextArr = splitText(initialMessage, '^');
+      initialMessage = this.rebuildInitialMessage(splittedTextArr);
+    }
+
+    return initialMessage;
+  },
+
+  //Takes an array and builds a string from it, and append a caret sign (^) at the end of each element;
+  rebuildInitialMessage(splittedTextArr) {
+    let formattedText = '';
+    for (let i = 0; i < splittedTextArr.length; i++) {
+      if (splittedTextArr[i] === splittedTextArr[splittedTextArr.length - 1]) {
+        formattedText += splittedTextArr[i];
+      } else {
+        formattedText += splittedTextArr[i] + '^ ';
+      }
+    }
+    return formattedText;
   },
 };
 

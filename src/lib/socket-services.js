@@ -1,6 +1,6 @@
 import { UNSENT_MESSAGES_KEY } from './chat-ui';
 import { rolesHTML } from './chat-widgets';
-import { constructLink, replaceLinksWithAnchors } from './helpers';
+import { constructLink, replaceLinksWithAnchors, clearCarets } from './helpers';
 import { errorMessage, input, loadingDots, messages, resendButton } from './utils';
 /**
  * Handles the start of the stream.
@@ -100,8 +100,7 @@ export function onStreamData(data) {
   }
 
   const lastMessageElement = this.getLastMessageElement('.assistant .js-assistant-message');
-  this.chunk = data.chunk;
-
+  this.chunk = clearCarets(data.chunk);
   this.processTextInCaseOfSquareBrackets();
   this.processTextInCaseOfCurlyBrackets();
 
