@@ -42,4 +42,5 @@ export const theme = {
   '--iota-dots': '#21bb5a',
   '--zeta': 'rgba(15, 14, 30, 0.6)',
   '--text-color': 'rgb(15, 14, 30)',
+  '--payButtons': '#019aff',
 };
