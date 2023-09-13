@@ -1,6 +1,8 @@
 import ChatUi, { CHAT_SEEN_KEY, STORAGE_KEY } from '../../src/lib/chat-ui';
 import { assistant } from '../../src/lib/config/assistant';
 import { roles } from '../../src/lib/config/roles';
+import { loadingDots, messageIncrementor } from '../__mocks__/htmlFixtures';
+import { loadingDots as loadingDotsObj } from '../../src/lib/utils';
 import { customEventTypes } from '../../src/lib/custom/tracking-events';
 import { actionService } from '../../src/lib/action-service';
 
@@ -394,6 +396,39 @@ describe('ChatUi', () => {
     expect(sut.appendHtml).toBeCalledWith({ content: 'element2' }, true);
     expect(actionService.clearButtonCodes).toBeCalled();
   });
+
+  test('that processMessageInCaseOfCaret formats the string in the correct format', () => {
+    //Arrange
+    const text = '^^ ^^ Do^^ you ^^^want^ ^^to ^^^ lose weight [Yes|No]^ ^ ^^^';
+
+    //Act
+    const formattedText = ChatUi.formatInitialMessage(text);
+
+    //Assert
+    expect(formattedText).toBe('Do^ you^ want^ to^ lose weight [Yes|No]');
+  });
+
+  test('that processMessageInCaseOfCaret returns the same string if no carets are present', () => {
+    //Arrange
+    const text = 'NO CARETS PRESENT';
+
+    //Act
+    const formattedText = ChatUi.formatInitialMessage(text);
+
+    //Assert
+    expect(formattedText).toBe('NO CARETS PRESENT');
+  });
+
+  test('that rebuildInitialMessage builds the correct string from an array', () => {
+    //Arrange
+    const arr = ['One', 'Two', 'Three'];
+
+    //Act
+    const stringResult = ChatUi.rebuildInitialMessage(arr);
+
+    //Assert
+    expect(stringResult).toBe('One^ Two^ Three');
+  });
 });
 
 function setContainer() {
@@ -401,3 +436,96 @@ function setContainer() {
   container.id = 'chatbot-container';
   document.body.appendChild(container);
 }
+
+describe('test appendHtmlInChunks and all its supporting functions', () => {
+  beforeEach(() => {
+    document.body.innerHTML = loadingDots + messageIncrementor;
+
+    ChatUi.elements = {
+      loadingDots: document.querySelector('.js-wave'),
+      messageIncrementor: document.getElementById('message-incrementor'),
+    };
+
+    jest.useFakeTimers();
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+  test('that delay() promise is resolved after a given time', async () => {
+    //Arrange
+    const delayTime = 1000;
+
+    //Act
+    const promise = ChatUi.delay(delayTime);
+    jest.advanceTimersByTime(delayTime);
+
+    //Assert
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  test('appendHtmlInChunks calls appendHtml once for each element of the splitted message array', async () => {
+    // Arrange
+    const appendHtmlSpy = jest.spyOn(ChatUi, 'appendHtml');
+    const splitMessage = ['Do you', 'want', 'to lose weight', 'and have fun? [#1#Yes|#2#No]'];
+    const data = {
+      message: 'Do you^ want^ to lose weight^ and have fun? [#1#Yes|#2#No]',
+      role: 'assistant',
+      term: 'term',
+      user_id: '123',
+    };
+    ChatUi.setElements();
+
+    // Mock the delay function to resolve immediately
+    jest.spyOn(ChatUi, 'delay').mockResolvedValue();
+
+    // Act
+    await ChatUi.appendHtmlInChunks(splitMessage, data);
+
+    // Assert
+    expect(appendHtmlSpy).toBeCalledTimes(splitMessage.length);
+  });
+
+  test('appendHtmlInChunks calls loadingDots.show() once for each element of the splitted message array', async () => {
+    // Arrange
+    const loadingDotsSpy = jest.spyOn(loadingDotsObj, 'show');
+    const splitMessage = ['one', 'two', 'three'];
+    const data = {
+      message: 'Do you^ want^ to lose weight^ and have fun? [#1#Yes|#2#No]',
+      role: 'assistant',
+      term: 'term',
+      user_id: '123',
+    };
+    ChatUi.setElements();
+
+    // Mock the delay function to resolve immediately
+    jest.spyOn(ChatUi, 'delay').mockResolvedValue();
+
+    // Act
+    await ChatUi.appendHtmlInChunks(splitMessage, data);
+
+    // Assert
+    expect(loadingDotsSpy).toBeCalledTimes(splitMessage.length);
+  });
+
+  test('appendHtmlInChunks calls loadingDots.hide() once for each element of the splitted message array', async () => {
+    // Arrange
+    const loadingDotsSpy = jest.spyOn(loadingDotsObj, 'hide');
+    const splitMessage = ['one', 'two', 'three', 'four'];
+    const data = {
+      message: 'Do you^ want^ to lose weight^ and have fun? [#1#Yes|#2#No]',
+      role: 'assistant',
+      term: 'term',
+      user_id: '123',
+    };
+    ChatUi.setElements();
+
+    // Mock the delay function to resolve immediately
+    jest.spyOn(ChatUi, 'delay').mockResolvedValue();
+
+    // Act
+    await ChatUi.appendHtmlInChunks(splitMessage, data);
+
+    // Assert
+    expect(loadingDotsSpy).toBeCalledTimes(splitMessage.length);
+  });
+});

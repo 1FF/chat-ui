@@ -194,3 +194,34 @@ export function buildConfig(arr) {
 
   return config;
 }
+
+/**
+ * splits a given text by a given separator and trims it and removes all empty meembers.
+ *
+ * @function splitText
+ * @param {string} text
+ * @param {string} separator
+ * @returns {Array} returns array of each part of the splitted text.
+ */
+export function splitText(text, separator) {
+  const messageArray = text.split(separator);
+  const trimmedArray = messageArray.map((element) => element.trim());
+  const filteredArray = trimmedArray.filter((item) => item !== '');
+  return filteredArray;
+}
+
+/**
+ * clears all ocurrences of the "^" symbol in a string, if the string does not include any "^" it returns the original string
+ *
+ * @function clearCarets
+ * @param {string} text
+ * @returns {String} returns array of each part of the splitted text.
+ */
+export function clearCarets(text) {
+  const regex = /\^+/gm;
+  if (text.includes('^')) {
+    text = text.replace(regex, '');
+  }
+
+  return text;
+}

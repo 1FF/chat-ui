@@ -6,6 +6,8 @@ import {
   buildConfig,
   getTerm,
   isExpired,
+  splitText,
+  clearCarets,
 } from '../../src/lib/helpers';
 
 describe('extractLink', () => {
@@ -319,5 +321,65 @@ describe('isExpired', () => {
 
     // Assert
     expect(expected).toBe(false);
+  });
+
+  test('that splitText() splits the text with the with the given separator', () => {
+    //Arrange
+    const text = 'This^is^test^text!';
+    const separator = '^';
+
+    //Act
+    const resultArr = splitText(text, separator);
+
+    //Assert
+    expect(resultArr).toHaveLength(4);
+  });
+
+  test('that splitText() trims the text of each element', () => {
+    //Arrange
+    const text = 'This  ^  is ^ test   ^text!   ';
+    const separator = '^';
+
+    //Act
+    const resultArr = splitText(text, separator);
+
+    //Assert
+    resultArr.forEach((element) => {
+      expect(element).not.toContain(' ');
+    });
+  });
+
+  test('that splitText() removes the empty elements', () => {
+    //Arrange
+    const text = '^This  ^  is ^ test   ^text! ^ ^  ';
+    const separator = '^';
+
+    //Act
+    const resultArr = splitText(text, separator);
+
+    //Assert
+    expect(resultArr).not.toContain('');
+  });
+
+  test('that clearCaret() removes all the carets from a string', () => {
+    //Arrange
+    const text = '^This^ is^ test^ text!^';
+
+    //Act
+    const resultText = clearCarets(text);
+
+    //Assert
+    expect(resultText).toBe('This is test text!');
+  });
+
+  test('that clearCaret() returns the same string if no carets are present', () => {
+    //Arrange
+    const text = '^This is test text!';
+
+    //Act
+    const resultText = clearCarets(text);
+
+    //Assert
+    expect(resultText).toBe('This is test text!');
   });
 });
