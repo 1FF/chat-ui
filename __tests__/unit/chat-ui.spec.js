@@ -205,6 +205,7 @@ describe('ChatUi', () => {
     const element = document.createElement('span');
     element.appendChild = jest.fn();
     sut.getLastMessageElement = jest.fn().mockReturnValue(element);
+    actionService.handleAction = jest.fn().mockReturnValue(document.createElement('div'));
     sut.word = jest.fn();
 
     sut.addOptions();
@@ -217,6 +218,7 @@ describe('ChatUi', () => {
     const element = document.createElement('span');
     element.appendChild = jest.fn();
     sut.getLastMessageElement = jest.fn().mockReturnValue(element);
+    actionService.handleAction = jest.fn().mockReturnValue(document.createElement('div'));
 
     sut.word = jest.fn();
 
@@ -395,6 +397,39 @@ describe('ChatUi', () => {
     expect(sut.appendHtml).toBeCalledWith({ content: 'element1' }, false);
     expect(sut.appendHtml).toBeCalledWith({ content: 'element2' }, true);
     expect(actionService.clearButtonCodes).toBeCalled();
+  });
+
+  test('that processMessageInCaseOfCaret formats the string in the correct format', () => {
+    //Arrange
+    const text = '^^ ^^ Do^^ you ^^^want^ ^^to ^^^ lose weight [Yes|No]^ ^ ^^^';
+
+    //Act
+    const formattedText = ChatUi.formatInitialMessage(text);
+
+    //Assert
+    expect(formattedText).toBe('Do^ you^ want^ to^ lose weight [Yes|No]');
+  });
+
+  test('that processMessageInCaseOfCaret returns the same string if no carets are present', () => {
+    //Arrange
+    const text = 'NO CARETS PRESENT';
+
+    //Act
+    const formattedText = ChatUi.formatInitialMessage(text);
+
+    //Assert
+    expect(formattedText).toBe('NO CARETS PRESENT');
+  });
+
+  test('that rebuildInitialMessage builds the correct string from an array', () => {
+    //Arrange
+    const arr = ['One', 'Two', 'Three'];
+
+    //Act
+    const stringResult = ChatUi.rebuildInitialMessage(arr);
+
+    //Assert
+    expect(stringResult).toBe('One^ Two^ Three');
   });
 
   test('that processMessageInCaseOfCaret formats the string in the correct format', () => {
