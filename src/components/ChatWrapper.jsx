@@ -1,21 +1,14 @@
 import React, { useEffect, useState } from "react";
 
-const ChatWrapper = ({ children, shouldShowChat, theme }) => {
-  const [height, setHeight] = useState(0);
+const ChatWrapper = ({ children, theme }) => {
+  const [height, setHeight] = useState('100%');
 
   useEffect(() => {
-    const setInitialHeight = () => {
-      setHeight(window.innerHeight);
-    };
-
-    setInitialHeight();
-    return () => {
-      window.removeEventListener("resize", setInitialHeight);
-    };
+    setHeight(window.innerHeight);
   }, []);
 
   return (
-    <div className={`chat-widget ${theme} ${shouldShowChat ? '' : 'hidden'}`} style={{ height }}>
+    <div className={`chat-widget ${theme}`} style={{ height }}>
       {children}
     </div>
   )

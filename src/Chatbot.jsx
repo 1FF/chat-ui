@@ -50,6 +50,7 @@ const Chatbot = ({ config }) => {
     message: '',
   });
   const [shouldShowChat, setShouldShowChat] = useState(false);
+  const [shouldShowPrompt, setShouldShowPrompt] = useState(false);
   const [isLoaderVisible, setIsLoaderVisible] = useState(true);
   const [isEmailLoaderVisible, setIEmailLoaderVisible] = useState(false);
   const [shouldSendUnsent, setShouldSendUnsent] = useState(false);
@@ -181,6 +182,7 @@ const Chatbot = ({ config }) => {
   }
 
   function onConnect() {
+    setShouldShowPrompt(true)
     setIsLoaderVisible(false);
   }
 
@@ -436,7 +438,7 @@ const Chatbot = ({ config }) => {
   }
 
   return (
-    <ChatWrapper theme={config.theme} shouldShowChat={shouldShowChat}>
+    <ChatWrapper theme={config.theme}>
       <Head assistant={assistant} />
       <MessagesWrapper>
         <InitiatorProfile assistant={assistant} />
@@ -463,8 +465,8 @@ const Chatbot = ({ config }) => {
       />
       <div>
         <div className={`js-error error-message ${errors.length ? '' : 'hidden'}`}>{translations.error}</div>
-        <span className="chat-widget__prompt" id="prompt-container">
-          <span className="widget__input">
+        <span className={`chat-widget__prompt ${shouldShowPrompt ? '' : 'hidden'}`} id="prompt-container">
+          <span className='widget__input'>
             <PromptField
               translations={translations}
               onKeyUp={promptKeyUpHandler}
