@@ -1,12 +1,12 @@
-import {io} from 'socket.io-client';
-import {chatMarkup, getDisplayInfo, initiatorProfile, paymentHeader, rolesHTML, timeMarkup} from './chat-widgets';
-import {styles} from './styles';
-import {assistant} from './config/assistant';
-import {events} from './config/events';
-import {roles} from './config/roles';
-import {socketConfig} from './config/socket';
-import {theme} from './config/theme';
-import {translations} from './config/translations';
+import { io } from 'socket.io-client';
+import { chatMarkup, getDisplayInfo, initiatorProfile, paymentHeader, rolesHTML, timeMarkup } from './chat-widgets';
+import { styles } from './styles';
+import { assistant } from './config/assistant';
+import { events } from './config/events';
+import { roles } from './config/roles';
+import { socketConfig } from './config/socket';
+import { theme } from './config/theme';
+import { translations } from './config/translations';
 import cssMinify from './css-minify';
 import {
   constructLink,
@@ -19,7 +19,7 @@ import {
   splitText,
   clearCarets,
 } from './helpers';
-import {emailLoader, errorMessage, input, loadingDots, resendButton, scroll} from './utils';
+import { emailLoader, errorMessage, input, loadingDots, resendButton, scroll } from './utils';
 import {
   onChatHistory,
   onConnect,
@@ -30,8 +30,8 @@ import {
   onStreamStart,
   socketEmitChat,
 } from './socket-services';
-import {actionService} from './action-service';
-import {customEventTypes, standardEventTypes} from "./custom/tracking-events";
+import { actionService } from './action-service';
+import { customEventTypes, standardEventTypes } from './custom/tracking-events';
 
 const nodeEvents = require('events');
 
@@ -347,10 +347,11 @@ const ChatUi = {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   },
   singleChoice(e) {
-    this.lastQuestionData.message = e.target.textContent;
+    let textContent = e.currentTarget.textContent
+    this.lastQuestionData.message = textContent;
     const data = {
       role: roles.user,
-      content: e.target.textContent,
+      content: textContent,
       time: new Date().toISOString(),
     };
     if (this.isFirstUserMessage()) {
@@ -358,7 +359,12 @@ const ChatUi = {
     }
     socketEmitChat(this);
     this.appendHtml(data);
-    e.target.parentElement.remove();
+
+    const answersContainer = document.querySelector('.answers-container');
+
+    if (answersContainer) {
+      answersContainer.remove();
+    }
   },
   addOptions() {
     const element = this.getLastMessageElement('.assistant');
@@ -367,10 +373,12 @@ const ChatUi = {
     const moveBtnNumber = '10';
     answersContainer.classList.add('answers-container');
     [...answerConfig.list].forEach((answer) => {
-      const optionElement = document.createElement('div');
+      let optionElement = document.createElement('div');
       optionElement.textContent = answer.content;
-      actionService.handleAction(optionElement, answer.actions, answersContainer);
+      optionElement = actionService.handleAction(optionElement, answer.actions, answersContainer);
       optionElement.addEventListener('click', this[answerConfig.answersType].bind(this));
+      console.log('optionElement',optionElement);
+      console.log('answerConfig',answerConfig.answersType);
       answersContainer.appendChild(optionElement);
     });
     this.answersFromStream = '';
@@ -389,7 +397,7 @@ const ChatUi = {
   isFirstUserMessage() {
     let history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
-    return !history.find(obj => {
+    return !history.find((obj) => {
       return obj.role === roles.user;
     });
   },

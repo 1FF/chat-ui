@@ -856,6 +856,18 @@ div.js-wave .dot:nth-child(3) {
   color: var(--zeta);
 }
 
+.gender-svg {
+  width: 28px;
+  height: 28px;
+  margin-right: 10px;
+  z-index: 10;
+}
+
+[dir="rtl"] .gender-svg {
+  margin-left: 10px;
+  margin-right: 0;
+}
+
 @keyframes shadowDots {
   0%,
   33% {
