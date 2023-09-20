@@ -347,10 +347,11 @@ const ChatUi = {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   },
   singleChoice(e) {
-    this.lastQuestionData.message = e.target.textContent;
+    let textContent = e.currentTarget.textContent
+    this.lastQuestionData.message = textContent;
     const data = {
       role: roles.user,
-      content: e.target.textContent,
+      content: textContent,
       time: new Date().toISOString(),
     };
     if (this.isFirstUserMessage()) {
@@ -376,6 +377,8 @@ const ChatUi = {
       optionElement.textContent = answer.content;
       optionElement = actionService.handleAction(optionElement, answer.actions, answersContainer);
       optionElement.addEventListener('click', this[answerConfig.answersType].bind(this));
+      console.log('optionElement',optionElement);
+      console.log('answerConfig',answerConfig.answersType);
       answersContainer.appendChild(optionElement);
     });
     this.answersFromStream = '';
