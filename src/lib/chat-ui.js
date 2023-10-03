@@ -1,5 +1,13 @@
 import { io } from 'socket.io-client';
-import { chatMarkup, getDisplayInfo, initiatorProfile, paymentHeader, rolesHTML, timeMarkup } from './chat-widgets';
+import {
+  chatMarkup,
+  getDisplayInfo,
+  initiatorProfile,
+  paymentHeader,
+  rolesHTML,
+  timeMarkup,
+  getPopUp,
+} from './chat-widgets';
 import { styles } from './styles';
 import { assistant } from './config/assistant';
 import { events } from './config/events';
@@ -444,6 +452,7 @@ const ChatUi = {
   },
   setElements() {
     this.elements = {
+      chatbotContainer: document.getElementById('chatbot-container'),
       messageInput: document.getElementById('chat-prompt'),
       sendButton: document.getElementById('send-button'),
       messageIncrementor: document.getElementById('message-incrementor'),
@@ -515,6 +524,8 @@ const ChatUi = {
    * @returns {void}
    */
   async loadAssistantInitialMessage() {
+    await this.loadInitialMessageSettings();
+
     loadingDots.show();
     this.sendAssistantInitialMessage();
 
@@ -541,11 +552,24 @@ const ChatUi = {
     }
   },
 
-  /**
-   * adds new message to lastQuestionData.message, clears the input field and visualizes it
-   *
-   * @returns {void}
-   */
+  async loadInitialMessageSettings() {
+    let actionCodes = actionService.getActionCodes(
+      this.assistant.initialMessage.content,
+      actionService.ACTION_CODE_REGEX,
+    );
+
+    let popUpHtml = getPopUp(actionCodes[0]);
+
+    if (popUpHtml) {
+      this.elements.chatbotContainer.appendChild(popUpHtml);
+      setTimeout(() => {
+        document.querySelector('.modal-wrapper').classList.add('hidden');
+      }, 3000);
+
+      await this.delay(3000);
+    }
+  },
+
   addNewMessage() {
     if (!this.elements.emailInput.classList.contains('hidden')) {
       this.emailSendHandler();

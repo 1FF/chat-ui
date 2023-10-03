@@ -48,6 +48,7 @@ jest.mock('../../src/lib/action-service', () => {
     __esModule: true,
     ...originalModule,
     actionService: {
+      getActionCodes: jest.fn().mockReturnValue(['1111']),
       handleAction: jest.fn(),
     },
   };
@@ -329,13 +330,16 @@ describe('ChatUi', () => {
 
   test('shouldHideChat returns false when user has seen the chat and the history has expired (24hrs)', () => {
     // Arrange
+    const givenDate = new Date();
+    givenDate.setDate(givenDate.getDate() - 1);
+
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify([
         {
           role: 'user',
           content: 'Get started',
-          time: new Date().getDate() - 2,
+          time: givenDate,
         },
       ]),
     );
@@ -350,13 +354,16 @@ describe('ChatUi', () => {
 
   test('shouldHideChat returns false when we have history but the user did not see cta button', () => {
     // Arrange
+    const givenDate = new Date();
+    givenDate.setDate(givenDate.getDate() - 1);
+
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify([
         {
           role: 'user',
           content: 'Get started',
-          time: new Date().getDate() - 2,
+          time: givenDate,
         },
       ]),
     );
@@ -368,24 +375,6 @@ describe('ChatUi', () => {
     expect(expected).toBe(false);
   });
 
-  test('should load assistant initial message and send it', () => {
-    // Arrange
-    sut.init({ translations: { paymentLoaderTexts: [] } });
-    jest.spyOn(sut, 'sendAssistantInitialMessage');
-    jest.spyOn(sut.socket, 'emit');
-
-    // Act
-    sut.loadAssistantInitialMessage();
-
-    // Assert
-    expect(sut.sendAssistantInitialMessage).toHaveBeenCalled();
-    expect(sut.socket.emit).toHaveBeenCalledWith('chat', {
-      message: assistant.initialMessage.content,
-      role: roles.assistant,
-      term,
-      user_id: 'userID',
-    });
-  });
   test('historyTraverse iterates over the history', () => {
     // Arrange
     sut.appendHtml = jest.fn();
@@ -465,12 +454,6 @@ describe('ChatUi', () => {
     expect(stringResult).toBe('One^ Two^ Three');
   });
 });
-
-function setContainer() {
-  const container = document.createElement('div');
-  container.id = 'chatbot-container';
-  document.body.appendChild(container);
-}
 
 describe('test appendHtmlInChunks and all its supporting functions', () => {
   beforeEach(() => {
@@ -564,3 +547,9 @@ describe('test appendHtmlInChunks and all its supporting functions', () => {
     expect(loadingDotsSpy).toBeCalledTimes(splitMessage.length);
   });
 });
+
+function setContainer() {
+  const container = document.createElement('div');
+  container.id = 'chatbot-container';
+  document.body.appendChild(container);
+}

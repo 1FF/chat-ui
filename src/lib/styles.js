@@ -939,6 +939,89 @@ div.js-wave .dot:nth-child(3) {
   }
 }
 
+.modal-wrapper{
+  width: 100%;
+  height: 100%;
+  z-index: 100000;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: rgba(0,0,0,0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pop-up {
+  position: absolute;
+  width: 335px;
+  height: 254px;
+  flex-grow: 0;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 12px 24px 0 rgba(43, 49, 57, 0.06), 0 4px 8px 0 rgba(43, 55, 70, 0.04);
+  background: var(--lumina);
+}
+
+.pop-up .image1 {
+  width: 92px;
+  height: 92px;
+  flex-grow: 0;
+  margin: 0 91px 10px 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: url('https://storage.googleapis.com/appsforfit-designs/assets/img/chat-ui/3-2-1-counter.gif');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.pop-up .image2 {
+  width: 92px;
+  height: 92px;
+  flex-grow: 0;
+  margin: 0 91px 10px 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: url('https://storage.googleapis.com/appsforfit-designs/assets/img/chat-ui/chat-bubbles.gif');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.pop-up .header {
+  width: 245px;
+  height: 56px;
+  flex-grow: 0;
+  margin: 10px 14px 10px 16px;
+  font-size: 20px;
+  font-weight: bold;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-align: center;
+  color: var(--text-color);
+}
+
+.pop-up .sub-header {
+  width: 275px;
+  height: 26px;
+  flex-grow: 0;
+  margin: 10px 0 0;
+  font-size: 16px;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.63;
+  letter-spacing: normal;
+  text-align: center;
+  color: var(--zeta);
+}
+
 .hidden {
   display: none !important;
 }`;

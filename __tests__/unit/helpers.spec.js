@@ -8,6 +8,7 @@ import {
   isExpired,
   splitText,
   clearCarets,
+  removeTextBetweenHashtags,
 } from '../../src/lib/helpers';
 
 describe('extractLink', () => {
@@ -184,6 +185,18 @@ describe('extractStringWithBrackets', () => {
       updatedMessage: 'Hello !',
     };
     const result = extractStringWithBrackets(message);
+    expect(result).toEqual(expected);
+  });
+
+  test('removeTextBetweenHashtags', () => {
+    //Arrange
+    let input = '#1111#This is a test message';
+    const expected = 'This is a test message';
+
+    //Act
+    const result = removeTextBetweenHashtags(input);
+
+    //Assert
     expect(result).toEqual(expected);
   });
 
