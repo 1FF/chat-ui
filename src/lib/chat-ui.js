@@ -297,9 +297,7 @@ const ChatUi = {
   processTextInCaseOfSquareBrackets() {
     if (this.chunk.includes('[')) {
       this.answersFromStream = this.chunk;
-    }
-
-    if (this.answersFromStream) {
+    } else if (this.answersFromStream) {
       this.answersFromStream += this.chunk;
     }
 
@@ -347,7 +345,7 @@ const ChatUi = {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   },
   singleChoice(e) {
-    let textContent = e.currentTarget.textContent
+    let textContent = e.currentTarget.textContent;
     this.lastQuestionData.message = textContent;
     const data = {
       role: roles.user,
@@ -377,8 +375,6 @@ const ChatUi = {
       optionElement.textContent = answer.content;
       optionElement = actionService.handleAction(optionElement, answer.actions, answersContainer);
       optionElement.addEventListener('click', this[answerConfig.answersType].bind(this));
-      console.log('optionElement',optionElement);
-      console.log('answerConfig',answerConfig.answersType);
       answersContainer.appendChild(optionElement);
     });
     this.answersFromStream = '';
