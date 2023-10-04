@@ -1,10 +1,10 @@
 import {
   extractStringWithBrackets,
   formatDateByLocale,
-  removeTextBetweenHashtags,
   replaceLinksWithAnchors,
   replaceStringInCurlyBracketsWithStrong,
 } from './helpers';
+import { actionService } from './action-service';
 import { translations } from './config/translations';
 
 export const chatMarkup = (config) => `<div class="chat-widget">
@@ -89,7 +89,8 @@ export const rolesHTML = {
     element.classList.add('assistant');
     element.appendChild(elementContent);
     const { extractedString, updatedMessage } = extractStringWithBrackets(content);
-    const clearedMessage = removeTextBetweenHashtags(updatedMessage);
+    console.log('actionService', actionService);
+    const clearedMessage = actionService.removeTextBetweenHashtags(updatedMessage);
 
     elementContent.innerHTML = replaceLinksWithAnchors(replaceStringInCurlyBracketsWithStrong(clearedMessage));
     return { extractedString, element };

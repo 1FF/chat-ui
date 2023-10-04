@@ -126,11 +126,6 @@ export const extractStringWithBrackets = (message) => {
   };
 };
 
-export function removeTextBetweenHashtags(input) {
-  const regex = /#[^#]+#/;
-  return input.replace(regex, '');
-}
-
 export const getAnswerConfig = (output) => {
   const optionsString = output.replace(/\[|\]/g, '');
   const choicesArray = optionsString.split('|');

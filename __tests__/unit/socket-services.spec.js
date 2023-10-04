@@ -1,8 +1,7 @@
 import { input, loadingDots } from '../../src/lib/utils';
 import { onStreamData, onStreamEnd, onStreamStart } from '../../src/lib/socket-services';
-import { constructLink, initializeAddClassMethod } from '../../src/lib/helpers';
+import { initializeAddClassMethod } from '../../src/lib/helpers';
 import ChatUi from '../../src/lib/chat-ui';
-import { doc } from 'prettier';
 
 describe('socket-services', () => {
   const testMessage = {

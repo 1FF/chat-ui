@@ -50,6 +50,7 @@ jest.mock('../../src/lib/action-service', () => {
     actionService: {
       getActionCodes: jest.fn().mockReturnValue(['1111']),
       handleAction: jest.fn(),
+      removeTextBetweenHashtags: jest.fn().mockReturnValue('text'),
     },
   };
 });

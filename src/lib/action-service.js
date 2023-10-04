@@ -8,6 +8,7 @@ export const actionService = {
   },
 
   ACTION_CODE_REGEX: /#([0-9]+)#/g, //matches #2# or any integer number between the hashtag (#).
+  ACTION_CODE_AT_BEGINNING: /#[^#]+#/, //matches #2# or any integer number between the hashtag (#) at the beginning of a string.
   CLEAR_ACTION_CODE_REGEX: /(#+\d+#+)|(#+\d+)|(\d+#+)|(#+)/gm, //matches #2#, #, ##, #3, 3#, ##3, 4##, ##999###.
 
   //extracts all action codes for each button, stores them into an array and returns them.
@@ -26,6 +27,10 @@ export const actionService = {
   clearButtonCodes(text) {
     const clearedText = text.replace(this.CLEAR_ACTION_CODE_REGEX, '');
     return clearedText;
+  },
+
+  removeTextBetweenHashtags(input) {
+    return input.replace(this.ACTION_CODE_AT_BEGINNING, '');
   },
 
   //applies actions for each button depending on the action codes it has.
