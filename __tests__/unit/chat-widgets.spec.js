@@ -1,4 +1,4 @@
-import { getPopUp } from '../../src/lib/chat-widgets';
+import { getPopUp, videoMarkup, imageMarkup } from '../../src/lib/chat-widgets';
 
 describe('getPopUp function', () => {
   it('should create the first modal when type is "1111"', () => {
@@ -55,5 +55,40 @@ describe('getPopUp function', () => {
     const subHeader = popUp.querySelector('.sub-header');
     expect(subHeader).toBeInstanceOf(HTMLDivElement);
     expect(subHeader.textContent).toBe('A few seconds until the chat starts');
+  });
+});
+
+describe('videoMarkup and imageMarkup works correctly', () => {
+  it('should create an iframe element with the correct attributes', () => {
+    // Arrange
+    const extractedLink = 'https://example.com/video';
+
+    // Act
+    const result = videoMarkup(extractedLink);
+
+    // Assert
+    expect(result).toBeInstanceOf(HTMLIFrameElement);
+    expect(result.src).toBe(`${extractedLink}?enablejsapi=1&rel=0`);
+    expect(result.getAttribute('allow')).toBe('fullscreen');
+    expect(result.id).toBe('player');
+    expect(result.classList.contains('media-video')).toBe(true);
+  });
+
+  it('should create a div element containing an img element with the correct attributes', () => {
+    // Arrange
+    const extractedLink = 'https://example.com/image.jpg';
+
+    // Act
+    const result = imageMarkup(extractedLink);
+
+    // Assert
+    expect(result).toBeInstanceOf(HTMLDivElement);
+
+    const imgElement = result.querySelector('img');
+    expect(imgElement).toBeInstanceOf(HTMLImageElement);
+    expect(imgElement.src).toBe(extractedLink);
+    expect(imgElement.classList.contains('media-image')).toBe(true);
+
+    expect(result.classList.contains('image-wrapper')).toBe(true);
   });
 });

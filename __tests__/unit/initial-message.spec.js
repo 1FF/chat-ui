@@ -19,6 +19,7 @@ jest.mock('../../src/lib/helpers.js', () => {
       extractedString: 'extracted-string',
       updatedMessage: 'updated-message',
     }),
+    getStringInAngleBrackets: jest.fn().mockReturnValue([''])
   };
 });
 
@@ -26,6 +27,7 @@ jest.mock('../../src/lib/chat-widgets', () => {
   return {
     getPopUp: jest.fn().mockReturnValue('<div></div>'),
     timeMarkup: jest.fn().mockReturnValue('markup'),
+    imageMarkup: jest.fn()
   };
 });
 
