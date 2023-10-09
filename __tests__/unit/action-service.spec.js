@@ -771,4 +771,16 @@ describe('Test the action service', () => {
     expect(element.children[0].tagName).toBe('DIV');
     expect(element.children[0].children[0].tagName).toBe('DIV');
   });
+
+  test('removeTextBetweenHashtags', () => {
+    //Arrange
+    let input = '#1111#This is a test message';
+    const expected = 'This is a test message';
+
+    //Act
+    const result = actionService.removeTextBetweenHashtags(input);
+
+    //Assert
+    expect(result).toEqual(expected);
+  });
 });

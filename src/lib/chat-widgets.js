@@ -4,6 +4,7 @@ import {
   replaceLinksWithAnchors,
   replaceStringInCurlyBracketsWithStrong,
 } from './helpers';
+import { actionService } from './action-service';
 import { translations } from './config/translations';
 
 export const chatMarkup = (config) => `<div class="chat-widget">
@@ -88,8 +89,10 @@ export const rolesHTML = {
     element.classList.add('assistant');
     element.appendChild(elementContent);
     const { extractedString, updatedMessage } = extractStringWithBrackets(content);
+    console.log('actionService', actionService);
+    const clearedMessage = actionService.removeTextBetweenHashtags(updatedMessage);
 
-    elementContent.innerHTML = replaceLinksWithAnchors(replaceStringInCurlyBracketsWithStrong(updatedMessage));
+    elementContent.innerHTML = replaceLinksWithAnchors(replaceStringInCurlyBracketsWithStrong(clearedMessage));
     return { extractedString, element };
   },
 };
@@ -240,6 +243,55 @@ export function getMaleSvg() {
     '</svg>'
   );
 }
+
+export const getPopUp = (type) => {
+  switch (type) {
+    case '1111':
+      const modalWrapper = document.createElement('div');
+      const popUp = document.createElement('div');
+      const counter = document.createElement('div');
+      const header = document.createElement('div');
+      const subHeader = document.createElement('div');
+
+      modalWrapper.classList.add('modal-wrapper');
+      popUp.classList.add('pop-up');
+      counter.classList.add('image1');
+      header.classList.add('header');
+      subHeader.classList.add('sub-header');
+
+      header.textContent = 'Connection with our best Nutrition Agent';
+      subHeader.textContent = 'A few seconds until the chat starts';
+
+      popUp.appendChild(counter);
+      popUp.appendChild(header);
+      popUp.appendChild(subHeader);
+      modalWrapper.appendChild(popUp);
+
+      return modalWrapper;
+    case '1112':
+      const modalWrapperTwo = document.createElement('div');
+      const popUpTwo = document.createElement('div');
+      const counterTwo = document.createElement('div');
+      const headerTwo = document.createElement('div');
+      const subHeaderTwo = document.createElement('div');
+
+      modalWrapperTwo.classList.add('modal-wrapper');
+      popUpTwo.classList.add('pop-up');
+      counterTwo.classList.add('image2');
+      headerTwo.classList.add('header');
+      subHeaderTwo.classList.add('sub-header');
+
+      headerTwo.textContent = 'Connection with our best Nutrition Agent';
+      subHeaderTwo.textContent = 'A few seconds until the chat starts';
+
+      popUpTwo.appendChild(counterTwo);
+      popUpTwo.appendChild(headerTwo);
+      popUpTwo.appendChild(subHeaderTwo);
+      modalWrapperTwo.appendChild(popUpTwo);
+
+      return modalWrapperTwo;
+  }
+};
 
 function getSubscriptionMessage(frequencyInMonths) {
   const doc = new DOMParser().parseFromString(backEndVars.tm566, 'text/xml');
