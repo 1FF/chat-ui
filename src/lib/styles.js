@@ -400,6 +400,67 @@ img {
   max-width: 400px;
 }
 
+.fullscreen-background-filter{
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 999;
+  display: none;
+}
+
+.show-image{
+  display: flex;
+}
+
+.close-mark{
+  position: absolute;
+  top: 20px;
+  right: 35px;
+  font-size: 32px;
+  font-weight: bolder;
+  padding: 5px;
+  color: #fff;
+  z-index: 999;
+}
+
+.fullscreen-image-wrapper .media-image{
+  height: 100%
+}
+
+.fullscreen-image-wrapper{
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  padding: 30px;
+  z-index: 99;
+}
+
+.media-video{
+  height: 360px;
+  max-width: 350px;
+  width: 100%;
+}
+
+.media-image{
+  width: 100%;
+  object-fit: contain;
+}
+
+.image-wrapper{
+  max-width: 350px;
+  width: 100%;
+  cursor: pointer;
+}
+
 .chat-widget__cta, .payment-button {
   display: flex;
   justify-content: center;

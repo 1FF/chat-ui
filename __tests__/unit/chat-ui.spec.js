@@ -5,12 +5,16 @@ import { loadingDots, messageIncrementor } from '../__mocks__/htmlFixtures';
 import { loadingDots as loadingDotsObj } from '../../src/lib/utils';
 import { customEventTypes } from '../../src/lib/custom/tracking-events';
 import { actionService } from '../../src/lib/action-service';
+import { getStringInAngleBrackets } from '../../src/lib/helpers';
+
+const chatWidgets = require('../../src/lib/chat-widgets');
 
 jest.mock('../../src/lib/helpers', () => {
   const originalModule = jest.requireActual('../../src/lib/helpers');
   const mockHelpers = {
     __esModule: true,
     ...originalModule,
+    getStringInAngleBrackets: jest.fn().mockReturnValue(['https://mysite.com']),
   };
 
   // Define the different return values for getAnswerConfig
@@ -376,17 +380,109 @@ describe('ChatUi', () => {
     expect(expected).toBe(false);
   });
 
-  test('historyTraverse iterates over the history', () => {
+  test('should load assistant initial message and send it', async () => {
     // Arrange
+    sut.init({ translations: { paymentLoaderTexts: [] } });
+    sut.loadInitialMessageSettings = jest.fn();
+    sut.delay = jest.fn();
+    sut.elements = {
+      chatbotContainer: {
+        appendChild: jest.fn()
+      },
+      messageIncrementor: {
+        appendChild: jest.fn(),
+      },
+    };
     sut.appendHtml = jest.fn();
-    actionService.clearButtonCodes = jest.fn().mockReturnValue('element2', true);
+    sut.hideInput = jest.fn();
 
-    sut.historyTraverse([{ content: 'element1' }, { content: 'element2' }]);
+    jest.spyOn(sut, 'sendAssistantInitialMessage');
+    jest.spyOn(sut.socket, 'emit');
 
-    expect(sut.appendHtml).toBeCalledTimes(2);
-    expect(sut.appendHtml).toBeCalledWith({ content: 'element1' }, false);
-    expect(sut.appendHtml).toBeCalledWith({ content: 'element2' }, true);
-    expect(actionService.clearButtonCodes).toBeCalled();
+    // Act
+    await sut.loadAssistantInitialMessage();
+
+    // Assert
+    expect(sut.sendAssistantInitialMessage).toHaveBeenCalled();
+    expect(sut.socket.emit).toHaveBeenCalledWith('chat', {
+      message: assistant.initialMessage.content,
+      role: roles.assistant,
+      term,
+      user_id: 'userID',
+    });
+  });
+
+  describe('historyTraverse', () => {
+    test('iterates over the history with one element', () => {
+      sut.appendHtml = jest.fn();
+      sut.initMedia = jest.fn();
+
+      sut.historyTraverse([{ content: 'element1' }]);
+
+      expect(sut.appendHtml).toBeCalledTimes(1);
+      expect(sut.initMedia).toBeCalledTimes(1);
+      expect(sut.appendHtml).toBeCalledWith({ content: 'element1' }, true);
+    });
+
+    test('iterates over the history without action data with 2 elements', () => {
+      sut.appendHtml = jest.fn();
+      sut.initMedia = jest.fn();
+
+      actionService.clearButtonCodes = jest.fn().mockReturnValue('element2', true);
+
+      sut.historyTraverse([{ content: 'element1' }, { content: 'element2' }]);
+
+      expect(sut.initMedia).toBeCalledTimes(1);
+      expect(sut.appendHtml).toBeCalledTimes(2);
+      expect(sut.appendHtml).toBeCalledWith({ content: 'element1' }, false);
+      expect(sut.appendHtml).toBeCalledWith({ content: 'element2' }, true);
+      expect(actionService.clearButtonCodes).toBeCalled();
+    });
+
+    test('iterates over the history with two element with caret', () => {
+      sut.appendHtml = jest.fn();
+      sut.initMedia = jest.fn();
+      sut.initNewLine = jest.fn();
+
+      sut.historyTraverse([{ content: 'elem^ent1' }, { content: 'element2' }]);
+
+      expect(sut.appendHtml).toBeCalledTimes(1);
+      expect(sut.appendHtml).toBeCalledWith({ content: 'element2' }, true);
+      expect(sut.initNewLine).toBeCalledTimes(1);
+      expect(sut.initMedia).toBeCalledTimes(1);
+    });
+  });
+
+  describe('initNewLine', () => {
+    test('adds new line in case of no caret', () => {
+      sut.appendHtml = jest.fn();
+
+      sut.initNewLine({ content: 'element1' }, false);
+
+      expect(sut.appendHtml).toBeCalledTimes(1);
+      expect(sut.appendHtml).toBeCalledWith({ content: 'element1' }, false);
+    });
+
+    test('adds new line in case of caret', () => {
+      sut.appendHtml = jest.fn();
+
+      sut.initNewLine({ content: 'elem^ent1' }, false);
+
+      expect(sut.appendHtml).toBeCalledTimes(2);
+      expect(sut.appendHtml).toBeCalledWith({ content: 'elem' }, false);
+      expect(sut.appendHtml).toBeCalledWith({ content: 'ent1' }, false);
+    });
+  });
+
+  describe('initMedia', () => {
+    test('appends the media link to the dom', () => {
+      sut.appendMedia = jest.fn();
+
+      sut.initMedia(`Hi! I'm here to assist you. {Are you ready?} <https://mylink.com> [Let's start]`);
+
+      expect(getStringInAngleBrackets).toBeCalledTimes(1);
+      expect(sut.appendMedia).toBeCalledWith('https://mysite.com');
+    });
   });
 
   test('that processMessageInCaseOfCaret formats the string in the correct format', () => {
@@ -554,3 +650,36 @@ function setContainer() {
   container.id = 'chatbot-container';
   document.body.appendChild(container);
 }
+
+describe('appendMedia calls the proper media markup', () => {
+  test('appendMedia calls videoMarkup if the extractedLink is a video link', () => {
+    //Arrange
+    let extractedLink = 'https://www.youtube.com/embed/cptE_T8okoo';
+    const videoMarkupSpy = jest.spyOn(chatWidgets, 'videoMarkup');
+    const imageMarkupSpy = jest.spyOn(chatWidgets, 'imageMarkup');
+
+    //Act
+    ChatUi.appendMedia(extractedLink);
+
+    //Assert
+    expect(videoMarkupSpy).toBeCalledTimes(1);
+    expect(imageMarkupSpy).not.toBeCalled();
+  });
+
+  test('appendMedia calls imageMarkup if the extractedLink is of image', () => {
+    //Arrange
+    const extractedLink = 'www.google.com/image.jpg';
+    const imageMarkupSpy = jest.spyOn(chatWidgets, 'imageMarkup');
+    const videoMarkupSpy = jest.spyOn(chatWidgets, 'videoMarkup');
+    document.appendChild = jest.fn();
+    ChatUi.fullScreenImage = jest.fn();
+
+    //Act
+    ChatUi.appendMedia(extractedLink);
+
+    //Assert
+    expect(imageMarkupSpy).toBeCalledTimes(1);
+    expect(videoMarkupSpy).not.toBeCalled();
+  });
+});
+

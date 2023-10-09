@@ -3,6 +3,7 @@ import {
   formatDateByLocale,
   replaceLinksWithAnchors,
   replaceStringInCurlyBracketsWithStrong,
+  removeStringInAngleBrackets,
 } from './helpers';
 import { actionService } from './action-service';
 import { translations } from './config/translations';
@@ -89,12 +90,35 @@ export const rolesHTML = {
     element.classList.add('assistant');
     element.appendChild(elementContent);
     const { extractedString, updatedMessage } = extractStringWithBrackets(content);
-    console.log('actionService', actionService);
+
     const clearedMessage = actionService.removeTextBetweenHashtags(updatedMessage);
 
-    elementContent.innerHTML = replaceLinksWithAnchors(replaceStringInCurlyBracketsWithStrong(clearedMessage));
+    const messageWithoutLink = removeStringInAngleBrackets(clearedMessage);
+
+    elementContent.innerHTML = replaceLinksWithAnchors(replaceStringInCurlyBracketsWithStrong(messageWithoutLink));
+
     return { extractedString, element };
   },
+};
+
+export const videoMarkup = (extractedLink) => {
+  const element = document.createElement('iframe');
+  element.src = `${extractedLink}?enablejsapi=1&rel=0`;
+  element.setAttribute('allow', 'fullscreen');
+  element.id = 'player';
+  element.classList.add('media-video');
+  return element;
+};
+
+export const imageMarkup = (extractedLink) => {
+  const img = document.createElement('img');
+  const element = document.createElement('div');
+
+  img.src = `${extractedLink}`;
+  img.classList.add('media-image');
+  element.classList.add('image-wrapper');
+  element.appendChild(img);
+  return element;
 };
 
 export const timeMarkup = (time) => {

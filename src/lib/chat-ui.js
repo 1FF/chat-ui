@@ -2,11 +2,13 @@ import { io } from 'socket.io-client';
 import {
   chatMarkup,
   getDisplayInfo,
+  imageMarkup,
   initiatorProfile,
   paymentHeader,
   rolesHTML,
   timeMarkup,
   getPopUp,
+  videoMarkup,
 } from './chat-widgets';
 import { styles } from './styles';
 import { assistant } from './config/assistant';
@@ -26,6 +28,7 @@ import {
   isExpired,
   splitText,
   clearCarets,
+  getStringInAngleBrackets,
 } from './helpers';
 import { emailLoader, errorMessage, input, loadingDots, resendButton, scroll } from './utils';
 import {
@@ -81,6 +84,7 @@ const ChatUi = {
   typingTimerIds: [],
   answersFromStream: '',
   boldedText: '',
+  video: '',
   showModalForRegisteredUser: '',
   showPaymentButton: '',
   lastQuestionData: {
@@ -215,7 +219,10 @@ const ChatUi = {
   historyTraverse(history) {
     let counter = 1;
     let isLastMessage = false;
+
     history.forEach((data) => {
+      let appended = false;
+
       if (counter > 1) {
         let updatedContent = actionService.clearButtonCodes(data.content);
         updatedContent = clearCarets(updatedContent);
@@ -224,22 +231,50 @@ const ChatUi = {
       if (counter === history.length) {
         isLastMessage = true;
       }
-      if (data.content.includes('^') && counter === 1) {
-        const splittedContent = splitText(data.content, '^');
-
-        for (let i = 0; i < splittedContent.length; i++) {
-          data.content = splittedContent[i];
-          const newData = {
-            ...data,
-            content: splittedContent[i],
-          };
-          this.appendHtml(newData, isLastMessage);
+      if (counter === 1) {
+        this.initMedia(data.content);
+        if (data.content.includes('^')) {
+          appended = true;
+          this.initNewLine(data, isLastMessage);
         }
-      } else {
+      }
+      if (!appended) {
         this.appendHtml(data, isLastMessage);
       }
+
       counter++;
     });
+
+    this.addImageAction();
+  },
+  initNewLine(data, isLastMessage) {
+    const splittedContent = splitText(data.content, '^');
+
+    for (let i = 0; i < splittedContent.length; i++) {
+      data.content = splittedContent[i];
+      const newData = {
+        ...data,
+        content: splittedContent[i],
+      };
+      this.appendHtml(newData, isLastMessage);
+    }
+  },
+  addImageAction() {
+    const images = document.querySelectorAll('.media-image');
+    images.forEach((img) => {
+      img.addEventListener('click', () => {
+        const fullScreen = document.querySelector('.fullscreen-background-filter');
+        fullScreen.classList.toggle('show-image');
+      });
+    });
+  },
+  initMedia(content) {
+    const link = getStringInAngleBrackets(content);
+
+    const extractedLink = link[0];
+    if (extractedLink) {
+      this.appendMedia(extractedLink);
+    }
   },
   appendUnsentMessage() {
     const data = {
@@ -478,9 +513,7 @@ const ChatUi = {
   appendHtml(data, isLastMessage = false) {
     const { role, content } = data;
     const result = rolesHTML[role](content);
-
     this.elements.messageIncrementor.appendChild(result.element || result);
-
     this.setLastMessageButtons(result.extractedString, isLastMessage);
   },
   // logic with last message buttons should be refactored
@@ -488,7 +521,6 @@ const ChatUi = {
     if ([intentionType.payment, intentionType.email].includes(extractedString)) {
       return;
     }
-
     if (extractedString && extractedString !== '' && isLastMessage) {
       input.hide(this);
       this.answersFromStream = '[' + extractedString + ']';
@@ -519,7 +551,7 @@ const ChatUi = {
    * If it does, it extracts the string between the brackets and sets the initial message to the extracted string.
    * It also adds the options to the chat widget.
    * If the message doesn't contain any brackets, it sets the initial message to the message content.
-   * It also hides the input field and adds the options to the chat widget.
+   * It also hides the input field and adds the options to the chat widget.media-image
    *
    * @returns {void}
    */
@@ -533,20 +565,25 @@ const ChatUi = {
 
     loadingDots.hide();
     const { extractedString, updatedMessage } = extractStringWithBrackets(this.assistant.initialMessage.content);
+    const link = getStringInAngleBrackets(this.assistant.initialMessage.content);
+    const extractedLink = link[0];
 
     const data = {
       content: updatedMessage,
       ...this.assistant.initialMessage,
     };
-
+    this.elements.messageIncrementor.appendChild(timeMarkup(data.time));
+    if (extractedLink) {
+      this.appendMedia(extractedLink);
+    }
     if (data.content.includes('^')) {
       const splitMessage = splitText(data.content, '^');
       await this.appendHtmlInChunks(splitMessage, data);
     } else {
-      this.elements.messageIncrementor.appendChild(timeMarkup(data.time));
       this.appendHtml(data);
     }
 
+    this.addImageAction();
     if (extractedString) {
       this.hideInput(extractedString);
     }
@@ -570,6 +607,53 @@ const ChatUi = {
     }
   },
 
+  /**
+   * Shows the image on full screen on click
+   */
+  fullScreenImage() {
+    const link = getStringInAngleBrackets(this.assistant.initialMessage.content);
+    const extractedLink = link[0];
+    const img = document.createElement('img');
+    const background = document.createElement('div');
+    const imgWrapper = document.createElement('div');
+    const closeMark = document.createElement('span');
+
+    closeMark.innerHTML = `&times`;
+    img.classList.add('media-image');
+    imgWrapper.classList.add('fullscreen-image-wrapper');
+    background.classList.add('fullscreen-background-filter');
+    closeMark.classList.add('close-mark');
+
+    img.src = `${extractedLink}`;
+    imgWrapper.appendChild(img);
+    imgWrapper.appendChild(closeMark);
+    background.appendChild(imgWrapper);
+    this.elements.chatbotContainer.appendChild(background);
+    closeMark.addEventListener('click', () => background.classList.remove('show-image'));
+  },
+
+  /**
+   *
+   * @param {*} extractedLink
+   * appends the media (image/video) to the initial message
+   */
+  appendMedia(extractedLink) {
+    const mediaBody = document.createElement('span');
+    mediaBody.classList.add('assistant');
+    if (extractedLink.includes('www.youtube.com')) {
+      mediaBody.appendChild(videoMarkup(extractedLink));
+    } else {
+      mediaBody.appendChild(imageMarkup(extractedLink));
+      this.fullScreenImage();
+    }
+    this.elements.messageIncrementor.appendChild(mediaBody);
+  },
+
+  /**
+   * adds new message to lastQuestionData.message, clears the input field and visualizes it
+   *
+   * @returns {void}
+   */
   addNewMessage() {
     if (!this.elements.emailInput.classList.contains('hidden')) {
       this.emailSendHandler();
@@ -833,7 +917,6 @@ const ChatUi = {
 
   //An async function, that appends the splitted message in chunks, with a total delay of 1000ms for each chunk.
   async appendHtmlInChunks(splitMessage, data) {
-    let showTimeOnce = true;
     for (let i = 0; i < splitMessage.length; i++) {
       loadingDots.show();
       await this.delay(500);
@@ -841,10 +924,7 @@ const ChatUi = {
         ...data,
         content: splitMessage[i],
       };
-      if (showTimeOnce) {
-        showTimeOnce = false;
-        this.elements.messageIncrementor.appendChild(timeMarkup(data.time));
-      }
+
       this.appendHtml(newData);
       loadingDots.hide();
       await this.delay(500);

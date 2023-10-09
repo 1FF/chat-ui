@@ -157,6 +157,36 @@ export function replaceStringInCurlyBracketsWithStrong(input) {
 }
 
 /**
+ * Get the string in angle brackets.
+ *
+ * @function getStringInAngleBrackets
+ * @param {string} input - The input string to process.
+ * @returns {Array} The modified string with replaced content.
+ */
+export function getStringInAngleBrackets(input) {
+  const pattern = /<([^>]+)>/g;
+  let matches = [];
+  let match;
+
+  while ((match = pattern.exec(input)) !== null) {
+    matches.push(match[1]);
+  }
+
+  return matches;
+}
+
+/**
+ * Remove the string in angle brackets.
+ *
+ * @function removeStringInAngleBrackets
+ * @param {string} input - The input string to process.
+ * @returns {string} The modified string with replaced content.
+ */
+export function removeStringInAngleBrackets(input) {
+  return input.replace(/<([^>]+)>/g, '');
+}
+
+/**
  * Checks if 24 hours have passed since the given date.
  *
  * @function isExpired

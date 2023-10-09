@@ -8,6 +8,8 @@ import {
   isExpired,
   splitText,
   clearCarets,
+  getStringInAngleBrackets,
+  removeStringInAngleBrackets,
 } from '../../src/lib/helpers';
 
 describe('extractLink', () => {
@@ -381,5 +383,31 @@ describe('isExpired', () => {
 
     //Assert
     expect(resultText).toBe('This is test text!');
+  });
+});
+
+describe('getStringInAngleBrackets and removeStringInAngleBrackets', () => {
+  test('getStringInAngleBrackets should return the string between < >', () => {
+    //Arrange
+    let input = 'Hello <www.test.test> Goodbye';
+
+    //Act
+    const result = getStringInAngleBrackets(input);
+    const expected = ['www.test.test'];
+
+    //Assert
+    expect(result).toEqual(expected);
+  });
+
+  test('removeStringInAngleBrackets replaces the string in < > with empty string', () => {
+    //Arrange
+    let input = 'This is a test to remove the link! <https://youtube.com>';
+
+    //Act
+    const result = removeStringInAngleBrackets(input);
+    const expected = 'This is a test to remove the link! ';
+
+    //Assert
+    expect(result).toEqual(expected);
   });
 });
