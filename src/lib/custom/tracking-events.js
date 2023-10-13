@@ -27,6 +27,7 @@ export const customEventTypes = {
   emailWrong: 'EmailWrong',
   emailExist: 'EmailExist',
   priceSeen: 'PriceSeen',
+  buttonClick: 'ButtonClick',
 }
 
 export const standard = () => {

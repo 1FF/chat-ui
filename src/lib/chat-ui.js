@@ -397,6 +397,7 @@ const ChatUi = {
     };
     if (this.isFirstUserMessage()) {
       this.track(customEventTypes.firstMessage);
+      this.track(customEventTypes.buttonClick + e.currentTarget.dataset.sequence);
     }
     socketEmitChat(this);
     this.appendHtml(data);
@@ -413,9 +414,10 @@ const ChatUi = {
     const answersContainer = document.createElement('div');
     const moveBtnNumber = '10';
     answersContainer.classList.add('answers-container');
-    [...answerConfig.list].forEach((answer) => {
+    [...answerConfig.list].forEach((answer, index) => {
       let optionElement = document.createElement('div');
       optionElement.textContent = answer.content;
+      optionElement.setAttribute('data-sequence', (index + 1).toString());
       optionElement = actionService.handleAction(optionElement, answer.actions, answersContainer);
       optionElement.addEventListener('click', this[answerConfig.answersType].bind(this));
       answersContainer.appendChild(optionElement);
