@@ -4,9 +4,11 @@ import {
   replaceLinksWithAnchors,
   replaceStringInCurlyBracketsWithStrong,
   removeStringInAngleBrackets,
+  getTerm,
 } from './helpers';
 import { actionService } from './action-service';
 import { translations } from './config/translations';
+import { experimentsPrompt } from '../../src/lib/config/prompts-affected';
 
 export const chatMarkup = (config) => `<div class="chat-widget">
   <div class="chat-widget__head">
@@ -19,6 +21,7 @@ export const chatMarkup = (config) => `<div class="chat-widget">
         <span class="widget-role">${config.assistant.role}</span>
       </span>
     </div>
+    ${getTerm() === experimentsPrompt.finalPage ? closeButton : ''}
   </div>
   <div class="chat-widget__messages" id="scroll-incrementor">
     <div class="chat-widget__messages-container" id="message-incrementor"></div>
