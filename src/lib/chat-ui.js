@@ -387,6 +387,24 @@ const ChatUi = {
       this.boldedText = '';
     }
   },
+  processStringInCaseOfAngleBrackets(){
+    if (this.chunk.includes('<')) {
+      this.answersFromStream = this.chunk;
+    } else if (this.answersFromStream) {
+      this.answersFromStream += this.chunk;
+    }
+
+    if (this.answersFromStream.includes('>')) {
+      if (this.answersFromStream.includes(intentionType.payment)) {
+        this.setPaymentIntent();
+        return;
+      }
+
+      // this.answersFromStream = actionService.clearButtonCodes(this.answersFromStream);
+      this.addOptions();
+      this.chunk = '';
+    }
+  },
   refreshLocalStorageHistory(history) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   },

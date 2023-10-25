@@ -105,6 +105,7 @@ export function onStreamData(data) {
   this.chunk = clearCarets(data.chunk);
   this.processTextInCaseOfSquareBrackets();
   this.processTextInCaseOfCurlyBrackets();
+  this.processStringInCaseOfAngleBrackets();
 
   !this.answersFromStream && (lastMessageElement.innerHTML += this.chunk);
   lastMessageElement.addClass('cursor');
