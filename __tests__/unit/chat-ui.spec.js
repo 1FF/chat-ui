@@ -6,6 +6,7 @@ import { loadingDots as loadingDotsObj } from '../../src/lib/utils';
 import { customEventTypes } from '../../src/lib/custom/tracking-events';
 import { actionService } from '../../src/lib/action-service';
 import { getStringInAngleBrackets } from '../../src/lib/helpers';
+import { experimentsPrompt } from '../../src/lib/config/prompts-affected';
 
 const chatWidgets = require('../../src/lib/chat-widgets');
 
@@ -310,6 +311,49 @@ describe('ChatUi', () => {
 
     expect(sut.track).toBeCalledTimes(1);
     expect(sut.track).toBeCalledWith(customEventTypes.linkProvided);
+  });
+
+  test('should call set cta button to close', () => {
+    // Arrange
+    Object.defineProperty(window, 'location', {
+      value: {
+        search: `?utm_chat=${experimentsPrompt.finalPage}`,
+      },
+      writable: true,
+    });
+    const link = 'https://example.com';
+
+    // Act
+    sut.init({ containerId: 'chatbot-container', translations });
+    sut.track = jest.fn();
+    sut.setCtaButtonToClose = jest.fn();
+
+    sut.link = link;
+    sut.setCtaButton();
+
+    // Assert
+    // expect(sut.elements.ctaButton.getAttribute('href')).toBe('javascript:void(0)');
+    expect(sut.elements.ctaButton.classList.contains('hidden')).toBe(false);
+
+    expect(sut.elements.promptContainer.classList.contains('hidden')).toBe(true);
+
+    expect(sut.setCtaButtonToClose).toBeCalledTimes(1);
+    expect(sut.track).toBeCalledTimes(1);
+    expect(sut.track).toBeCalledWith(customEventTypes.linkProvided);
+  });
+
+  test('should close the chat via cta button click', () => {
+    // Act
+    sut.init({ containerId: 'chatbot-container', translations });
+    sut.closeWidget = jest.fn();
+
+    sut.setCtaButtonToClose();
+
+    sut.elements.ctaButton.click();
+
+    // Assert
+    expect(sut.elements.ctaButton.getAttribute('href')).toBe('javascript:void(0)');
+    expect(sut.closeWidget).toBeCalledTimes(1);
   });
 
   test('shouldHideChat returns true when user has seen the chat and the history has not expired (24hrs)', () => {

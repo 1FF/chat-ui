@@ -1,7 +1,9 @@
 import { UNSENT_MESSAGES_KEY } from './chat-ui';
 import { rolesHTML } from './chat-widgets';
-import { constructLink, replaceLinksWithAnchors, clearCarets } from './helpers';
+import { constructLink, replaceLinksWithAnchors, clearCarets, getTerm, removeUrl } from './helpers';
 import { errorMessage, input, loadingDots, messages, resendButton } from './utils';
+import { experimentsPrompt } from '../../src/lib/config/prompts-affected';
+
 /**
  * Handles the start of the stream.
  * Hides loading dots, appends the current timestamp, and adds the assistant role element.
@@ -129,7 +131,12 @@ export function onStreamEnd() {
   lastMessageTextContainer.classList.remove('cursor');
   this.hasAnswers = lastMessageElement.querySelector('.answers-container');
   this.link = constructLink(lastMessageTextContainer.innerHTML);
-  lastMessageTextContainer.innerHTML = replaceLinksWithAnchors(lastMessageTextContainer.innerHTML);
+
+  if (getTerm() === experimentsPrompt.finalPage) {
+    lastMessageTextContainer.innerHTML = removeUrl(lastMessageTextContainer.innerHTML);
+  } else {
+    lastMessageTextContainer.innerHTML = replaceLinksWithAnchors(lastMessageTextContainer.innerHTML);
+  }
 
   if (this.link) {
     this.setCtaButton();

@@ -14,6 +14,10 @@ export function getRandomInteger(min, max) {
   return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
 }
 
+export function removeUrl(text){
+  return text.replace(REGEX_URL);
+}
+
 /**
  * Formats a date string according to the locale, including the date and time.
  *

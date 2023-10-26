@@ -43,6 +43,7 @@ import {
 } from './socket-services';
 import { actionService } from './action-service';
 import { customEventTypes, standardEventTypes } from './custom/tracking-events';
+import { experimentsPrompt } from '../../src/lib/config/prompts-affected';
 
 const nodeEvents = require('events');
 
@@ -202,8 +203,10 @@ const ChatUi = {
 
     if (this.link) {
       this.setCtaButton();
+      if(getTerm() === experimentsPrompt.finalPage){
+        this.link.remove();
+      }
     }
-
     if (content.includes(intentionType.email)) {
       this.setEmailVisibility();
     }
@@ -450,13 +453,27 @@ const ChatUi = {
    */
   setCtaButton() {
     this.elements.ctaButton.classList.remove('hidden');
-    this.elements.ctaButton.setAttribute('href', this.link);
+    if (getTerm() === experimentsPrompt.finalPage) {
+      this.setCtaButtonToClose();
+    } else {
+      this.elements.ctaButton.setAttribute('href', this.link);
+    }
     input.hide(this);
     this.track(customEventTypes.linkProvided);
     this.elements.ctaButton.addEventListener('click', () => {
       this.track(customEventTypes.linkClicked);
     });
   },
+
+  setCtaButtonToClose(){
+    this.elements.ctaButton.setAttribute('href', 'javascript:void(0)');
+
+    this.elements.ctaButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.closeWidget();
+    });
+  },
+
   /**
    * Sets custom variables and applies them to the main container element and font family.
    * Theme-specific properties are handled separately.
@@ -725,13 +742,17 @@ const ChatUi = {
     this.closeSocket();
     localStorage.setItem(CHAT_SEEN_KEY, true);
   },
+  goBack() {
+    this.closeSocket();
+    history.back();
+  },
   /**
    * Attaches event listeners to the chat widget elements.
    *
    * @returns {void}
    */
   attachListeners() {
-    this.elements.closeButton?.addEventListener('click', this.closeWidget.bind(this));
+    this.elements.closeButton?.addEventListener('click', this.goBack.bind(this));
     this.elements.sendButton.addEventListener('click', this.addNewMessage.bind(this));
     this.elements.ctaButton.addEventListener('click', this.closeWidget.bind(this));
     this.elements.messageInput.addEventListener('keydown', this.onKeyDown.bind(this));
