@@ -362,6 +362,8 @@ const ChatUi = {
       this.addOptions();
       this.chunk = '';
     }
+    console.log('this.answersFromStream', this.answersFromStream);
+
   },
   processTextInCaseOfCurlyBrackets() {
     if (this.chunk.includes('{')) {
@@ -394,16 +396,13 @@ const ChatUi = {
       this.answersFromStream += this.chunk;
     }
 
-    if (this.answersFromStream.includes('>')) {
-      if (this.answersFromStream.includes(intentionType.payment)) {
-        this.setPaymentIntent();
-        return;
-      }
 
-      // this.answersFromStream = actionService.clearButtonCodes(this.answersFromStream);
-      this.addOptions();
-      this.chunk = '';
-    }
+    // if (this.answersFromStream.includes('>')) {
+    //   this.addOptions();
+    //   this.chunk = '';
+    // }
+    console.log('this.chunk', this.chunk);
+    console.log('this.answersFromStream', this.answersFromStream);
   },
   refreshLocalStorageHistory(history) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
