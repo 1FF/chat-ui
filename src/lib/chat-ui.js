@@ -130,6 +130,17 @@ const ChatUi = {
     this.setDomContent();
     this.setSocket();
     this.setIntentionEvents();
+    this.setImageFullScreen();
+  },
+  setImageFullScreen() {
+    document.querySelector('body').addEventListener('click', (e) => {
+      console.log('document', document);
+      if (e.target.classList.contains('media-image')) {
+        const fullScreen = document.querySelector('.fullscreen-background-filter');
+        fullScreen.querySelector('img').src = e.target.src;
+        fullScreen.classList.toggle('show-image');
+      }
+    });
   },
   setIntentionEvents() {
     intentions.on(intentionType.emailError, (response) => {
@@ -235,7 +246,6 @@ const ChatUi = {
         isLastMessage = true;
       }
       if (counter === 1) {
-        this.initMedia(data.content);
         if (data.content.includes('^')) {
           appended = true;
           this.initNewLine(data, isLastMessage);
@@ -244,11 +254,10 @@ const ChatUi = {
       if (!appended) {
         this.appendHtml(data, isLastMessage);
       }
+      this.initMedia(data.content);
 
       counter++;
     });
-
-    this.addImageAction();
   },
   initNewLine(data, isLastMessage) {
     const splittedContent = splitText(data.content, '^');
@@ -261,15 +270,6 @@ const ChatUi = {
       };
       this.appendHtml(newData, isLastMessage);
     }
-  },
-  addImageAction() {
-    const images = document.querySelectorAll('.media-image');
-    images.forEach((img) => {
-      img.addEventListener('click', () => {
-        const fullScreen = document.querySelector('.fullscreen-background-filter');
-        fullScreen.classList.toggle('show-image');
-      });
-    });
   },
   initMedia(content) {
     const link = getStringInAngleBrackets(content);
@@ -362,8 +362,6 @@ const ChatUi = {
       this.addOptions();
       this.chunk = '';
     }
-    console.log('this.answersFromStream', this.answersFromStream);
-
   },
   processTextInCaseOfCurlyBrackets() {
     if (this.chunk.includes('{')) {
@@ -389,20 +387,18 @@ const ChatUi = {
       this.boldedText = '';
     }
   },
-  processStringInCaseOfAngleBrackets(){
+  processStringInCaseOfAngleBrackets() {
     if (this.chunk.includes('<')) {
       this.answersFromStream = this.chunk;
-    } else if (this.answersFromStream) {
-      this.answersFromStream += this.chunk;
     }
 
-
-    // if (this.answersFromStream.includes('>')) {
-    //   this.addOptions();
-    //   this.chunk = '';
-    // }
-    console.log('this.chunk', this.chunk);
-    console.log('this.answersFromStream', this.answersFromStream);
+    if (this.answersFromStream.includes('>')) {
+      this.answersFromStream = this.answersFromStream.replace('<', '').replace('>', '');
+      console.log('this.answersFromStream', this.answersFromStream);
+      this.appendMedia(this.answersFromStream);
+      this.answersFromStream = '';
+      this.chunk = '';
+    }
   },
   refreshLocalStorageHistory(history) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
@@ -429,7 +425,7 @@ const ChatUi = {
     }
   },
   addOptions() {
-    const element = this.getLastMessageElement('.assistant');
+    const element = this.getLastMessageElementConsistingMessage('.assistant');
     const answerConfig = getAnswerConfig(this.answersFromStream);
     const answersContainer = document.createElement('div');
     const moveBtnNumber = '10';
@@ -454,6 +450,21 @@ const ChatUi = {
     return this.elements.messageIncrementor.querySelectorAll(role)[
       this.elements.messageIncrementor.querySelectorAll(role).length - 1
     ];
+  },
+  getLastMessageElementConsistingMessage(role) {
+    const parentElements = this.elements.messageIncrementor.querySelectorAll(role);
+    var lastElement = null;
+
+    for (let i = parentElements.length - 1; i >= 0; i--) {
+      const parent = parentElements[i];
+      const child1 = parent.querySelector('.js-assistant-message');
+      if (child1) {
+        lastElement = parent;
+        break; // Exit the loop as soon as a match is found
+      }
+    }
+
+    return lastElement;
   },
   isFirstUserMessage() {
     let history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -619,7 +630,7 @@ const ChatUi = {
       this.appendHtml(data);
     }
 
-    this.addImageAction();
+    // this.addImageAction();
     if (extractedString) {
       this.hideInput(extractedString);
     }
@@ -644,31 +655,6 @@ const ChatUi = {
   },
 
   /**
-   * Shows the image on full screen on click
-   */
-  fullScreenImage() {
-    const link = getStringInAngleBrackets(this.assistant.initialMessage.content);
-    const extractedLink = link[0];
-    const img = document.createElement('img');
-    const background = document.createElement('div');
-    const imgWrapper = document.createElement('div');
-    const closeMark = document.createElement('span');
-
-    closeMark.innerHTML = `&times`;
-    img.classList.add('media-image');
-    imgWrapper.classList.add('fullscreen-image-wrapper');
-    background.classList.add('fullscreen-background-filter');
-    closeMark.classList.add('close-mark');
-
-    img.src = `${extractedLink}`;
-    imgWrapper.appendChild(img);
-    imgWrapper.appendChild(closeMark);
-    background.appendChild(imgWrapper);
-    this.elements.chatbotContainer.appendChild(background);
-    closeMark.addEventListener('click', () => background.classList.remove('show-image'));
-  },
-
-  /**
    *
    * @param {*} extractedLink
    * appends the media (image/video) to the initial message
@@ -680,7 +666,6 @@ const ChatUi = {
       mediaBody.appendChild(videoMarkup(extractedLink));
     } else {
       mediaBody.appendChild(imageMarkup(extractedLink));
-      this.fullScreenImage();
     }
     this.elements.messageIncrementor.appendChild(mediaBody);
   },

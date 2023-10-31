@@ -211,7 +211,7 @@ describe('ChatUi', () => {
   test('that initial buttons are not appended from assistant if actions number is 10', () => {
     const element = document.createElement('span');
     element.appendChild = jest.fn();
-    sut.getLastMessageElement = jest.fn().mockReturnValue(element);
+    sut.getLastMessageElementConsistingMessage = jest.fn().mockReturnValue(element);
     actionService.handleAction = jest.fn().mockReturnValue(document.createElement('div'));
     sut.word = jest.fn();
 
@@ -224,7 +224,7 @@ describe('ChatUi', () => {
   test('that initial buttons are appended from assistant if actions number is 10', () => {
     const element = document.createElement('span');
     element.appendChild = jest.fn();
-    sut.getLastMessageElement = jest.fn().mockReturnValue(element);
+    sut.getLastMessageElementConsistingMessage = jest.fn().mockReturnValue(element);
     actionService.handleAction = jest.fn().mockReturnValue(document.createElement('div'));
 
     sut.word = jest.fn();
@@ -476,7 +476,7 @@ describe('ChatUi', () => {
 
       sut.historyTraverse([{ content: 'element1' }, { content: 'element2' }]);
 
-      expect(sut.initMedia).toBeCalledTimes(1);
+      expect(sut.initMedia).toBeCalledTimes(2);
       expect(sut.appendHtml).toBeCalledTimes(2);
       expect(sut.appendHtml).toBeCalledWith({ content: 'element1' }, false);
       expect(sut.appendHtml).toBeCalledWith({ content: 'element2' }, true);
@@ -493,7 +493,7 @@ describe('ChatUi', () => {
       expect(sut.appendHtml).toBeCalledTimes(1);
       expect(sut.appendHtml).toBeCalledWith({ content: 'element2' }, true);
       expect(sut.initNewLine).toBeCalledTimes(1);
-      expect(sut.initMedia).toBeCalledTimes(1);
+      expect(sut.initMedia).toBeCalledTimes(2);
     });
   });
 
@@ -724,6 +724,24 @@ describe('appendMedia calls the proper media markup', () => {
     //Assert
     expect(imageMarkupSpy).toBeCalledTimes(1);
     expect(videoMarkupSpy).not.toBeCalled();
+  });
+
+  test('set image fullscreen', () => {
+    document.body.innerHTML = '<img src="http://localhost/image-to-show" class="media-image"> <div class="fullscreen-background-filter"><img src="http://localhost/initial-src"></div>';
+
+    var fullScreenImageContainer = document.querySelector('.fullscreen-background-filter');
+    var fullScreenImage = fullScreenImageContainer.querySelector('img');
+
+    expect(fullScreenImageContainer.classList.contains("show-image")).toBeFalsy();
+    expect(fullScreenImage.src).toBe("http://localhost/initial-src")
+
+    document.querySelector('.media-image').click();
+
+    var fullScreenImageContainer = document.querySelector('.fullscreen-background-filter');
+    var fullScreenImage = fullScreenImageContainer.querySelector('img');
+
+    expect(fullScreenImageContainer.classList.contains("show-image")).toBeTruthy();
+    expect(fullScreenImage.src).toBe("http://localhost/image-to-show")
   });
 });
 

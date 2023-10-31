@@ -33,6 +33,7 @@ describe('socket-services', () => {
       getLastMessageElement: jest.fn().mockImplementationOnce(() => document.querySelector('div')),
       processTextInCaseOfSquareBrackets: jest.fn(),
       processTextInCaseOfCurlyBrackets: jest.fn(),
+      processStringInCaseOfAngleBrackets: jest.fn(),
       elements: {
         messageIncrementor: { appendChild: jest.fn() },
       },
@@ -72,6 +73,7 @@ describe('socket-services', () => {
     const state = {
       setCtaButton: jest.fn(),
       getLastMessageElement: ChatUi.getLastMessageElement,
+      getLastMessageElementConsistingMessage: ChatUi.getLastMessageElementConsistingMessage,
       elements: { messageIncrementor: document.querySelector('#message-incrementor') },
     };
     jest.spyOn(input, 'show');
@@ -114,6 +116,7 @@ describe('socket-services', () => {
     const state = {
       setCtaButton: jest.fn(),
       getLastMessageElement: ChatUi.getLastMessageElement,
+      getLastMessageElementConsistingMessage: ChatUi.getLastMessageElementConsistingMessage,
       elements: {
         messageIncrementor: document.querySelector('#message-incrementor'),
         promptContainer: document.querySelector('#prompt-container'),
@@ -163,6 +166,7 @@ describe('socket-services', () => {
     const state = {
       setCtaButton: jest.fn(),
       getLastMessageElement: ChatUi.getLastMessageElement,
+      getLastMessageElementConsistingMessage: ChatUi.getLastMessageElementConsistingMessage,
       elements: {
         messageIncrementor: document.querySelector('#message-incrementor'),
         promptContainer: document.querySelector('#prompt-container'),

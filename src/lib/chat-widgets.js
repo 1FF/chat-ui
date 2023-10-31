@@ -49,6 +49,7 @@ export const chatMarkup = (config) => `<div class="chat-widget">
       </div>
     </div>
   </div>
+  ${imageFullscreen}
 </div>`;
 
 export const initiatorProfile = (config) => {
@@ -146,6 +147,8 @@ export const paymentButton = (translations) => `<button id="chat-pay" class="js-
   </svg>
   <span class="payment-button__text">${translations.payButton}</span>
 </button>`;
+
+export const imageFullscreen = `<div class="fullscreen-background-filter"><div class="fullscreen-image-wrapper"><img class="media-image" src="https://www.worldatlas.com/upload/cf/93/4b/shutterstock-1385689649.jpg"><span class="close-mark">×</span></div></div>`
 
 export const closePaymentFormButton = `<span id="payment-form-close-button" class="close-payment-form hidden">
   <svg

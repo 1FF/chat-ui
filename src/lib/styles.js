@@ -422,6 +422,7 @@ img {
 
 .close-mark{
   position: absolute;
+  pointer-events: none;
   top: 20px;
   right: 35px;
   font-size: 32px;

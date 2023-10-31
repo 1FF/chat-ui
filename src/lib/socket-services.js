@@ -123,7 +123,7 @@ export function onStreamData(data) {
  */
 export function onStreamEnd() {
   window.debugMode && console.log('stream-end');
-  const lastMessageElement = this.getLastMessageElement('.assistant');
+  const lastMessageElement = this.getLastMessageElementConsistingMessage('.assistant');
   const lastMessageTextContainer = lastMessageElement.querySelector('.js-assistant-message');
 
   // in case stream ended with empty message, remove it from the DOM.
