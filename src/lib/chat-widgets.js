@@ -26,7 +26,7 @@ export const chatMarkup = (config) => `<div class="chat-widget">
   <div class="chat-widget__messages" id="scroll-incrementor">
     <div class="chat-widget__messages-container" id="message-incrementor"></div>
   </div>
-    <a class="chat-widget__cta hidden" id="cta-button">${config.translations.mealButton}</a>
+    <a class="chat-widget__cta hidden" id="cta-button" data-e2e="quiz-trigger-btn">${config.translations.mealButton}</a>
   ${paymentButton(config.translations)}
   ${loadingDots}
   ${chatPaymentFormContainer(config.translations)}
@@ -38,13 +38,13 @@ export const chatMarkup = (config) => `<div class="chat-widget">
       <span class="widget__input">
       <input id="chat-email" class="hidden" autofocus="chat" name="email" type="email" placeholder="${
         translations.emailPlaceholder
-      }">
+      }" data-e2e="email-input">
       <input id="chat-prompt" minlength="1" autofocus="chat" name="chat-prompt" type="text" placeholder="${
         translations.textareaPlaceholder
       }">
         ${loaderEmail}
       </span>
-      <div class="widget__button" id="send-button">
+      <div class="widget__button" id="send-button" data-e2e="email-validate-btn">
         ${sendIcon}
       </div>
     </div>
@@ -91,6 +91,7 @@ export const rolesHTML = {
     const elementContent = document.createElement('span');
     elementContent.className = 'js-assistant-message';
     element.classList.add('assistant');
+    element.dataset.e2e = "stream-assistant-msg";
     element.appendChild(elementContent);
     const { extractedString, updatedMessage } = extractStringWithBrackets(content);
 
@@ -127,17 +128,18 @@ export const imageMarkup = (extractedLink) => {
 export const timeMarkup = (time) => {
   const element = document.createElement('div');
   element.classList.add('date-formatted');
+  element.dataset.e2e = "stream-assistant-msg-date";
   element.textContent = formatDateByLocale(time);
   return element;
 };
 
-export const loadingDots = `<div class="js-wave hidden">
+export const loadingDots = `<div class="js-wave hidden" data-e2e="stream-response-loader">
   <span class="dot"></span>
   <span class="dot"></span>
   <span class="dot"></span>
 </div>`;
 
-export const paymentButton = (translations) => `<button id="chat-pay" class="js-payment-button payment-button hidden">
+export const paymentButton = (translations) => `<button id="chat-pay" class="js-payment-button payment-button hidden" data-e2e="payment-form-trigger-btn">
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path opacity=".3" d="M4 12h16v6H4v-6zm0-6h16v2H4V6z" fill="currentColor"/>
       <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor"/>
