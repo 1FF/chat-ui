@@ -1,0 +1,32 @@
+name: Post-merge
+on:
+  pull_request:
+    types: [ closed ]
+jobs:
+  post-merge:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.WORKFLOW_GIT_ACCESS_TOKEN }}
+
+      # Setup .npmrc file to publish to npm
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.14.0'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Bump version, build, commit, and merge changes
+        if: github.event.pull_request.merged == true
+        run: |
+          npm ci
+          git config user.name "${{ github.event.pull_request.user.login }}"
+          git config user.email "${{ github.event.pull_request.user.login }}@users.noreply.github.com"
+          npm version patch --no-git-tag-version
+          PACKAGE_VERSION=v$(node -pe "require('./package.json').version")
+          npm run build
+          git commit -am "Build $PACKAGE_VERSION"
+          git push
+          git tag "$PACKAGE_VERSION"
+          git push origin "$PACKAGE_VERSION"
