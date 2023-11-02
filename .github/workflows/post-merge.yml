@@ -24,9 +24,9 @@ jobs:
           git config user.name "${{ github.event.pull_request.user.login }}"
           git config user.email "${{ github.event.pull_request.user.login }}@users.noreply.github.com"
           npm version patch --no-git-tag-version
-          PACKAGE_VERSION=$(node -pe "require('./package.json').version")
+          PACKAGE_VERSION=v$(node -pe "require('./package.json').version")
           npm run build
           git commit -am "Build $PACKAGE_VERSION"
           git push
-          git tag v$PACKAGE_VERSION
-          git push origin v$PACKAGE_VERSION
+          git tag "$PACKAGE_VERSION"
+          git push origin "$PACKAGE_VERSION"
