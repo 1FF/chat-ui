@@ -1,0 +1,32 @@
+name: Release New Version
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Generate release notes
+        run: |
+          pre_last_commit_msg=$(git log -1 --format=%B $(git rev-parse HEAD~1))
+          # Generate release notes from the commits since the last release
+          echo "## What's Changed" > release-notes.md
+          echo "- ${pre_last_commit_msg}" >> release-notes.md
+
+      - name: Create release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.WORKFLOW_GIT_ACCESS_TOKEN }}
+        id: create_release
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: ${{ github.ref_name }}
+          body_path: release-notes.md
