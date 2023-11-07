@@ -105,6 +105,7 @@ export function onStreamData(data) {
   this.chunk = clearCarets(data.chunk);
   this.processTextInCaseOfSquareBrackets();
   this.processTextInCaseOfCurlyBrackets();
+  this.processStringInCaseOfAngleBrackets();
 
   !this.answersFromStream && (lastMessageElement.innerHTML += this.chunk);
   lastMessageElement.addClass('cursor');
@@ -122,7 +123,7 @@ export function onStreamData(data) {
  */
 export function onStreamEnd() {
   window.debugMode && console.log('stream-end');
-  const lastMessageElement = this.getLastMessageElement('.assistant');
+  const lastMessageElement = this.getLastMessageElementConsistingMessage('.assistant');
   const lastMessageTextContainer = lastMessageElement.querySelector('.js-assistant-message');
 
   // in case stream ended with empty message, remove it from the DOM.
