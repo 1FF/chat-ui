@@ -252,8 +252,8 @@ const ChatUi = {
         }
       }
       if (!appended) {
-        this.initMedia(data.content);
         this.appendHtml(data, isLastMessage);
+        this.initMedia(data.content);
       }
 
       counter++;
@@ -273,7 +273,6 @@ const ChatUi = {
   },
   initMedia(content) {
     const link = getStringInAngleBrackets(content);
-console.log('initmedia with', content);
     const extractedLink = link[0];
     if (extractedLink) {
       this.appendMedia(extractedLink);
