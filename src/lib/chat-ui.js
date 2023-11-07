@@ -233,7 +233,6 @@ const ChatUi = {
   historyTraverse(history) {
     let counter = 1;
     let isLastMessage = false;
-
     history.forEach((data) => {
       let appended = false;
 
@@ -248,13 +247,14 @@ const ChatUi = {
       if (counter === 1) {
         if (data.content.includes('^')) {
           appended = true;
+          this.initMedia(data.content);
           this.initNewLine(data, isLastMessage);
         }
       }
       if (!appended) {
+        this.initMedia(data.content);
         this.appendHtml(data, isLastMessage);
       }
-      this.initMedia(data.content);
 
       counter++;
     });
@@ -273,7 +273,7 @@ const ChatUi = {
   },
   initMedia(content) {
     const link = getStringInAngleBrackets(content);
-
+console.log('initmedia with', content);
     const extractedLink = link[0];
     if (extractedLink) {
       this.appendMedia(extractedLink);
