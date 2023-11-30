@@ -214,10 +214,12 @@ const ChatUi = {
 
     if (this.link) {
       this.setCtaButton();
+      this.attachLinkEventListener();
       if(getTerm() === experimentsPrompt.finalPage){
         this.link.remove();
       }
     }
+
     if (content.includes(intentionType.email)) {
       this.setEmailVisibility();
     }
@@ -377,6 +379,7 @@ const ChatUi = {
       this.link = constructLink(this.boldedText);
       if (this.link) {
         this.setCtaButton();
+        this.attachLinkEventListener();
       }
 
       let strongTaggedText = this.boldedText.replace('{', '').replace('}', '');
@@ -497,6 +500,16 @@ const ChatUi = {
 
     this.elements.ctaButton.addEventListener('click', (e) => {
       e.preventDefault();
+      this.closeWidget();
+    });
+  },
+
+  attachLinkEventListener() {
+    const links = document.querySelectorAll('.js-assistant-message a');
+    const link = links[links.length - 1];
+
+    link.addEventListener('click', () => {
+      this.track(customEventTypes.linkClicked);
       this.closeWidget();
     });
   },
