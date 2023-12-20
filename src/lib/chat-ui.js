@@ -214,7 +214,6 @@ const ChatUi = {
 
     if (this.link) {
       this.setCtaButton();
-      this.attachLinkEventListener();
       if(getTerm() === experimentsPrompt.finalPage){
         this.link.remove();
       }
@@ -379,7 +378,6 @@ const ChatUi = {
       this.link = constructLink(this.boldedText);
       if (this.link) {
         this.setCtaButton();
-        this.attachLinkEventListener();
       }
 
       let strongTaggedText = this.boldedText.replace('{', '').replace('}', '');
@@ -483,6 +481,7 @@ const ChatUi = {
    */
   setCtaButton() {
     this.elements.ctaButton.classList.remove('hidden');
+    this.attachLinkEventListener();
     if (getTerm() === experimentsPrompt.finalPage) {
       this.setCtaButtonToClose();
     } else {
@@ -508,10 +507,12 @@ const ChatUi = {
     const links = document.querySelectorAll('.js-assistant-message a');
     const link = links[links.length - 1];
 
-    link.addEventListener('click', () => {
-      this.track(customEventTypes.linkClicked);
-      this.closeWidget();
-    });
+    if (link) {
+      link.addEventListener('click', () => {
+        this.track(customEventTypes.linkClicked);
+        this.closeWidget();
+      });
+    }
   },
 
   /**
