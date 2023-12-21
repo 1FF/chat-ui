@@ -218,6 +218,7 @@ const ChatUi = {
         this.link.remove();
       }
     }
+
     if (content.includes(intentionType.email)) {
       this.setEmailVisibility();
     }
@@ -480,6 +481,7 @@ const ChatUi = {
    */
   setCtaButton() {
     this.elements.ctaButton.classList.remove('hidden');
+    this.attachLinkEventListener();
     if (getTerm() === experimentsPrompt.finalPage) {
       this.setCtaButtonToClose();
     } else {
@@ -499,6 +501,18 @@ const ChatUi = {
       e.preventDefault();
       this.closeWidget();
     });
+  },
+
+  attachLinkEventListener() {
+    const links = document.querySelectorAll('.js-assistant-message a');
+    const link = links[links.length - 1];
+
+    if (link) {
+      link.addEventListener('click', () => {
+        this.track(customEventTypes.linkClicked);
+        this.closeWidget();
+      });
+    }
   },
 
   /**
